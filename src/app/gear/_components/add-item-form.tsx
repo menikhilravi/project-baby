@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Link2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -40,8 +40,8 @@ export function AddItemForm() {
             Track a new item
           </DialogTitle>
           <DialogDescription>
-            Paste the current price and your target — we&apos;ll keep the
-            history.
+            Paste a product URL and we&apos;ll grab the price. Add more
+            retailers afterwards.
           </DialogDescription>
         </DialogHeader>
 
@@ -86,56 +86,8 @@ export function AddItemForm() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="retailer" className="text-sm">
-                Retailer
-              </Label>
-              <Input
-                id="retailer"
-                name="retailer"
-                placeholder="Babylist"
-                className="rounded-xl bg-background/60"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="url" className="text-sm">
-              URL <span className="text-muted-foreground">(optional)</span>
-            </Label>
-            <Input
-              id="url"
-              name="url"
-              type="url"
-              placeholder="https://"
-              className="rounded-xl bg-background/60"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="current_price" className="text-sm">
-                Current price
-              </Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                  $
-                </span>
-                <Input
-                  id="current_price"
-                  name="current_price"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  required
-                  inputMode="decimal"
-                  placeholder="899"
-                  className="rounded-xl bg-background/60 pl-6"
-                />
-              </div>
-            </div>
-            <div className="space-y-1.5">
               <Label htmlFor="target_price" className="text-sm">
-                Target
+                Target price
               </Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
@@ -156,6 +108,27 @@ export function AddItemForm() {
             </div>
           </div>
 
+          <div className="space-y-1.5">
+            <Label htmlFor="url" className="text-sm">
+              Product URL
+            </Label>
+            <div className="relative">
+              <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="url"
+                name="url"
+                type="url"
+                required
+                placeholder="https://www.babylist.com/store/…"
+                className="rounded-xl bg-background/60 pl-9"
+              />
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Babylist, Pottery Barn Kids, Target, Nordstrom, etc. Amazon &amp;
+              Walmart aren&apos;t auto-trackable yet — set those manually.
+            </p>
+          </div>
+
           {error ? <p className="text-xs text-destructive">{error}</p> : null}
 
           <DialogFooter className="pt-2">
@@ -164,7 +137,7 @@ export function AddItemForm() {
               disabled={pending}
               className="rounded-xl bg-gear hover:bg-gear/90 text-white"
             >
-              {pending ? "Saving…" : "Save item"}
+              {pending ? "Checking price…" : "Add item"}
             </Button>
           </DialogFooter>
         </form>

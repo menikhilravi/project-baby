@@ -28,12 +28,10 @@ export interface Database {
           id: string;
           user_id: string;
           name: string;
-          retailer: string | null;
-          url: string | null;
           emoji: string;
-          current_price: number;
           target_price: number;
-          high_price: number | null;
+          last_target_hit_at: string | null;
+          is_target_hit_acknowledged: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -41,35 +39,63 @@ export interface Database {
           id?: string;
           user_id: string;
           name: string;
-          retailer?: string | null;
-          url?: string | null;
           emoji?: string;
-          current_price: number;
           target_price: number;
-          high_price?: number | null;
-          created_at?: string;
-          updated_at?: string;
+          last_target_hit_at?: string | null;
+          is_target_hit_acknowledged?: boolean;
         };
         Update: {
           name?: string;
-          retailer?: string | null;
-          url?: string | null;
           emoji?: string;
-          current_price?: number;
           target_price?: number;
-          high_price?: number | null;
-          updated_at?: string;
+          last_target_hit_at?: string | null;
+          is_target_hit_acknowledged?: boolean;
+        };
+        Relationships: [];
+      };
+      gear_watchers: {
+        Row: {
+          id: string;
+          item_id: string;
+          retailer: string;
+          url: string;
+          current_price: number | null;
+          last_checked_at: string | null;
+          last_checked_status: "pending" | "ok" | "failed";
+          last_error: string | null;
+          is_paused: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          item_id: string;
+          retailer: string;
+          url: string;
+          current_price?: number | null;
+          last_checked_at?: string | null;
+          last_checked_status?: "pending" | "ok" | "failed";
+          last_error?: string | null;
+          is_paused?: boolean;
+        };
+        Update: {
+          retailer?: string;
+          url?: string;
+          current_price?: number | null;
+          last_checked_at?: string | null;
+          last_checked_status?: "pending" | "ok" | "failed";
+          last_error?: string | null;
+          is_paused?: boolean;
         };
         Relationships: [];
       };
       gear_price_history: {
         Row: {
           id: number;
-          item_id: string;
+          watcher_id: string;
           price: number;
           recorded_at: string;
         };
-        Insert: { id?: number; item_id: string; price: number; recorded_at?: string };
+        Insert: { id?: number; watcher_id: string; price: number; recorded_at?: string };
         Update: { price?: number };
         Relationships: [];
       };
