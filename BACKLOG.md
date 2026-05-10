@@ -6,21 +6,14 @@ Post-launch improvements. New items get appended; tags: `📋 Captured` → `�
 
 ## Price Pulse
 
-### 📋 PP-1 · Real-world price data + alerts when price changes
-**What:** Pull current prices automatically. Notify when a tracked item hits the target.
-**Why:** Manual entry defeats the point — we forget to check.
-**Approach options:**
-- *Data:* free + fragile = build a scraper per retailer (Playwright in a Vercel Cron or Supabase Edge Function). Paid + robust = Keepa (~$19/mo, Amazon-only) or Rainforest / SerpAPI (multi-retailer, $$).
-- *Alerts:* web push (PWA + service worker) and/or email via Resend SMTP when `current_price ≤ target_price`.
-- *Schedule:* Vercel Cron daily.
-**Schema impact:** none — uses existing `gear_items` + `gear_price_history`.
-**Effort:** ★★★★ (biggest item; scraper reliability is the real cost)
+### ⏸ PP-1 · Real-world price data + alerts when price changes
+**Status:** Attempted with free JSON-LD parsing; landed but **not viable for v1**. Modern retailers (Babylist, Target, Pottery Barn Kids, Buy Buy Baby, Nordstrom, UPPAbaby direct) hydrate price markup client-side — server-rendered HTML has no structured data. The scraper only succeeded on a few Next.js-RSC sites like Happiest Baby. Reverting to manual entry as the primary path.
+**To revisit:** integrate **ScrapingBee** or **ScraperAPI** (~$30–49/mo) for JS rendering, or **Keepa** ($19/mo) for Amazon-specific. Code skeleton (scraper, cron, target-hit transitions) is already in the repo — only the data source needs swapping.
+**Effort to revisit:** ★★ (most plumbing exists)
 
-### 📋 PP-2 · Track each item across many retailers
-**What:** One product, many watch URLs (Amazon, Target, Walmart, Babylist…). Show the best current price.
-**Why:** Same item often varies $50–100 across retailers; we want lowest.
-**Schema impact:** new `gear_watchers` table (`item_id`, `retailer`, `url`, `current_price`, `last_checked_at`). `gear_items.current_price` becomes a derived "best across watchers" value.
-**Effort:** ★★★ (depends on PP-1 — pair them)
+### ✅ PP-2 · Track each item across many retailers
+**Status:** Shipped. Schema is `gear_items` + `gear_watchers` (one item → many retailer URLs) + `gear_price_history` per watcher. UI shows best-price across watchers, expandable watchers list, "Add another retailer", manual price edit per watcher, target-hit banner.
+**Reality:** because PP-1 is paused, watcher prices are user-entered manually rather than scraped. The multi-retailer + best-price-tracking value is intact.
 
 ---
 
@@ -65,7 +58,7 @@ Post-launch improvements. New items get appended; tags: `📋 Captured` → `�
 
 ## Pairings worth noting
 
-- **PP-1 + PP-2** ship together — once you're scraping, multi-retailer is the natural shape.
+- ~~**PP-1 + PP-2** ship together~~ — Tried; PP-1 paused (see status above). PP-2 shipped with manual entry per watcher.
 - **NB-3 + NB-4** ship together — curated Telugu names seed the pool, LLM extends it. Doing only NB-4 with a Western prompt would be the wrong default.
 - **NB-1** can ship independently and unlocks the most product value (couple mode is the actual core loop).
 - **NB-2** is small and standalone — can slot in any time as a polish item.
