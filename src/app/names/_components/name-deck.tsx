@@ -1,29 +1,36 @@
-"use client";
+'use client';
 
 import { useState, useTransition } from "react";
-import { Heart, X, Sparkles } from "lucide-react";
+import { Heart, X, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { NameEntry } from "@/data/names";
-import { recordSwipe } from "../actions";
+import { recordSwipe, generateMoreNames } from "../actions";
+
+const LOW_THRESHOLD = 5;
 
 export function NameDeck({
-  pool,
-  totalCount,
+  pool: initialPool,
+  totalCount: initialTotal,
   seenCount,
 }: {
   pool: NameEntry[];
   totalCount: number;
   seenCount: number;
 }) {
+  const [pool, setPool] = useState(initialPool);
+  const [totalCount, setTotalCount] = useState(initialTotal);
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState<"like" | "pass" | null>(null);
   const [animating, setAnimating] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [_, startTransition] = useTransition();
 
-  const exhausted = pool.length === 0;
-  const current = pool[index % Math.max(pool.length, 1)];
-  const upcoming = pool[(index + 1) % Math.max(pool.length, 1)];
+  const remaining = pool.length - index;
+  const exhausted = remaining <= 0;
+  const current = pool[index];
+  const upcoming = pool[index + 1];
+  const showGeneratePrompt = !generating && remaining <= LOW_THRESHOLD;
 
   const handle = (verdict: "like" | "pass") => {
     if (animating || exhausted) return;
@@ -42,33 +49,57 @@ export function NameDeck({
     }, 280);
   };
 
+  const handleGenerate = async () => {
+    setGenerating(true);
+    try {
+      const newNames = await generateMoreNames();
+      if (newNames.length > 0) {
+        setPool((p) => [...p, ...newNames]);
+        setTotalCount((t) => t + newNames.length);
+      }
+    } catch (e) {
+      console.error("Generate failed:", e);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   if (exhausted) {
     return (
       <div className="w-full max-w-xs aspect-[3/4] rounded-3xl border-2 border-dashed border-border/60 grid place-items-center text-center px-6">
-        <div>
+        <div className="flex flex-col items-center gap-4">
           <span className="text-4xl">🎉</span>
-          <h2 className="font-display text-xl font-semibold mt-3">
-            You&apos;ve seen them all
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Visit your favorites to revisit your top picks.
-          </p>
+          <div>
+            <h2 className="font-display text-xl font-semibold">
+              You&apos;ve seen them all
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Visit your favorites, or generate a fresh batch.
+            </p>
+          </div>
+          <Button
+            onClick={handleGenerate}
+            disabled={generating}
+            className="rounded-full bg-names hover:bg-names/90 text-white px-5 gap-2"
+          >
+            {generating ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
+            {generating ? "Generating…" : "Generate more names"}
+          </Button>
         </div>
       </div>
     );
   }
 
-  // We've cycled through the pool — `current` may be undefined if index >= pool.length.
-  if (!current) {
-    return null;
-  }
-
-  const seenAfter = seenCount + index + (animating ? 0 : 0);
+  const seenAfter = seenCount + index;
 
   return (
     <>
       <div className="relative w-full max-w-xs aspect-[3/4] mt-2">
-        {upcoming && pool.length > 1 ? (
+        {upcoming ? (
           <div
             aria-hidden
             className="absolute inset-0 rounded-3xl bg-card/70 ring-1 ring-border/60 shadow-sm scale-[0.94] translate-y-3 opacity-70"
@@ -102,7 +133,7 @@ export function NameDeck({
               {current.name}
             </h2>
             <p className="mt-4 text-sm text-foreground/70 italic max-w-[16rem]">
-              “{current.meaning}”
+              &ldquo;{current.meaning}&rdquo;
             </p>
           </div>
         </div>
@@ -131,6 +162,23 @@ export function NameDeck({
       <p className="mt-5 text-xs text-muted-foreground tabular-nums">
         {String(seenAfter + 1).padStart(2, "0")} / {String(totalCount).padStart(2, "0")}
       </p>
+
+      {showGeneratePrompt && (
+        <Button
+          onClick={handleGenerate}
+          disabled={generating}
+          variant="ghost"
+          size="sm"
+          className="mt-3 rounded-full text-names hover:bg-names-soft gap-1.5 text-xs"
+        >
+          {generating ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Sparkles className="h-3.5 w-3.5" />
+          )}
+          {generating ? "Generating…" : "✨ Generate more names"}
+        </Button>
+      )}
     </>
   );
 }

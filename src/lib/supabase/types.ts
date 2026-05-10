@@ -143,6 +143,26 @@ export interface Database {
         };
         Relationships: [];
       };
+      generated_names: {
+        Row: {
+          id: number;
+          user_id: string;
+          name: string;
+          origin: string;
+          meaning: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          user_id: string;
+          name: string;
+          origin: string;
+          meaning: string;
+          created_at?: string;
+        };
+        Update: never;
+        Relationships: [];
+      };
       cards: {
         Row: {
           id: string;

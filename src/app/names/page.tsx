@@ -8,13 +8,22 @@ import { NameDeck } from "./_components/name-deck";
 export default async function NamesPage() {
   const supabase = await createClient();
 
-  const { data: swipes } = await supabase
-    .from("name_swipes")
-    .select("name, verdict");
+  const [{ data: swipes }, { data: generated }] = await Promise.all([
+    supabase.from("name_swipes").select("name, verdict"),
+    supabase
+      .from("generated_names")
+      .select("name, origin, meaning")
+      .order("created_at"),
+  ]);
 
   const swiped = new Set((swipes ?? []).map((s) => s.name));
   const likedCount = (swipes ?? []).filter((s) => s.verdict === "like").length;
-  const pool = names.filter((n) => !swiped.has(n.name));
+
+  const staticPool = names.filter((n) => !swiped.has(n.name));
+  const generatedPool = (generated ?? []).filter((g) => !swiped.has(g.name));
+  const pool = [...staticPool, ...generatedPool];
+  const totalSeen = swiped.size;
+  const totalKnown = names.length + (generated ?? []).length;
 
   return (
     <div className="mx-auto max-w-md px-4 py-8 md:py-12 flex flex-col items-center">
@@ -40,8 +49,8 @@ export default async function NamesPage() {
 
       <NameDeck
         pool={pool}
-        totalCount={names.length}
-        seenCount={swiped.size}
+        seenCount={totalSeen}
+        totalCount={totalKnown}
       />
     </div>
   );
