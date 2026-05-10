@@ -8,6 +8,7 @@
 
 drop view if exists public.gear_items_with_best;
 drop table if exists public.gear_price_history cascade;
+drop table if exists public.gear_watchers cascade;
 drop table if exists public.gear_items cascade;
 
 ------------------------------------------------------------------------------
