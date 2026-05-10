@@ -5,8 +5,9 @@ import { usePathname } from "next/navigation";
 import { Baby } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { navItems, toolColors } from "@/lib/nav";
+import { UserMenu } from "@/components/user-menu";
 
-export function SideNav() {
+export function SideNav({ userEmail }: { userEmail?: string | null }) {
   const pathname = usePathname();
 
   return (
@@ -73,11 +74,15 @@ export function SideNav() {
         })}
       </nav>
 
-      <div className="px-5 py-4 border-t border-border/60">
-        <p className="font-display text-xs leading-relaxed text-muted-foreground italic">
-          “Take it one little day at a time.”
-        </p>
-      </div>
+      {userEmail ? (
+        <UserMenu email={userEmail} variant="side" />
+      ) : (
+        <div className="px-5 py-4 border-t border-border/60">
+          <p className="font-display text-xs leading-relaxed text-muted-foreground italic">
+            “Take it one little day at a time.”
+          </p>
+        </div>
+      )}
     </aside>
   );
 }

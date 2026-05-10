@@ -3,6 +3,8 @@ import { Geist, Geist_Mono, Fraunces } from "next/font/google";
 import "./globals.css";
 import { SideNav } from "@/components/side-nav";
 import { BottomNav } from "@/components/bottom-nav";
+import { UserMenu } from "@/components/user-menu";
+import { createClient } from "@/lib/supabase/server";
 
 const geistSans = Geist({
   variable: "--font-sans",
@@ -25,20 +27,44 @@ export const metadata: Metadata = {
   description: "Your gentle, all-in-one companion for the road to parenthood.",
 };
 
-export default function RootLayout({
+async function getUserEmail(): Promise<string | null> {
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    return null;
+  }
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getUser();
+  return data.user?.email ?? null;
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const email = await getUserEmail();
+  const authed = Boolean(email);
+
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="min-h-full text-foreground">
-        <SideNav />
-        <main className="md:pl-64 pb-24 md:pb-12 min-h-screen">{children}</main>
-        <BottomNav />
+        {authed ? <SideNav userEmail={email} /> : null}
+        {authed ? <UserMenu email={email!} variant="mobile" /> : null}
+        <main
+          className={
+            authed
+              ? "md:pl-64 pb-24 md:pb-12 min-h-screen"
+              : "min-h-screen"
+          }
+        >
+          {children}
+        </main>
+        {authed ? <BottomNav /> : null}
       </body>
     </html>
   );

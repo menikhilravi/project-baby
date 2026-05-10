@@ -1,94 +1,44 @@
-"use client";
-
-import { useState } from "react";
+import { BriefcaseMedical } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { BriefcaseMedical, Check } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
+import { createClient } from "@/lib/supabase/server";
+import { ownerCopy, type Owner } from "@/data/default-checklist";
+import { seedDefaultList } from "./actions";
+import {
+  ChecklistGroup,
+  type ChecklistRow,
+} from "./_components/checklist-group";
 import { cn } from "@/lib/utils";
 
-const lists = {
-  mom: ["Robe & slippers", "Toiletries", "Phone charger", "Going-home outfit"],
-  dad: ["Snacks & water", "Change of clothes", "Camera & charger", "Power bank"],
-  baby: [
-    "Going-home outfit",
-    "Swaddle blanket",
-    "Newborn diapers",
-    "Pediatrician contact",
-  ],
-} as const;
+export default async function HospitalPage() {
+  const supabase = await createClient();
 
-type Owner = keyof typeof lists;
+  // Auto-seed on first visit.
+  const { count: initial } = await supabase
+    .from("hospital_checklist")
+    .select("id", { count: "exact", head: true });
+  if ((initial ?? 0) === 0) {
+    await seedDefaultList();
+  }
 
-const ownerCopy: Record<Owner, { label: string; emoji: string }> = {
-  mom: { label: "Mom", emoji: "🌷" },
-  dad: { label: "Dad", emoji: "☕" },
-  baby: { label: "Baby", emoji: "🧸" },
-};
+  const { data: rows } = await supabase
+    .from("hospital_checklist")
+    .select("id, owner, item, checked, sort_order")
+    .order("sort_order", { ascending: true });
 
-function ChecklistGroup({
-  owner,
-  state,
-  onToggle,
-}: {
-  owner: Owner;
-  state: Record<string, boolean>;
-  onToggle: (id: string) => void;
-}) {
-  return (
-    <ul className="space-y-2.5 mt-5">
-      {lists[owner].map((item, i) => {
-        const id = `${owner}-${i}`;
-        const checked = !!state[id];
-        return (
-          <li key={id}>
-            <label
-              htmlFor={id}
-              className={cn(
-                "flex items-center gap-3 rounded-2xl border bg-card px-4 py-3.5 cursor-pointer transition-all",
-                "hover:border-hospital/40 hover:shadow-sm",
-                checked && "bg-hospital-soft/60 border-hospital/30",
-              )}
-            >
-              <Checkbox
-                id={id}
-                checked={checked}
-                onCheckedChange={() => onToggle(id)}
-                className={cn(
-                  "data-[state=checked]:bg-hospital data-[state=checked]:border-hospital",
-                  "data-[state=checked]:text-white",
-                )}
-              />
-              <Label
-                htmlFor={id}
-                className={cn(
-                  "text-sm font-normal cursor-pointer flex-1",
-                  checked && "line-through text-muted-foreground",
-                )}
-              >
-                {item}
-              </Label>
-              {checked ? (
-                <Check className="h-4 w-4 text-hospital" />
-              ) : null}
-            </label>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
+  const safeRows: ChecklistRow[] = (rows ?? []) as ChecklistRow[];
 
-export default function HospitalPage() {
-  const [state, setState] = useState<Record<string, boolean>>({});
-  const toggle = (id: string) =>
-    setState((s) => ({ ...s, [id]: !s[id] }));
+  const byOwner: Record<Owner, ChecklistRow[]> = {
+    mom: [],
+    dad: [],
+    baby: [],
+  };
+  for (const r of safeRows) byOwner[r.owner].push(r);
 
-  const counts = (Object.keys(lists) as Owner[]).reduce(
+  const counts = (Object.keys(byOwner) as Owner[]).reduce(
     (acc, owner) => {
-      const total = lists[owner].length;
-      const done = lists[owner].filter((_, i) => state[`${owner}-${i}`]).length;
+      const total = byOwner[owner].length;
+      const done = byOwner[owner].filter((r) => r.checked).length;
       acc[owner] = { done, total };
       return acc;
     },
@@ -97,7 +47,7 @@ export default function HospitalPage() {
 
   const totalDone = Object.values(counts).reduce((n, c) => n + c.done, 0);
   const totalAll = Object.values(counts).reduce((n, c) => n + c.total, 0);
-  const overall = Math.round((totalDone / totalAll) * 100);
+  const overall = totalAll === 0 ? 0 : Math.round((totalDone / totalAll) * 100);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 md:px-8 md:py-12">
@@ -112,7 +62,7 @@ export default function HospitalPage() {
       <div className="mb-6 rounded-2xl border bg-card p-4">
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">Overall progress</span>
-          <span className="font-medium">
+          <span className="font-medium tabular-nums">
             {totalDone} / {totalAll} packed
           </span>
         </div>
@@ -126,8 +76,9 @@ export default function HospitalPage() {
 
       <Tabs defaultValue="mom">
         <TabsList className="grid grid-cols-3 w-full bg-muted/60 p-1.5 rounded-2xl h-auto">
-          {(Object.keys(lists) as Owner[]).map((owner) => {
+          {(Object.keys(byOwner) as Owner[]).map((owner) => {
             const { done, total } = counts[owner];
+            const complete = total > 0 && done === total;
             return (
               <TabsTrigger
                 key={owner}
@@ -144,9 +95,7 @@ export default function HospitalPage() {
                 <span
                   className={cn(
                     "text-[10.5px] tabular-nums",
-                    done === total && total > 0
-                      ? "text-hospital"
-                      : "text-muted-foreground",
+                    complete ? "text-hospital" : "text-muted-foreground",
                   )}
                 >
                   {done}/{total}
@@ -156,9 +105,9 @@ export default function HospitalPage() {
           })}
         </TabsList>
 
-        {(Object.keys(lists) as Owner[]).map((owner) => (
+        {(Object.keys(byOwner) as Owner[]).map((owner) => (
           <TabsContent key={owner} value={owner}>
-            <ChecklistGroup owner={owner} state={state} onToggle={toggle} />
+            <ChecklistGroup owner={owner} rows={byOwner[owner]} />
           </TabsContent>
         ))}
       </Tabs>
