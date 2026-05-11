@@ -30,6 +30,7 @@ export async function generateTeluguNames(opts: {
   excluded: string[];
   liked: string[];
   passed: string[];
+  userHint?: string;
 }): Promise<GeneratedNameEntry[]> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -38,9 +39,9 @@ export async function generateTeluguNames(opts: {
     );
   }
 
-  const { count, excluded, liked, passed } = opts;
+  const { count, excluded, liked, passed, userHint } = opts;
 
-  const prompt = buildPrompt({ count, excluded, liked, passed });
+  const prompt = buildPrompt({ count, excluded, liked, passed, userHint });
 
   const body = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -132,16 +133,22 @@ function buildPrompt({
   excluded,
   liked,
   passed,
+  userHint,
 }: {
   count: number;
   excluded: string[];
   liked: string[];
   passed: string[];
+  userHint?: string;
 }): string {
   const tasteBlock =
     liked.length > 0 || passed.length > 0
       ? `\n\nUser's taste so far (lean toward similar phonetics / aesthetics to LIKED, away from PASSED):\nLIKED: ${liked.join(", ") || "(none yet)"}\nPASSED: ${passed.join(", ") || "(none yet)"}`
       : "";
+
+  const hintBlock = userHint
+    ? `\n\nAdditional preferences from the couple: "${userHint}"\nHonour these as best you can while still meeting all other rules.`
+    : "";
 
   return `You are helping a Telugu-speaking couple in India pick a name for their baby. The baby's gender is unknown, so produce a mix of names suitable for boys, girls, and gender-neutral options.
 
@@ -155,7 +162,7 @@ Rules:
 - Do NOT include any of these names (they've already been shown to the user):\n${excluded.length ? excluded.join(", ") : "(none yet)"}
 - Balance: aim for roughly equal male / female / gender-neutral.
 - No duplicates within this batch.
-- Each name must be distinct in initial letter or sound where possible to feel varied.${tasteBlock}
+- Each name must be distinct in initial letter or sound where possible to feel varied.${tasteBlock}${hintBlock}
 
 Return ONLY the JSON array — no preamble, no markdown, no commentary.`;
 }

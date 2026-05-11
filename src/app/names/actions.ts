@@ -96,7 +96,7 @@ export async function unlikeName(name: string) {
   revalidatePath("/names/favorites");
 }
 
-export async function generateMoreNames(): Promise<NameEntry[]> {
+export async function generateMoreNames(userHint?: string): Promise<NameEntry[]> {
   const { supabase, user } = await requireUser();
 
   const [{ data: swipes }, { data: prevGenerated }] = await Promise.all([
@@ -117,7 +117,8 @@ export async function generateMoreNames(): Promise<NameEntry[]> {
     ...(prevGenerated ?? []).map((g) => g.name),
   ];
 
-  const batch = await generateTeluguNames({ count: 20, excluded, liked, passed });
+  const hint = typeof userHint === "string" ? userHint.trim().slice(0, 300) : undefined;
+  const batch = await generateTeluguNames({ count: 20, excluded, liked, passed, userHint: hint || undefined });
   if (batch.length === 0) return [];
 
   const { error } = await supabase.from("generated_names").upsert(
