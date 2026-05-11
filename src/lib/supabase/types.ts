@@ -17,10 +17,21 @@ export interface Database {
         Row: {
           id: string;
           email: string | null;
+          couple_id: string | null;
           created_at: string;
         };
-        Insert: { id: string; email?: string | null; created_at?: string };
-        Update: { email?: string | null };
+        Insert: { id: string; email?: string | null; couple_id?: string | null; created_at?: string };
+        Update: { email?: string | null; couple_id?: string | null };
+        Relationships: [];
+      };
+      couples: {
+        Row: {
+          id: string;
+          invite_code: string;
+          created_at: string;
+        };
+        Insert: { id?: string; invite_code: string; created_at?: string };
+        Update: { invite_code?: string };
         Relationships: [];
       };
       gear_items: {

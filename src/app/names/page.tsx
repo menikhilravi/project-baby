@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Heart } from "lucide-react";
+import { Heart, Users } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
 import { createClient } from "@/lib/supabase/server";
 import { names } from "@/data/names";
@@ -36,7 +36,14 @@ export default async function NamesPage() {
           subtitle="Tap to keep, tap to skip. Your favorites pile up over time."
         />
 
-        <div className="-mt-3 mb-2 flex justify-end">
+        <div className="-mt-3 mb-2 flex items-center justify-end gap-2">
+          <Link
+            href="/names/couple"
+            className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Users className="h-3.5 w-3.5" />
+            Couple
+          </Link>
           <Link
             href="/names/favorites"
             className="inline-flex items-center gap-1.5 rounded-full bg-names-soft text-names px-3 py-1 text-xs font-medium hover:bg-names/15 transition-colors"

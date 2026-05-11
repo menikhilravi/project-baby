@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/admin";
 import { generateTeluguNames } from "@/lib/gemini";
 import { names } from "@/data/names";
 import type { NameEntry } from "@/data/names";
@@ -39,7 +40,8 @@ export async function recordSwipe(name: string, verdict: "like" | "pass") {
     );
   if (error) throw new Error(error.message);
 
-  // No revalidatePath — the deck advances locally; persistence is fire-and-forget.
+  // Revalidate so the favorites count badge refreshes without a full navigation.
+  revalidatePath("/names");
 }
 
 export async function reorderFavorite(name: string, direction: "up" | "down") {
@@ -130,4 +132,106 @@ export async function generateMoreNames(): Promise<NameEntry[]> {
   if (error) throw new Error(error.message);
 
   return batch;
+}
+
+// ── Couple mode ─────────────────────────────────────────────────────────────
+
+function generateInviteCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  return Array.from(
+    { length: 6 },
+    () => chars[Math.floor(Math.random() * chars.length)],
+  ).join("");
+}
+
+export type CoupleStatus = {
+  inviteCode: string;
+  partnerId: string | null;
+  partnerEmail: string | null;
+};
+
+export async function getCoupleStatus(): Promise<CoupleStatus | null> {
+  const { supabase, user } = await requireUser();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("couple_id")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile?.couple_id) return null;
+
+  const { data: couple } = await supabase
+    .from("couples")
+    .select("invite_code")
+    .eq("id", profile.couple_id)
+    .single();
+
+  if (!couple) return null;
+
+  const admin = createServiceClient();
+  const { data: members } = await admin
+    .from("profiles")
+    .select("id, email")
+    .eq("couple_id", profile.couple_id);
+
+  const partner = (members ?? []).find((m) => m.id !== user.id) ?? null;
+
+  return {
+    inviteCode: couple.invite_code,
+    partnerId: partner?.id ?? null,
+    partnerEmail: partner?.email ?? null,
+  };
+}
+
+export async function createCouple(): Promise<void> {
+  const { supabase, user } = await requireUser();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("couple_id")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.couple_id) throw new Error("Already in a couple");
+
+  const { data: couple, error } = await supabase
+    .from("couples")
+    .insert({ invite_code: generateInviteCode() })
+    .select()
+    .single();
+
+  if (error || !couple) throw new Error(error?.message ?? "Failed to create couple");
+
+  await supabase
+    .from("profiles")
+    .update({ couple_id: couple.id })
+    .eq("id", user.id);
+
+  revalidatePath("/names/couple");
+}
+
+export async function joinCouple(formData: FormData): Promise<void> {
+  const { supabase, user } = await requireUser();
+  const code = (formData.get("code") as string | null)?.trim().toUpperCase();
+  if (!code) throw new Error("Code is required");
+
+  const admin = createServiceClient();
+  const { data: couple } = await admin
+    .from("couples")
+    .select("id")
+    .eq("invite_code", code)
+    .single();
+
+  if (!couple) throw new Error("Invalid invite code");
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ couple_id: couple.id })
+    .eq("id", user.id);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/names/couple");
+  revalidatePath("/names/favorites");
 }
