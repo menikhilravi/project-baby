@@ -151,13 +151,7 @@ export function NameDeck({
           <div
             aria-hidden
             className="absolute inset-0 rounded-3xl bg-card/70 ring-1 ring-border/60 shadow-sm scale-[0.94] translate-y-3 opacity-70"
-          >
-            <div className="h-full grid place-items-center">
-              <span className="font-display text-2xl text-muted-foreground/60">
-                {upcoming.name}
-              </span>
-            </div>
-          </div>
+          />
         ) : null}
 
         <div
