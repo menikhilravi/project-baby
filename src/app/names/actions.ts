@@ -96,6 +96,20 @@ export async function unlikeName(name: string) {
   revalidatePath("/names/favorites");
 }
 
+export async function addCustomName(formData: FormData): Promise<void> {
+  const { supabase, user } = await requireUser();
+  const name = (formData.get("name") as string | null)?.trim();
+  if (!name) return;
+  const meaning = (formData.get("meaning") as string | null)?.trim() || "Added by us";
+
+  const { error } = await supabase.from("generated_names").upsert(
+    { user_id: user.id, name, origin: "Custom", meaning },
+    { onConflict: "user_id,name" },
+  );
+  if (error) throw new Error(error.message);
+  revalidatePath("/names");
+}
+
 export async function generateMoreNames(userHint?: string): Promise<NameEntry[]> {
   const { supabase, user } = await requireUser();
 

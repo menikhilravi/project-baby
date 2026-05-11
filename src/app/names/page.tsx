@@ -4,6 +4,7 @@ import { PageHero } from "@/components/page-hero";
 import { createClient } from "@/lib/supabase/server";
 import { names } from "@/data/names";
 import { NameDeck } from "./_components/name-deck";
+import { AddCustomName } from "./_components/add-custom-name";
 
 export default async function NamesPage() {
   const supabase = await createClient();
@@ -59,6 +60,10 @@ export default async function NamesPage() {
         seenCount={totalSeen}
         totalCount={totalKnown}
       />
+
+      <div className="mt-6">
+        <AddCustomName />
+      </div>
     </div>
   );
 }

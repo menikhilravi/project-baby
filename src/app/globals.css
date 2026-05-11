@@ -149,23 +149,31 @@
   }
   html {
     @apply font-sans;
+    background: var(--background);
   }
-  body {
-    @apply text-foreground;
+  /* Fixed pseudo-element carries the gradient so it never shifts on scroll */
+  html::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
     background:
       radial-gradient(at 0% 0%, oklch(0.95 0.04 30 / 0.55), transparent 50%),
       radial-gradient(at 100% 0%, oklch(0.95 0.04 80 / 0.5), transparent 50%),
       radial-gradient(at 50% 100%, oklch(0.95 0.04 150 / 0.35), transparent 60%),
       var(--background);
-    background-attachment: fixed;
   }
-  .dark body {
+  .dark html::before {
     background:
       radial-gradient(ellipse 80% 60% at 0% 0%, oklch(0.22 0.09 280 / 0.40), transparent),
       radial-gradient(ellipse 70% 50% at 100% 0%, oklch(0.22 0.08 30 / 0.22), transparent),
       radial-gradient(ellipse 60% 40% at 50% 100%, oklch(0.22 0.07 155 / 0.15), transparent),
       var(--background);
-    background-attachment: fixed;
+  }
+  body {
+    @apply text-foreground;
+    background: transparent;
   }
   .font-display {
     font-family: var(--font-display), ui-serif, Georgia, "Times New Roman", serif;
