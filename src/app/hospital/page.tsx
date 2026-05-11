@@ -75,7 +75,7 @@ export default async function HospitalPage() {
       </div>
 
       <Tabs defaultValue="mom">
-        <TabsList className="grid grid-cols-3 w-full bg-muted/60 p-1.5 rounded-2xl h-auto">
+        <TabsList className="grid grid-cols-3 w-full bg-card/50 p-1.5 rounded-2xl !h-auto gap-1">
           {(Object.keys(byOwner) as Owner[]).map((owner) => {
             const { done, total } = counts[owner];
             const complete = total > 0 && done === total;
@@ -84,8 +84,8 @@ export default async function HospitalPage() {
                 key={owner}
                 value={owner}
                 className={cn(
-                  "rounded-xl py-2.5 flex flex-col gap-0.5 data-[state=active]:bg-card",
-                  "data-[state=active]:shadow-sm transition-all",
+                  "rounded-xl py-2.5 flex flex-col items-center gap-0.5 !h-auto transition-all",
+                  "data-active:!bg-muted data-active:!text-foreground data-active:!shadow-sm",
                 )}
               >
                 <span className="flex items-center gap-1.5 text-sm font-medium">
