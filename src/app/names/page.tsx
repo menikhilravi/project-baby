@@ -32,7 +32,7 @@ export default async function NamesPage() {
         <PageHero
           tool="names"
           icon={Heart}
-          eyebrow="Name Bracket"
+          eyebrow="Names"
           title="Find a name you love."
           subtitle="Tap to keep, tap to skip. Your favorites pile up over time."
         />

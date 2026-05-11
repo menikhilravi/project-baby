@@ -26,7 +26,7 @@ export const navItems: NavItem[] = [
   },
   {
     href: "/names",
-    label: "Name Bracket",
+    label: "Names",
     tagline: "Swipe through names — find a favorite.",
     icon: Heart,
     key: "names",
