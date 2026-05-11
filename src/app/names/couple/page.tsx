@@ -63,7 +63,7 @@ function NotConnected() {
           Create a couple and share your invite code with your partner.
         </p>
         <form action={createCouple}>
-          <Button className="w-full bg-names hover:bg-names/90 text-white">
+          <Button type="submit" className="w-full bg-names hover:bg-names/90 text-white">
             Create couple
           </Button>
         </form>
@@ -85,7 +85,7 @@ function NotConnected() {
             className="uppercase font-mono tracking-widest"
             required
           />
-          <Button type="submit" variant="outline">
+          <Button type="submit" variant="outline" className="shrink-0">
             Join
           </Button>
         </form>
