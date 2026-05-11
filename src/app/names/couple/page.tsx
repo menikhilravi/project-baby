@@ -1,11 +1,18 @@
 import Link from "next/link";
-import { ArrowLeft, Heart, Users, Link2 } from "lucide-react";
+import { ArrowLeft, Heart, Users, Link2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHero } from "@/components/page-hero";
 import { getCoupleStatus, createCouple, joinCouple } from "../actions";
 
-export default async function CouplePage() {
+type SearchParams = Promise<{ error?: string }>;
+
+export default async function CouplePage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const { error } = await searchParams;
   const status = await getCoupleStatus();
 
   return (
@@ -25,6 +32,13 @@ export default async function CouplePage() {
         title="Swipe together."
         subtitle="Link accounts so you can see which names you both love."
       />
+
+      {error && (
+        <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+          {decodeURIComponent(error)}
+        </div>
+      )}
 
       {!status ? (
         <NotConnected />
@@ -48,12 +62,7 @@ function NotConnected() {
         <p className="text-sm text-muted-foreground">
           Create a couple and share your invite code with your partner.
         </p>
-        <form
-          action={async () => {
-            "use server";
-            await createCouple();
-          }}
-        >
+        <form action={createCouple}>
           <Button className="w-full bg-names hover:bg-names/90 text-white">
             Create couple
           </Button>
@@ -101,7 +110,7 @@ function WaitingForPartner({ inviteCode }: { inviteCode: string }) {
         Share this code with your partner. Once they join, you&apos;ll both see
         your matches on the Favorites page.
       </p>
-      <div className="flex items-center gap-2 text-xs text-muted-foreground/60">
+      <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground/60">
         <div className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
         Waiting for partner to join…
       </div>

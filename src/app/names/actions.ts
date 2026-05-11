@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/admin";
 import { generateTeluguNames } from "@/lib/gemini";
@@ -200,83 +201,91 @@ export async function getCoupleStatus(): Promise<CoupleStatus | null> {
 }
 
 export async function createCouple(): Promise<void> {
-  const { supabase, user } = await requireUser();
+  try {
+    const { supabase, user } = await requireUser();
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("couple_id")
-    .eq("id", user.id)
-    .single();
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("couple_id")
+      .eq("id", user.id)
+      .single();
 
-  if (profile?.couple_id) throw new Error("Already in a couple");
+    if (profile?.couple_id) {
+      redirect("/names/couple");
+    }
 
-  const { data: couple, error } = await supabase
-    .from("couples")
-    .insert({ invite_code: generateInviteCode() })
-    .select()
-    .single();
+    const { data: couple, error } = await supabase
+      .from("couples")
+      .insert({ invite_code: generateInviteCode() })
+      .select()
+      .single();
 
-  if (error || !couple) throw new Error(error?.message ?? "Failed to create couple");
+    if (error || !couple) throw new Error(error?.message ?? "Failed to create couple");
 
-  await supabase
-    .from("profiles")
-    .update({ couple_id: couple.id })
-    .eq("id", user.id);
-
-  // Backfill existing items so pre-couple data is also shared.
-  await Promise.all([
-    supabase
-      .from("gear_items")
+    await supabase
+      .from("profiles")
       .update({ couple_id: couple.id })
-      .eq("user_id", user.id)
-      .is("couple_id", null),
-    supabase
-      .from("hospital_checklist")
-      .update({ couple_id: couple.id })
-      .eq("user_id", user.id)
-      .is("couple_id", null),
-  ]);
+      .eq("id", user.id);
 
-  revalidatePath("/names/couple");
+    await Promise.all([
+      supabase
+        .from("gear_items")
+        .update({ couple_id: couple.id })
+        .eq("user_id", user.id)
+        .is("couple_id", null),
+      supabase
+        .from("hospital_checklist")
+        .update({ couple_id: couple.id })
+        .eq("user_id", user.id)
+        .is("couple_id", null),
+    ]);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Something went wrong";
+    // re-throw Next.js redirect signals untouched
+    if (msg === "NEXT_REDIRECT") throw e;
+    redirect(`/names/couple?error=${encodeURIComponent(msg)}`);
+  }
+  redirect("/names/couple");
 }
 
 export async function joinCouple(formData: FormData): Promise<void> {
-  const { supabase, user } = await requireUser();
-  const code = (formData.get("code") as string | null)?.trim().toUpperCase();
-  if (!code) throw new Error("Code is required");
+  try {
+    const { supabase, user } = await requireUser();
+    const code = (formData.get("code") as string | null)?.trim().toUpperCase();
+    if (!code) throw new Error("Code is required");
 
-  const admin = createServiceClient();
-  const { data: couple } = await admin
-    .from("couples")
-    .select("id")
-    .eq("invite_code", code)
-    .single();
+    const admin = createServiceClient();
+    const { data: couple } = await admin
+      .from("couples")
+      .select("id")
+      .eq("invite_code", code)
+      .single();
 
-  if (!couple) throw new Error("Invalid invite code");
+    if (!couple) throw new Error("Invalid invite code — double-check and try again");
 
-  const { error } = await supabase
-    .from("profiles")
-    .update({ couple_id: couple.id })
-    .eq("id", user.id);
-
-  if (error) throw new Error(error.message);
-
-  // Backfill this user's existing items into the shared couple pool.
-  await Promise.all([
-    supabase
-      .from("gear_items")
+    const { error } = await supabase
+      .from("profiles")
       .update({ couple_id: couple.id })
-      .eq("user_id", user.id)
-      .is("couple_id", null),
-    supabase
-      .from("hospital_checklist")
-      .update({ couple_id: couple.id })
-      .eq("user_id", user.id)
-      .is("couple_id", null),
-  ]);
+      .eq("id", user.id);
 
-  revalidatePath("/names/couple");
-  revalidatePath("/names/favorites");
-  revalidatePath("/gear");
-  revalidatePath("/hospital");
+    if (error) throw new Error(error.message);
+
+    await Promise.all([
+      supabase
+        .from("gear_items")
+        .update({ couple_id: couple.id })
+        .eq("user_id", user.id)
+        .is("couple_id", null),
+      supabase
+        .from("hospital_checklist")
+        .update({ couple_id: couple.id })
+        .eq("user_id", user.id)
+        .is("couple_id", null),
+    ]);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Something went wrong";
+    if (msg === "NEXT_REDIRECT") throw e;
+    redirect(`/names/couple?error=${encodeURIComponent(msg)}`);
+  }
+  redirect("/names/couple");
 }
