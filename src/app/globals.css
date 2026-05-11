@@ -57,7 +57,7 @@
 }
 
 :root {
-  /* warm cream base */
+  /* light mode — warm cream */
   --background: oklch(0.985 0.012 75);
   --foreground: oklch(0.24 0.025 50);
   --card: oklch(1 0.003 80);
@@ -81,7 +81,7 @@
   --chart-3: oklch(0.6 0.11 155);
   --chart-4: oklch(0.62 0.14 235);
   --chart-5: oklch(0.65 0.18 350);
-  --radius: 1rem;
+  --radius: 0.9rem;
   --sidebar: oklch(0.99 0.01 75);
   --sidebar-foreground: oklch(0.24 0.025 50);
   --sidebar-primary: oklch(0.42 0.05 35);
@@ -90,59 +90,57 @@
   --sidebar-accent-foreground: oklch(0.32 0.04 35);
   --sidebar-border: oklch(0.91 0.018 65);
   --sidebar-ring: oklch(0.78 0.05 50);
-
-  /* per-tool accents (soft & nurturing palette) */
-  --gear: oklch(0.55 0.13 235);          /* sky blue */
+  --gear: oklch(0.55 0.13 235);
   --gear-soft: oklch(0.95 0.035 235);
-  --names: oklch(0.62 0.18 10);          /* rose */
+  --names: oklch(0.62 0.18 10);
   --names-soft: oklch(0.96 0.04 10);
-  --hospital: oklch(0.55 0.11 155);      /* sage */
+  --hospital: oklch(0.55 0.11 155);
   --hospital-soft: oklch(0.95 0.045 155);
-  --rewards: oklch(0.62 0.13 75);        /* amber */
+  --rewards: oklch(0.62 0.13 75);
   --rewards-soft: oklch(0.96 0.05 75);
 }
 
 .dark {
-  --background: oklch(0.18 0.015 50);
-  --foreground: oklch(0.96 0.015 75);
-  --card: oklch(0.22 0.018 50);
-  --card-foreground: oklch(0.96 0.015 75);
-  --popover: oklch(0.22 0.018 50);
-  --popover-foreground: oklch(0.96 0.015 75);
-  --primary: oklch(0.92 0.025 75);
-  --primary-foreground: oklch(0.22 0.018 50);
-  --secondary: oklch(0.28 0.022 55);
-  --secondary-foreground: oklch(0.96 0.015 75);
-  --muted: oklch(0.28 0.022 55);
-  --muted-foreground: oklch(0.72 0.025 65);
-  --accent: oklch(0.3 0.03 50);
-  --accent-foreground: oklch(0.96 0.015 75);
-  --destructive: oklch(0.7 0.19 22);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.55 0.04 60);
-  --chart-1: oklch(0.7 0.15 30);
-  --chart-2: oklch(0.75 0.13 75);
-  --chart-3: oklch(0.65 0.11 155);
-  --chart-4: oklch(0.68 0.14 235);
-  --chart-5: oklch(0.7 0.18 350);
-  --sidebar: oklch(0.22 0.018 50);
-  --sidebar-foreground: oklch(0.96 0.015 75);
-  --sidebar-primary: oklch(0.6 0.18 30);
-  --sidebar-primary-foreground: oklch(0.96 0.015 75);
-  --sidebar-accent: oklch(0.3 0.03 50);
-  --sidebar-accent-foreground: oklch(0.96 0.015 75);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.55 0.04 60);
-
-  --gear: oklch(0.7 0.14 235);
-  --gear-soft: oklch(0.32 0.06 235);
-  --names: oklch(0.72 0.17 10);
-  --names-soft: oklch(0.32 0.07 10);
-  --hospital: oklch(0.72 0.13 155);
-  --hospital-soft: oklch(0.3 0.06 155);
-  --rewards: oklch(0.78 0.13 75);
-  --rewards-soft: oklch(0.32 0.07 75);
+  /* deep cool-slate — sleek & premium */
+  --background: oklch(0.105 0.010 265);
+  --foreground: oklch(0.94 0.008 265);
+  --card: oklch(0.150 0.010 265);
+  --card-foreground: oklch(0.94 0.008 265);
+  --popover: oklch(0.150 0.010 265);
+  --popover-foreground: oklch(0.94 0.008 265);
+  --primary: oklch(0.92 0.015 265);
+  --primary-foreground: oklch(0.15 0.010 265);
+  --secondary: oklch(0.20 0.010 265);
+  --secondary-foreground: oklch(0.94 0.008 265);
+  --muted: oklch(0.19 0.010 265);
+  --muted-foreground: oklch(0.55 0.012 265);
+  --accent: oklch(0.22 0.012 265);
+  --accent-foreground: oklch(0.94 0.008 265);
+  --destructive: oklch(0.68 0.20 22);
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 10%);
+  --ring: oklch(0.48 0.04 265);
+  --chart-1: oklch(0.72 0.16 30);
+  --chart-2: oklch(0.78 0.14 75);
+  --chart-3: oklch(0.70 0.14 155);
+  --chart-4: oklch(0.72 0.16 235);
+  --chart-5: oklch(0.72 0.18 350);
+  --sidebar: oklch(0.122 0.010 265);
+  --sidebar-foreground: oklch(0.94 0.008 265);
+  --sidebar-primary: oklch(0.76 0.18 10);
+  --sidebar-primary-foreground: oklch(0.94 0.008 265);
+  --sidebar-accent: oklch(0.20 0.010 265);
+  --sidebar-accent-foreground: oklch(0.94 0.008 265);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.48 0.04 265);
+  --gear: oklch(0.72 0.16 235);
+  --gear-soft: oklch(0.22 0.07 235);
+  --names: oklch(0.76 0.18 10);
+  --names-soft: oklch(0.22 0.07 10);
+  --hospital: oklch(0.72 0.16 155);
+  --hospital-soft: oklch(0.22 0.07 155);
+  --rewards: oklch(0.82 0.15 75);
+  --rewards-soft: oklch(0.24 0.08 75);
 }
 
 @layer base {
@@ -163,9 +161,9 @@
   }
   .dark body {
     background:
-      radial-gradient(at 0% 0%, oklch(0.32 0.06 30 / 0.5), transparent 55%),
-      radial-gradient(at 100% 0%, oklch(0.32 0.05 80 / 0.45), transparent 55%),
-      radial-gradient(at 50% 100%, oklch(0.32 0.05 150 / 0.3), transparent 60%),
+      radial-gradient(ellipse 80% 60% at 0% 0%, oklch(0.22 0.09 280 / 0.40), transparent),
+      radial-gradient(ellipse 70% 50% at 100% 0%, oklch(0.22 0.08 30 / 0.22), transparent),
+      radial-gradient(ellipse 60% 40% at 50% 100%, oklch(0.22 0.07 155 / 0.15), transparent),
       var(--background);
     background-attachment: fixed;
   }

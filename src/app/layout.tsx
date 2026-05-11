@@ -50,7 +50,7 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased dark`}
     >
       <body className="min-h-full text-foreground">
         {authed ? <SideNav userEmail={email} /> : null}
@@ -58,7 +58,7 @@ export default async function RootLayout({
         <main
           className={
             authed
-              ? "md:pl-64 pb-24 md:pb-12 min-h-screen"
+              ? "md:pl-60 pb-20 md:pb-0 pt-16 md:pt-0 min-h-screen"
               : "min-h-screen"
           }
         >

@@ -10,10 +10,10 @@ export function BottomNav() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-3 inset-x-3 z-30 rounded-3xl border border-border/60 bg-card/85 backdrop-blur-xl shadow-[0_8px_30px_-8px_rgba(0,0,0,0.18)]"
-      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-card/80 backdrop-blur-2xl border-t border-border/40"
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 8px)" }}
     >
-      <ul className="grid grid-cols-4 px-1.5 py-1.5">
+      <ul className="grid grid-cols-4 px-2 pt-1.5 pb-1">
         {navItems.map((item) => {
           const Icon = item.icon;
           const active =
@@ -23,25 +23,20 @@ export function BottomNav() {
             <li key={item.href}>
               <Link
                 href={item.href}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-1 rounded-2xl py-2 transition-all",
-                  active ? "" : "text-muted-foreground hover:text-foreground",
-                )}
+                className="flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl transition-all active:scale-95"
               >
                 <span
                   className={cn(
                     "grid place-items-center h-9 w-9 rounded-xl transition-all",
-                    active
-                      ? cn(c.bgSoft, c.text, "scale-110")
-                      : "bg-transparent",
+                    active ? cn(c.bgSoft, c.text) : "text-muted-foreground",
                   )}
                 >
-                  <Icon className="h-[18px] w-[18px]" />
+                  <Icon className="h-[19px] w-[19px]" />
                 </span>
                 <span
                   className={cn(
-                    "text-[10.5px] leading-none font-medium transition-colors",
-                    active ? c.text : "",
+                    "text-[10px] font-medium leading-none transition-colors",
+                    active ? c.text : "text-muted-foreground",
                   )}
                 >
                   {item.label}
