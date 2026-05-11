@@ -105,6 +105,7 @@ export interface Database {
           user_id: string;
           name: string;
           verdict: "like" | "pass";
+          rank: number | null;
           created_at: string;
         };
         Insert: {
@@ -112,9 +113,10 @@ export interface Database {
           user_id: string;
           name: string;
           verdict: "like" | "pass";
+          rank?: number | null;
           created_at?: string;
         };
-        Update: { verdict?: "like" | "pass" };
+        Update: { verdict?: "like" | "pass"; rank?: number | null };
         Relationships: [];
       };
       hospital_checklist: {

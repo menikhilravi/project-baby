@@ -18,15 +18,68 @@ async function requireUser() {
 export async function recordSwipe(name: string, verdict: "like" | "pass") {
   const { supabase, user } = await requireUser();
 
+  let rank: number | null = null;
+  if (verdict === "like") {
+    const { data: top } = await supabase
+      .from("name_swipes")
+      .select("rank")
+      .eq("user_id", user.id)
+      .eq("verdict", "like")
+      .order("rank", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    rank = (top?.rank ?? 0) + 1;
+  }
+
   const { error } = await supabase
     .from("name_swipes")
     .upsert(
-      { user_id: user.id, name, verdict },
+      { user_id: user.id, name, verdict, rank },
       { onConflict: "user_id,name" },
     );
   if (error) throw new Error(error.message);
 
   // No revalidatePath — the deck advances locally; persistence is fire-and-forget.
+}
+
+export async function reorderFavorite(name: string, direction: "up" | "down") {
+  const { supabase, user } = await requireUser();
+
+  const { data: current } = await supabase
+    .from("name_swipes")
+    .select("rank")
+    .eq("user_id", user.id)
+    .eq("name", name)
+    .eq("verdict", "like")
+    .single();
+
+  if (!current?.rank) return;
+
+  const adjacentRank = direction === "up" ? current.rank - 1 : current.rank + 1;
+
+  const { data: neighbor } = await supabase
+    .from("name_swipes")
+    .select("name, rank")
+    .eq("user_id", user.id)
+    .eq("verdict", "like")
+    .eq("rank", adjacentRank)
+    .maybeSingle();
+
+  if (!neighbor) return;
+
+  await supabase
+    .from("name_swipes")
+    .update({ rank: adjacentRank })
+    .eq("user_id", user.id)
+    .eq("name", name);
+
+  await supabase
+    .from("name_swipes")
+    .update({ rank: current.rank })
+    .eq("user_id", user.id)
+    .eq("name", neighbor.name);
+
+  revalidatePath("/names/favorites");
 }
 
 export async function unlikeName(name: string) {

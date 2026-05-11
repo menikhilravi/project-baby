@@ -1,21 +1,31 @@
 import Link from "next/link";
-import { ArrowLeft, Heart, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowUp, ArrowDown, Heart, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHero } from "@/components/page-hero";
 import { createClient } from "@/lib/supabase/server";
 import { names } from "@/data/names";
-import { unlikeName } from "../actions";
+import { unlikeName, reorderFavorite } from "../actions";
 
 export default async function FavoritesPage() {
   const supabase = await createClient();
 
-  const { data: liked } = await supabase
-    .from("name_swipes")
-    .select("name, created_at")
-    .eq("verdict", "like")
-    .order("created_at", { ascending: false });
+  const [{ data: liked }, { data: generated }] = await Promise.all([
+    supabase
+      .from("name_swipes")
+      .select("name, rank")
+      .eq("verdict", "like")
+      .order("rank", { ascending: true }),
+    supabase.from("generated_names").select("name, origin, meaning"),
+  ]);
 
-  const meta = new Map(names.map((n) => [n.name, n]));
+  const meta = new Map([
+    ...names.map((n) => [n.name, n] as const),
+    ...(generated ?? []).map(
+      (g) => [g.name, { name: g.name, origin: g.origin, meaning: g.meaning }] as const,
+    ),
+  ]);
+
+  const list = liked ?? [];
 
   return (
     <div className="mx-auto max-w-md px-4 py-8 md:py-12">
@@ -32,10 +42,10 @@ export default async function FavoritesPage() {
         icon={Heart}
         eyebrow="Favorites"
         title="The shortlist."
-        subtitle="Names you've kept. Remove one to put it back in the deck."
+        subtitle="Drag names up or down to rank them. #1 is your top pick."
       />
 
-      {!liked || liked.length === 0 ? (
+      {list.length === 0 ? (
         <div className="rounded-3xl border-2 border-dashed border-border/60 p-10 text-center">
           <Heart className="h-7 w-7 mx-auto text-names" />
           <h3 className="font-display text-lg font-semibold mt-3">
@@ -46,24 +56,68 @@ export default async function FavoritesPage() {
           </p>
         </div>
       ) : (
-        <ul className="space-y-2.5">
-          {liked.map((row) => {
+        <ul className="space-y-2">
+          {list.map((row, i) => {
             const m = meta.get(row.name);
+            const isFirst = i === 0;
+            const isLast = i === list.length - 1;
             return (
               <li
                 key={row.name}
-                className="flex items-center gap-3 rounded-2xl border bg-card px-4 py-3"
+                className="flex items-center gap-2 rounded-2xl border bg-card px-3 py-3"
               >
+                <span className="w-6 text-center text-xs font-mono font-semibold text-names tabular-nums select-none">
+                  {i + 1}
+                </span>
+
+                <div className="flex flex-col gap-0.5">
+                  <form
+                    action={async () => {
+                      "use server";
+                      await reorderFavorite(row.name, "up");
+                    }}
+                  >
+                    <Button
+                      type="submit"
+                      size="icon"
+                      variant="ghost"
+                      disabled={isFirst}
+                      aria-label={`Move ${row.name} up`}
+                      className="h-6 w-6 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-20"
+                    >
+                      <ArrowUp className="h-3.5 w-3.5" />
+                    </Button>
+                  </form>
+                  <form
+                    action={async () => {
+                      "use server";
+                      await reorderFavorite(row.name, "down");
+                    }}
+                  >
+                    <Button
+                      type="submit"
+                      size="icon"
+                      variant="ghost"
+                      disabled={isLast}
+                      aria-label={`Move ${row.name} down`}
+                      className="h-6 w-6 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-20"
+                    >
+                      <ArrowDown className="h-3.5 w-3.5" />
+                    </Button>
+                  </form>
+                </div>
+
                 <div className="flex-1 min-w-0">
                   <p className="font-display text-lg font-semibold leading-tight">
                     {row.name}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    {m
-                      ? `${m.origin} · ${m.meaning}`
-                      : "Saved"}
-                  </p>
+                  {m && (
+                    <p className="text-xs text-muted-foreground truncate">
+                      {m.origin} &middot; {m.meaning}
+                    </p>
+                  )}
                 </div>
+
                 <form
                   action={async () => {
                     "use server";
@@ -74,7 +128,7 @@ export default async function FavoritesPage() {
                     type="submit"
                     size="icon"
                     variant="ghost"
-                    className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive"
+                    className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive shrink-0"
                     aria-label={`Remove ${row.name}`}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
