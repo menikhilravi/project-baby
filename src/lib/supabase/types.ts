@@ -38,6 +38,7 @@ export interface Database {
         Row: {
           id: string;
           user_id: string;
+          couple_id: string | null;
           name: string;
           emoji: string;
           target_price: number;
@@ -49,6 +50,7 @@ export interface Database {
         Insert: {
           id?: string;
           user_id: string;
+          couple_id?: string | null;
           name: string;
           emoji?: string;
           target_price: number;
@@ -59,6 +61,7 @@ export interface Database {
           name?: string;
           emoji?: string;
           target_price?: number;
+          couple_id?: string | null;
           last_target_hit_at?: string | null;
           is_target_hit_acknowledged?: boolean;
         };
@@ -134,6 +137,7 @@ export interface Database {
         Row: {
           id: number;
           user_id: string;
+          couple_id: string | null;
           owner: "mom" | "dad" | "baby";
           item: string;
           checked: boolean;
@@ -143,6 +147,7 @@ export interface Database {
         Insert: {
           id?: number;
           user_id: string;
+          couple_id?: string | null;
           owner: "mom" | "dad" | "baby";
           item: string;
           checked?: boolean;
@@ -151,6 +156,7 @@ export interface Database {
         };
         Update: {
           item?: string;
+          couple_id?: string | null;
           checked?: boolean;
           sort_order?: number;
         };

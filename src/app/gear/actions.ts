@@ -14,6 +14,15 @@ async function requireUser() {
   return { supabase, user };
 }
 
+async function getUserCoupleId(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
+  const { data } = await supabase
+    .from("profiles")
+    .select("couple_id")
+    .eq("id", userId)
+    .single();
+  return data?.couple_id ?? null;
+}
+
 function asPositiveNumber(v: FormDataEntryValue | null): number {
   const n = parseFloat(String(v ?? ""));
   if (!Number.isFinite(n) || n <= 0) throw new Error("Invalid number");
@@ -44,9 +53,10 @@ export async function addGearItem(formData: FormData) {
   const url = String(formData.get("url") ?? "").trim();
   if (!isValidUrl(url)) throw new Error("Enter a valid product URL");
 
+  const coupleId = await getUserCoupleId(supabase, user.id);
   const { data: item, error: itemErr } = await supabase
     .from("gear_items")
-    .insert({ user_id: user.id, name, emoji, target_price })
+    .insert({ user_id: user.id, couple_id: coupleId, name, emoji, target_price })
     .select("id")
     .single();
   if (itemErr || !item) throw new Error(itemErr?.message ?? "Failed to add");
@@ -63,22 +73,20 @@ export async function removeGearItem(formData: FormData) {
   const { error } = await supabase
     .from("gear_items")
     .delete()
-    .eq("id", id)
-    .eq("user_id", user.id);
+    .eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/gear");
 }
 
 export async function updateGearItemTarget(formData: FormData) {
-  const { supabase, user } = await requireUser();
+  const { supabase } = await requireUser();
   const id = String(formData.get("id") ?? "");
   const target_price = asPositiveNumber(formData.get("target_price"));
   if (!id) throw new Error("Missing id");
   const { error } = await supabase
     .from("gear_items")
     .update({ target_price })
-    .eq("id", id)
-    .eq("user_id", user.id);
+    .eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/gear");
 }
@@ -94,12 +102,11 @@ export async function addWatcher(formData: FormData) {
   if (!itemId) throw new Error("Missing item_id");
   if (!isValidUrl(url)) throw new Error("Enter a valid product URL");
 
-  // Authorize: user must own the item.
+  // Authorize via RLS: user must be able to see the item (own or couple's).
   const { data: item } = await supabase
     .from("gear_items")
     .select("id")
     .eq("id", itemId)
-    .eq("user_id", user.id)
     .maybeSingle();
   if (!item) throw new Error("Item not found");
 
@@ -159,8 +166,7 @@ export async function refreshUserPrices() {
 
   const { data: items } = await supabase
     .from("gear_items")
-    .select("id, target_price")
-    .eq("user_id", user.id);
+    .select("id, target_price");
 
   if (!items?.length) {
     revalidatePath("/gear");
@@ -291,8 +297,7 @@ export async function acknowledgeTargetHit(formData: FormData) {
   const { error } = await supabase
     .from("gear_items")
     .update({ is_target_hit_acknowledged: true })
-    .eq("id", id)
-    .eq("user_id", user.id);
+    .eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/gear");
 }

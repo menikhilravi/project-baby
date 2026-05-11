@@ -208,6 +208,20 @@ export async function createCouple(): Promise<void> {
     .update({ couple_id: couple.id })
     .eq("id", user.id);
 
+  // Backfill existing items so pre-couple data is also shared.
+  await Promise.all([
+    supabase
+      .from("gear_items")
+      .update({ couple_id: couple.id })
+      .eq("user_id", user.id)
+      .is("couple_id", null),
+    supabase
+      .from("hospital_checklist")
+      .update({ couple_id: couple.id })
+      .eq("user_id", user.id)
+      .is("couple_id", null),
+  ]);
+
   revalidatePath("/names/couple");
 }
 
@@ -232,6 +246,22 @@ export async function joinCouple(formData: FormData): Promise<void> {
 
   if (error) throw new Error(error.message);
 
+  // Backfill this user's existing items into the shared couple pool.
+  await Promise.all([
+    supabase
+      .from("gear_items")
+      .update({ couple_id: couple.id })
+      .eq("user_id", user.id)
+      .is("couple_id", null),
+    supabase
+      .from("hospital_checklist")
+      .update({ couple_id: couple.id })
+      .eq("user_id", user.id)
+      .is("couple_id", null),
+  ]);
+
   revalidatePath("/names/couple");
   revalidatePath("/names/favorites");
+  revalidatePath("/gear");
+  revalidatePath("/hospital");
 }

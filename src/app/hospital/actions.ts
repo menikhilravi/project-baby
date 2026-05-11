@@ -13,39 +13,48 @@ async function requireUser() {
   return { supabase, user };
 }
 
+async function getUserCoupleId(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
+  const { data } = await supabase
+    .from("profiles")
+    .select("couple_id")
+    .eq("id", userId)
+    .single();
+  return data?.couple_id ?? null;
+}
+
 export async function seedDefaultList() {
   const { supabase, user } = await requireUser();
 
+  // Couple-aware check: if the couple already has any items, don't re-seed.
   const { count } = await supabase
     .from("hospital_checklist")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id);
+    .select("id", { count: "exact", head: true });
 
   if ((count ?? 0) > 0) return;
 
-  const rows = (Object.entries(defaultChecklist) as [Owner, string[]][])
-    .flatMap(([owner, items]) =>
+  const coupleId = await getUserCoupleId(supabase, user.id);
+
+  const rows = (Object.entries(defaultChecklist) as [Owner, string[]][]).flatMap(
+    ([owner, items]) =>
       items.map((item, idx) => ({
         user_id: user.id,
+        couple_id: coupleId,
         owner,
         item,
         sort_order: idx,
       })),
-    );
+  );
 
-  const { error } = await supabase
-    .from("hospital_checklist")
-    .insert(rows);
+  const { error } = await supabase.from("hospital_checklist").insert(rows);
   if (error) throw new Error(error.message);
 }
 
 export async function toggleItem(id: number, checked: boolean) {
-  const { supabase, user } = await requireUser();
+  const { supabase } = await requireUser();
   const { error } = await supabase
     .from("hospital_checklist")
     .update({ checked })
-    .eq("id", id)
-    .eq("user_id", user.id);
+    .eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/hospital");
 }
@@ -59,10 +68,11 @@ export async function addCustomItem(formData: FormData) {
     throw new Error("Invalid owner");
   }
 
+  const coupleId = await getUserCoupleId(supabase, user.id);
+
   const { data: lastRow } = await supabase
     .from("hospital_checklist")
     .select("sort_order")
-    .eq("user_id", user.id)
     .eq("owner", owner)
     .order("sort_order", { ascending: false })
     .limit(1)
@@ -72,6 +82,7 @@ export async function addCustomItem(formData: FormData) {
 
   const { error } = await supabase.from("hospital_checklist").insert({
     user_id: user.id,
+    couple_id: coupleId,
     owner,
     item,
     sort_order: nextOrder,
@@ -81,12 +92,11 @@ export async function addCustomItem(formData: FormData) {
 }
 
 export async function removeItem(id: number) {
-  const { supabase, user } = await requireUser();
+  const { supabase } = await requireUser();
   const { error } = await supabase
     .from("hospital_checklist")
     .delete()
-    .eq("id", id)
-    .eq("user_id", user.id);
+    .eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/hospital");
 }
