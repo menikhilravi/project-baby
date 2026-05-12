@@ -3,10 +3,11 @@ import {
   Heart,
   BriefcaseMedical,
   CreditCard,
+  Baby,
   type LucideIcon,
 } from "lucide-react";
 
-export type ToolKey = "gear" | "names" | "hospital" | "rewards";
+export type ToolKey = "gear" | "names" | "hospital" | "rewards" | "nursery";
 
 export type NavItem = {
   href: string;
@@ -44,6 +45,13 @@ export const navItems: NavItem[] = [
     tagline: "Pick the best card for every purchase.",
     icon: CreditCard,
     key: "rewards",
+  },
+  {
+    href: "/nursery",
+    label: "Nursery",
+    tagline: "Get the nest ready.",
+    icon: Baby,
+    key: "nursery",
   },
 ];
 
@@ -98,5 +106,14 @@ export const toolColors: Record<
     ring: "ring-rewards",
     gradientFrom: "from-rewards-soft",
     gradientVia: "via-rewards-soft/60",
+  },
+  nursery: {
+    bg: "bg-nursery",
+    bgSoft: "bg-nursery-soft",
+    text: "text-nursery",
+    border: "border-nursery",
+    ring: "ring-nursery",
+    gradientFrom: "from-nursery-soft",
+    gradientVia: "via-nursery-soft/60",
   },
 };
