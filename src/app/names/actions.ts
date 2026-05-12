@@ -110,42 +110,53 @@ export async function addCustomName(formData: FormData): Promise<void> {
   revalidatePath("/names");
 }
 
-export async function generateMoreNames(userHint?: string): Promise<NameEntry[]> {
-  const { supabase, user } = await requireUser();
+export type GenerateResult =
+  | { names: NameEntry[] }
+  | { error: string };
 
-  const [{ data: swipes }, { data: prevGenerated }] = await Promise.all([
-    supabase.from("name_swipes").select("name, verdict"),
-    supabase.from("generated_names").select("name"),
-  ]);
+export async function generateMoreNames(userHint?: string): Promise<GenerateResult> {
+  try {
+    const { supabase, user } = await requireUser();
 
-  const liked = (swipes ?? [])
-    .filter((s) => s.verdict === "like")
-    .map((s) => s.name);
-  const passed = (swipes ?? [])
-    .filter((s) => s.verdict === "pass")
-    .map((s) => s.name);
+    const [{ data: swipes }, { data: prevGenerated }] = await Promise.all([
+      supabase.from("name_swipes").select("name, verdict"),
+      supabase.from("generated_names").select("name"),
+    ]);
 
-  const excluded = [
-    ...(swipes ?? []).map((s) => s.name),
-    ...(prevGenerated ?? []).map((g) => g.name),
-  ];
+    const liked = (swipes ?? [])
+      .filter((s) => s.verdict === "like")
+      .map((s) => s.name);
+    const passed = (swipes ?? [])
+      .filter((s) => s.verdict === "pass")
+      .map((s) => s.name);
 
-  const hint = typeof userHint === "string" ? userHint.trim().slice(0, 300) : undefined;
-  const batch = await generateTeluguNames({ count: 20, excluded, liked, passed, userHint: hint || undefined });
-  if (batch.length === 0) return [];
+    // Deduplicate and cap to avoid an ever-growing prompt
+    const excluded = [
+      ...new Set([
+        ...(swipes ?? []).map((s) => s.name),
+        ...(prevGenerated ?? []).map((g) => g.name),
+      ]),
+    ].slice(-150);
 
-  const { error } = await supabase.from("generated_names").upsert(
-    batch.map((n) => ({
-      user_id: user.id,
-      name: n.name,
-      origin: n.origin,
-      meaning: n.meaning,
-    })),
-    { onConflict: "user_id,name" },
-  );
-  if (error) throw new Error(error.message);
+    const hint = typeof userHint === "string" ? userHint.trim().slice(0, 300) : undefined;
+    const batch = await generateTeluguNames({ count: 20, excluded, liked, passed, userHint: hint || undefined });
+    if (batch.length === 0) return { names: [] };
 
-  return batch;
+    const { error } = await supabase.from("generated_names").upsert(
+      batch.map((n) => ({
+        user_id: user.id,
+        name: n.name,
+        origin: n.origin,
+        meaning: n.meaning,
+      })),
+      { onConflict: "user_id,name" },
+    );
+    if (error) return { error: error.message };
+
+    return { names: batch };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Generation failed" };
+  }
 }
 
 export async function setMyRole(role: "mom" | "dad"): Promise<void> {

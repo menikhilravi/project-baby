@@ -8,7 +8,7 @@ import "server-only";
  * for a two-person app).
  */
 
-const MODEL = "gemini-2.0-flash";
+const MODEL = "gemini-3-flash-preview";
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 export type GeneratedNameEntry = {

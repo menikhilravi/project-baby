@@ -55,9 +55,11 @@ export function NameDeck({ pool: initialPool }: { pool: NameEntry[] }) {
 
     startTransition(async () => {
       try {
-        const newNames = await generateMoreNames(hintText);
-        if (newNames.length > 0) {
-          setPool((p) => [...p, ...newNames]);
+        const result = await generateMoreNames(hintText);
+        if ("error" in result) {
+          setGenerateError(result.error);
+        } else if (result.names.length > 0) {
+          setPool((p) => [...p, ...result.names]);
         }
       } catch (e) {
         setGenerateError(
@@ -76,9 +78,11 @@ export function NameDeck({ pool: initialPool }: { pool: NameEntry[] }) {
       setGenerateError(null);
       startTransition(async () => {
         try {
-          const newNames = await generateMoreNames();
-          if (newNames.length > 0) {
-            setPool((p) => [...p, ...newNames]);
+          const result = await generateMoreNames();
+          if ("error" in result) {
+            setGenerateError(result.error);
+          } else if (result.names.length > 0) {
+            setPool((p) => [...p, ...result.names]);
           }
         } catch (e) {
           setGenerateError(
