@@ -22,7 +22,7 @@ export function UserMenu({
         <Link
           href="/names/couple"
           aria-label="Couple settings"
-          className="flex items-center justify-center h-8 w-8 rounded-full bg-card/70 backdrop-blur-xl ring-1 ring-border/40 shadow-sm text-muted-foreground hover:text-foreground transition-all active:scale-95"
+          className="flex items-center justify-center h-8 w-8 rounded-full bg-card/70 ring-1 ring-border/40 shadow-sm text-muted-foreground hover:text-foreground transition-all active:scale-95"
         >
           <Users className="h-3.5 w-3.5" />
         </Link>
@@ -32,7 +32,7 @@ export function UserMenu({
             aria-label={`Sign out ${email}`}
             title={email}
             className={cn(
-              "flex items-center gap-1.5 rounded-full bg-card/70 backdrop-blur-xl ring-1 ring-border/40 shadow-sm",
+              "flex items-center gap-1.5 rounded-full bg-card/70 ring-1 ring-border/40 shadow-sm",
               "pl-1 pr-2.5 py-1 text-[11px] font-medium hover:bg-card/90 transition-all active:scale-95",
             )}
           >

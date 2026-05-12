@@ -11,7 +11,7 @@ export function SideNav({ userEmail }: { userEmail?: string | null }) {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden md:flex fixed inset-y-0 left-0 w-60 flex-col border-r border-border/50 bg-sidebar/90 backdrop-blur-xl z-30">
+    <aside className="hidden md:flex fixed inset-y-0 left-0 w-60 flex-col border-r border-border/50 bg-sidebar z-30">
       <Link
         href="/gear"
         className="flex items-center gap-3 px-5 py-5 border-b border-border/50 group"
