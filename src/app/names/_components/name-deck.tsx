@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useTransition } from "react";
 import { Heart, X, Sparkles, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { NameEntry } from "@/data/names";
@@ -11,7 +11,7 @@ const SWIPE_THRESHOLD = 80;
 export function NameDeck({ pool: initialPool }: { pool: NameEntry[] }) {
   const [pool, setPool] = useState(initialPool);
   const [index, setIndex] = useState(0);
-  const [generating, setGenerating] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [hint, setHint] = useState("");
   const [showHintInput, setShowHintInput] = useState(false);
@@ -22,7 +22,7 @@ export function NameDeck({ pool: initialPool }: { pool: NameEntry[] }) {
   poolRef.current = pool;
   indexRef.current = index;
 
-  // Prevent concurrent auto-generates
+  // Prevent concurrent generates
   const isGeneratingRef = useRef(false);
 
   // Drag/commit state — never triggers re-renders
@@ -40,40 +40,58 @@ export function NameDeck({ pool: initialPool }: { pool: NameEntry[] }) {
   const exhausted = remaining <= 0;
   const current = pool[index];
   const upcoming = pool[index + 1];
+  const generating = isPending;
 
-  // Set initial cursor once on mount
   useEffect(() => {
     if (cardRef.current) cardRef.current.style.cursor = "grab";
   }, []);
 
-  const handleGenerate = useCallback(async (hintText?: string) => {
+  // Manual generate (with optional hint)
+  const handleGenerate = useCallback((hintText?: string) => {
     if (isGeneratingRef.current) return;
     isGeneratingRef.current = true;
-    setGenerating(true);
     setGenerateError(null);
     setShowHintInput(false);
-    try {
-      const newNames = await generateMoreNames(hintText);
-      if (newNames.length > 0) {
-        setPool((p) => [...p, ...newNames]);
+
+    startTransition(async () => {
+      try {
+        const newNames = await generateMoreNames(hintText);
+        if (newNames.length > 0) {
+          setPool((p) => [...p, ...newNames]);
+        }
+      } catch (e) {
+        setGenerateError(
+          e instanceof Error ? e.message : "Generation failed — check GEMINI_API_KEY",
+        );
+      } finally {
+        isGeneratingRef.current = false;
       }
-    } catch (e) {
-      setGenerateError(e instanceof Error ? e.message : "Generation failed — check GEMINI_API_KEY");
-    } finally {
-      setGenerating(false);
-      isGeneratingRef.current = false;
-    }
-  }, []);
+    });
+  }, [startTransition]);
 
   // Auto-generate whenever deck is exhausted (covers initial empty pool too)
   useEffect(() => {
-    if (exhausted) {
-      void handleGenerate();
+    if (exhausted && !isGeneratingRef.current) {
+      isGeneratingRef.current = true;
+      setGenerateError(null);
+      startTransition(async () => {
+        try {
+          const newNames = await generateMoreNames();
+          if (newNames.length > 0) {
+            setPool((p) => [...p, ...newNames]);
+          }
+        } catch (e) {
+          setGenerateError(
+            e instanceof Error ? e.message : "Generation failed — check GEMINI_API_KEY",
+          );
+        } finally {
+          isGeneratingRef.current = false;
+        }
+      });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exhausted]);
 
-  // Apply transform + overlay opacity directly to DOM during drag
   const applyDrag = useCallback((dx: number) => {
     const card = cardRef.current;
     if (!card) return;
@@ -102,7 +120,13 @@ export function NameDeck({ pool: initialPool }: { pool: NameEntry[] }) {
     if (v === "like" && likeRef.current) likeRef.current.style.opacity = "1";
     if (v === "pass" && passRef.current) passRef.current.style.opacity = "1";
 
-    void recordSwipe(currCard.name, v).catch(console.error);
+    startTransition(async () => {
+      try {
+        await recordSwipe(currCard.name, v);
+      } catch {
+        // swipe recording is fire-and-forget; not critical for UX
+      }
+    });
 
     setTimeout(() => {
       if (cardRef.current) {
@@ -117,7 +141,7 @@ export function NameDeck({ pool: initialPool }: { pool: NameEntry[] }) {
       committingRef.current = false;
       setIndex(currIndex + 1);
     }, 290);
-  }, []);
+  }, [startTransition]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (committingRef.current || indexRef.current >= poolRef.current.length) return;
@@ -220,7 +244,6 @@ export function NameDeck({ pool: initialPool }: { pool: NameEntry[] }) {
           style={{ touchAction: "none", willChange: "transform" }}
           className="absolute inset-0 rounded-3xl overflow-hidden ring-1 ring-border/60 shadow-xl bg-gradient-to-br from-names-soft via-rewards-soft/70 to-gear-soft/60 select-none"
         >
-          {/* Overlays — always in DOM, opacity driven imperatively */}
           <div
             ref={likeRef}
             style={{ opacity: 0 }}
