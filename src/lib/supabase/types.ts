@@ -18,10 +18,11 @@ export interface Database {
           id: string;
           email: string | null;
           couple_id: string | null;
+          role: "mom" | "dad" | null;
           created_at: string;
         };
-        Insert: { id: string; email?: string | null; couple_id?: string | null; created_at?: string };
-        Update: { email?: string | null; couple_id?: string | null };
+        Insert: { id: string; email?: string | null; couple_id?: string | null; role?: "mom" | "dad" | null; created_at?: string };
+        Update: { email?: string | null; couple_id?: string | null; role?: "mom" | "dad" | null };
         Relationships: [];
       };
       couples: {
@@ -216,6 +217,35 @@ export interface Database {
         };
         Insert: { card_id: string; category: string; multiplier: number };
         Update: { multiplier?: number };
+        Relationships: [];
+      };
+      nursery_checklist: {
+        Row: {
+          id: number;
+          user_id: string;
+          couple_id: string | null;
+          owner: "room" | "safety" | "supplies";
+          item: string;
+          checked: boolean;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          user_id: string;
+          couple_id?: string | null;
+          owner: "room" | "safety" | "supplies";
+          item: string;
+          checked?: boolean;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          item?: string;
+          couple_id?: string | null;
+          checked?: boolean;
+          sort_order?: number;
+        };
         Relationships: [];
       };
     };

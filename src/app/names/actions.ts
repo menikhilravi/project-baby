@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/admin";
 import { generateTeluguNames } from "@/lib/gemini";
-import { names } from "@/data/names";
 import type { NameEntry } from "@/data/names";
 
 async function requireUser() {
@@ -127,7 +126,6 @@ export async function generateMoreNames(userHint?: string): Promise<NameEntry[]>
     .map((s) => s.name);
 
   const excluded = [
-    ...names.map((n) => n.name),
     ...(swipes ?? []).map((s) => s.name),
     ...(prevGenerated ?? []).map((g) => g.name),
   ];
@@ -150,6 +148,17 @@ export async function generateMoreNames(userHint?: string): Promise<NameEntry[]>
   return batch;
 }
 
+export async function setMyRole(role: "mom" | "dad"): Promise<void> {
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase
+    .from("profiles")
+    .update({ role })
+    .eq("id", user.id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/names/couple");
+  revalidatePath("/names/favorites");
+}
+
 // ── Couple mode ─────────────────────────────────────────────────────────────
 
 function generateInviteCode(): string {
@@ -162,8 +171,10 @@ function generateInviteCode(): string {
 
 export type CoupleStatus = {
   inviteCode: string;
+  myRole: "mom" | "dad" | null;
   partnerId: string | null;
   partnerEmail: string | null;
+  partnerRole: "mom" | "dad" | null;
 };
 
 export async function getCoupleStatus(): Promise<CoupleStatus | null> {
@@ -171,7 +182,7 @@ export async function getCoupleStatus(): Promise<CoupleStatus | null> {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("couple_id")
+    .select("couple_id, role")
     .eq("id", user.id)
     .single();
 
@@ -188,15 +199,17 @@ export async function getCoupleStatus(): Promise<CoupleStatus | null> {
   const admin = createServiceClient();
   const { data: members } = await admin
     .from("profiles")
-    .select("id, email")
+    .select("id, email, role")
     .eq("couple_id", profile.couple_id);
 
   const partner = (members ?? []).find((m) => m.id !== user.id) ?? null;
 
   return {
     inviteCode: couple.invite_code,
+    myRole: profile.role ?? null,
     partnerId: partner?.id ?? null,
     partnerEmail: partner?.email ?? null,
+    partnerRole: partner?.role ?? null,
   };
 }
 

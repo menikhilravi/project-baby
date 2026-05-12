@@ -2,7 +2,6 @@ import Link from "next/link";
 import { Heart, Users } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
 import { createClient } from "@/lib/supabase/server";
-import { names } from "@/data/names";
 import { NameDeck } from "./_components/name-deck";
 import { AddCustomName } from "./_components/add-custom-name";
 
@@ -20,11 +19,9 @@ export default async function NamesPage() {
   const swiped = new Set((swipes ?? []).map((s) => s.name));
   const likedCount = (swipes ?? []).filter((s) => s.verdict === "like").length;
 
-  const staticPool = names.filter((n) => !swiped.has(n.name));
+  // Only show Gemini-generated names, 20 at a time
   const generatedPool = (generated ?? []).filter((g) => !swiped.has(g.name));
-  const pool = [...staticPool, ...generatedPool];
-  const totalSeen = swiped.size;
-  const totalKnown = names.length + (generated ?? []).length;
+  const pool = generatedPool.slice(0, 20);
 
   return (
     <div className="mx-auto max-w-md px-4 py-8 md:py-12 flex flex-col items-center">
@@ -34,7 +31,7 @@ export default async function NamesPage() {
           icon={Heart}
           eyebrow="Names"
           title="Find a name you love."
-          subtitle="Tap to keep, tap to skip. Your favorites pile up over time."
+          subtitle="Swipe right to keep, left to skip. Your favorites pile up over time."
         />
 
         <div className="-mt-3 mb-2 flex items-center justify-end gap-2">
@@ -55,11 +52,7 @@ export default async function NamesPage() {
         </div>
       </div>
 
-      <NameDeck
-        pool={pool}
-        seenCount={totalSeen}
-        totalCount={totalKnown}
-      />
+      <NameDeck pool={pool} />
 
       <div className="mt-6">
         <AddCustomName />

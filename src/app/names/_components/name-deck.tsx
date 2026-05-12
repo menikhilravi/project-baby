@@ -1,36 +1,29 @@
 'use client';
 
-import { useState, useTransition, useRef, useCallback, useEffect } from "react";
-import { Heart, X, Sparkles, Loader2 } from "lucide-react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { Heart, X, Sparkles, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { NameEntry } from "@/data/names";
 import { recordSwipe, generateMoreNames } from "../actions";
 
 const SWIPE_THRESHOLD = 80;
 
-export function NameDeck({
-  pool: initialPool,
-  totalCount: initialTotal,
-  seenCount,
-}: {
-  pool: NameEntry[];
-  totalCount: number;
-  seenCount: number;
-}) {
-  // React state — only for things that need to trigger re-renders
+export function NameDeck({ pool: initialPool }: { pool: NameEntry[] }) {
   const [pool, setPool] = useState(initialPool);
-  const [totalCount, setTotalCount] = useState(initialTotal);
   const [index, setIndex] = useState(0);
   const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
   const [hint, setHint] = useState("");
   const [showHintInput, setShowHintInput] = useState(false);
-  const [, startTransition] = useTransition();
 
-  // Always-current mirrors of state — safe to read inside callbacks without stale closure issues
+  // Always-current mirrors — safe to read inside callbacks
   const poolRef = useRef(pool);
   const indexRef = useRef(0);
   poolRef.current = pool;
   indexRef.current = index;
+
+  // Prevent concurrent auto-generates
+  const isGeneratingRef = useRef(false);
 
   // Drag/commit state — never triggers re-renders
   const committingRef = useRef(false);
@@ -53,6 +46,33 @@ export function NameDeck({
     if (cardRef.current) cardRef.current.style.cursor = "grab";
   }, []);
 
+  const handleGenerate = useCallback(async (hintText?: string) => {
+    if (isGeneratingRef.current) return;
+    isGeneratingRef.current = true;
+    setGenerating(true);
+    setGenerateError(null);
+    setShowHintInput(false);
+    try {
+      const newNames = await generateMoreNames(hintText);
+      if (newNames.length > 0) {
+        setPool((p) => [...p, ...newNames]);
+      }
+    } catch (e) {
+      setGenerateError(e instanceof Error ? e.message : "Generation failed — check GEMINI_API_KEY");
+    } finally {
+      setGenerating(false);
+      isGeneratingRef.current = false;
+    }
+  }, []);
+
+  // Auto-generate whenever deck is exhausted (covers initial empty pool too)
+  useEffect(() => {
+    if (exhausted) {
+      void handleGenerate();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exhausted]);
+
   // Apply transform + overlay opacity directly to DOM during drag
   const applyDrag = useCallback((dx: number) => {
     const card = cardRef.current;
@@ -64,7 +84,6 @@ export function NameDeck({
   }, []);
 
   const commit = useCallback((v: "like" | "pass") => {
-    // Read current values from refs — never from stale closures
     const currPool = poolRef.current;
     const currIndex = indexRef.current;
     const currCard = currPool[currIndex];
@@ -83,9 +102,7 @@ export function NameDeck({
     if (v === "like" && likeRef.current) likeRef.current.style.opacity = "1";
     if (v === "pass" && passRef.current) passRef.current.style.opacity = "1";
 
-    startTransition(() => {
-      recordSwipe(currCard.name, v).catch(console.error);
-    });
+    void recordSwipe(currCard.name, v).catch(console.error);
 
     setTimeout(() => {
       if (cardRef.current) {
@@ -100,7 +117,7 @@ export function NameDeck({
       committingRef.current = false;
       setIndex(currIndex + 1);
     }, 290);
-  }, [applyDrag, startTransition]);
+  }, []);
 
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (committingRef.current || indexRef.current >= poolRef.current.length) return;
@@ -141,46 +158,44 @@ export function NameDeck({
     }
   }, [commit]);
 
-  const handleGenerate = async () => {
-    setGenerating(true);
-    setShowHintInput(false);
-    try {
-      const newNames = await generateMoreNames(hint || undefined);
-      if (newNames.length > 0) {
-        setPool((p) => [...p, ...newNames]);
-        setTotalCount((t) => t + newNames.length);
-      }
-    } catch (e) {
-      console.error("Generate failed:", e);
-    } finally {
-      setGenerating(false);
-    }
-  };
-
   if (exhausted) {
     return (
       <div className="w-full max-w-xs aspect-[3/4] rounded-3xl border-2 border-dashed border-border/60 grid place-items-center text-center px-6">
         <div className="flex flex-col items-center gap-4 w-full">
-          <span className="text-4xl">🎉</span>
-          <div>
-            <h2 className="font-display text-xl font-semibold">You&apos;ve seen them all</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Generate a fresh batch with Gemini AI.</p>
-          </div>
-          <textarea
-            value={hint}
-            onChange={(e) => setHint(e.target.value)}
-            placeholder={"Preferences (optional)\ne.g. starts with V, 4-5 letters…"}
-            rows={2}
-            className="w-full text-xs px-3 py-2 rounded-xl border border-border/60 bg-background/60 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-names/40 resize-none"
-          />
-          <Button
-            onClick={handleGenerate}
-            disabled={generating}
-            className="rounded-full bg-names hover:bg-names/90 text-white px-5 gap-2"
-          >
-            {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            {generating ? "Generating…" : "Generate 20 names"}
-          </Button>
+          {generateError ? (
+            <>
+              <AlertCircle className="h-8 w-8 text-destructive" />
+              <div>
+                <h2 className="font-display text-lg font-semibold">Generation failed</h2>
+                <p className="mt-1 text-xs text-muted-foreground break-all">{generateError}</p>
+              </div>
+              <div className="flex flex-col gap-2 w-full">
+                <textarea
+                  value={hint}
+                  onChange={(e) => setHint(e.target.value)}
+                  placeholder={"Preferences (optional)\ne.g. starts with V, 4-5 letters…"}
+                  rows={2}
+                  className="w-full text-xs px-3 py-2 rounded-xl border border-border/60 bg-background/60 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-names/40 resize-none"
+                />
+                <Button
+                  onClick={() => handleGenerate(hint || undefined)}
+                  disabled={generating}
+                  className="rounded-full bg-names hover:bg-names/90 text-white px-5 gap-2"
+                >
+                  {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  {generating ? "Generating…" : "Try again"}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <Loader2 className="h-8 w-8 text-names animate-spin" />
+              <div>
+                <h2 className="font-display text-lg font-semibold">Loading names…</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Asking Gemini for fresh suggestions.</p>
+              </div>
+            </>
+          )}
         </div>
       </div>
     );
@@ -263,10 +278,13 @@ export function NameDeck({
       </div>
 
       <p className="mt-5 text-xs text-muted-foreground tabular-nums">
-        {String(seenCount + index + 1).padStart(2, "0")} / {String(totalCount).padStart(2, "0")}
+        {String(index + 1).padStart(2, "0")} / {String(pool.length).padStart(2, "0")}
       </p>
 
       <div className="mt-3 flex flex-col items-center gap-2 w-full max-w-xs">
+        {generateError && (
+          <p className="text-xs text-destructive text-center">{generateError}</p>
+        )}
         {showHintInput && (
           <textarea
             value={hint}
@@ -278,7 +296,7 @@ export function NameDeck({
         )}
         <div className="flex items-center gap-2">
           <Button
-            onClick={handleGenerate}
+            onClick={() => handleGenerate(hint || undefined)}
             disabled={generating}
             variant="ghost"
             size="sm"

@@ -3,7 +3,7 @@ import { ArrowLeft, Heart, Users, Link2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHero } from "@/components/page-hero";
-import { getCoupleStatus, createCouple, joinCouple } from "../actions";
+import { getCoupleStatus, createCouple, joinCouple, setMyRole } from "../actions";
 
 type SearchParams = Promise<{ error?: string }>;
 
@@ -43,7 +43,7 @@ export default async function CouplePage({
       {!status ? (
         <NotConnected />
       ) : status.partnerId ? (
-        <Connected partnerEmail={status.partnerEmail} />
+        <Connected partnerEmail={status.partnerEmail} myRole={status.myRole} />
       ) : (
         <WaitingForPartner inviteCode={status.inviteCode} />
       )}
@@ -118,25 +118,83 @@ function WaitingForPartner({ inviteCode }: { inviteCode: string }) {
   );
 }
 
-function Connected({ partnerEmail }: { partnerEmail: string | null }) {
+function Connected({
+  partnerEmail,
+  myRole,
+}: {
+  partnerEmail: string | null;
+  myRole: "mom" | "dad" | null;
+}) {
   return (
-    <div className="rounded-2xl border bg-card p-6 text-center space-y-3">
-      <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-names-soft mx-auto">
-        <Heart className="h-5 w-5 text-names fill-current" />
+    <div className="space-y-4">
+      <div className="rounded-2xl border bg-card p-6 text-center space-y-3">
+        <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-names-soft mx-auto">
+          <Heart className="h-5 w-5 text-names fill-current" />
+        </div>
+        <div>
+          <p className="font-semibold text-lg">Connected</p>
+          {partnerEmail && (
+            <p className="text-sm text-muted-foreground mt-0.5">{partnerEmail}</p>
+          )}
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Head to{" "}
+          <Link href="/names/favorites" className="text-names hover:underline">
+            Favorites
+          </Link>{" "}
+          to see the names you both love.
+        </p>
       </div>
-      <div>
-        <p className="font-semibold text-lg">Connected</p>
-        {partnerEmail && (
-          <p className="text-sm text-muted-foreground mt-0.5">{partnerEmail}</p>
+
+      <div className="rounded-2xl border bg-card p-5 space-y-3">
+        <h2 className="font-semibold">Your role</h2>
+        <p className="text-sm text-muted-foreground">
+          Set your role so Favorites labels each person&apos;s picks correctly.
+        </p>
+        <div className="flex gap-2">
+          <form
+            action={async () => {
+              "use server";
+              await setMyRole("mom");
+            }}
+          >
+            <Button
+              type="submit"
+              variant={myRole === "mom" ? "default" : "outline"}
+              className={
+                myRole === "mom"
+                  ? "bg-names hover:bg-names/90 text-white"
+                  : ""
+              }
+            >
+              Mom
+            </Button>
+          </form>
+          <form
+            action={async () => {
+              "use server";
+              await setMyRole("dad");
+            }}
+          >
+            <Button
+              type="submit"
+              variant={myRole === "dad" ? "default" : "outline"}
+              className={
+                myRole === "dad"
+                  ? "bg-names hover:bg-names/90 text-white"
+                  : ""
+              }
+            >
+              Dad
+            </Button>
+          </form>
+        </div>
+        {myRole && (
+          <p className="text-xs text-muted-foreground">
+            Currently set to: <span className="font-medium capitalize text-foreground">{myRole}</span>
+          </p>
         )}
       </div>
-      <p className="text-sm text-muted-foreground">
-        Head to{" "}
-        <Link href="/names/favorites" className="text-names hover:underline">
-          Favorites
-        </Link>{" "}
-        to see the names you both love.
-      </p>
     </div>
   );
 }
