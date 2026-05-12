@@ -65,7 +65,7 @@ export async function generateTeluguNames(opts: {
   };
 
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 25_000);
+  const timer = setTimeout(() => ctrl.abort(), 60_000);
 
   let res: Response;
   try {
