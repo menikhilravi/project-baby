@@ -214,7 +214,8 @@ export async function createCouple(): Promise<void> {
       redirect("/names/couple");
     }
 
-    const { data: couple, error } = await supabase
+    const admin = createServiceClient();
+    const { data: couple, error } = await admin
       .from("couples")
       .insert({ invite_code: generateInviteCode() })
       .select()
