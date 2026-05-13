@@ -19,11 +19,17 @@ export async function updatePhase(formData: FormData) {
       ? overrideRaw
       : null;
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
     .update({ birth_date, phase_override })
-    .eq("id", user.id);
+    .eq("id", user.id)
+    .select("id");
   if (error) throw new Error(error.message);
+  if (!data || data.length === 0) {
+    throw new Error(
+      "Profile row not updated — check that migration 0010 ran and that the profiles RLS update policy is active.",
+    );
+  }
 
   revalidatePath("/", "layout");
 }

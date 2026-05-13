@@ -20,6 +20,13 @@ export function UserMenu({
     return (
       <div className="md:hidden fixed top-3 right-3 z-40 flex items-center gap-1.5">
         <Link
+          href="/settings"
+          aria-label="Settings"
+          className="flex items-center justify-center h-8 w-8 rounded-full bg-card/70 ring-1 ring-border/40 shadow-sm text-muted-foreground hover:text-foreground transition-all active:scale-95"
+        >
+          <Settings className="h-3.5 w-3.5" />
+        </Link>
+        <Link
           href="/names/couple"
           aria-label="Couple settings"
           className="flex items-center justify-center h-8 w-8 rounded-full bg-card/70 ring-1 ring-border/40 shadow-sm text-muted-foreground hover:text-foreground transition-all active:scale-95"
