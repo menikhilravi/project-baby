@@ -4,10 +4,21 @@ import {
   BriefcaseMedical,
   CreditCard,
   Baby,
+  Moon,
+  BookOpen,
   type LucideIcon,
 } from "lucide-react";
 
-export type ToolKey = "gear" | "names" | "hospital" | "rewards" | "nursery";
+export type Phase = "prenatal" | "postnatal";
+
+export type ToolKey =
+  | "gear"
+  | "names"
+  | "hospital"
+  | "rewards"
+  | "nursery"
+  | "logger"
+  | "notes";
 
 export type NavItem = {
   href: string;
@@ -15,9 +26,18 @@ export type NavItem = {
   tagline: string;
   icon: LucideIcon;
   key: ToolKey;
+  phases?: Phase[];
 };
 
 export const navItems: NavItem[] = [
+  {
+    href: "/log",
+    label: "Night Shift",
+    tagline: "Tap to log feeds, diapers, sleep.",
+    icon: Moon,
+    key: "logger",
+    phases: ["postnatal"],
+  },
   {
     href: "/gear",
     label: "Price Pulse",
@@ -38,6 +58,7 @@ export const navItems: NavItem[] = [
     tagline: "Pack what you need for the big day.",
     icon: BriefcaseMedical,
     key: "hospital",
+    phases: ["prenatal"],
   },
   {
     href: "/rewards",
@@ -53,7 +74,18 @@ export const navItems: NavItem[] = [
     icon: Baby,
     key: "nursery",
   },
+  {
+    href: "/notes",
+    label: "Notes",
+    tagline: "Pediatrician info, dosages, numbers.",
+    icon: BookOpen,
+    key: "notes",
+  },
 ];
+
+export function navItemsForPhase(phase: Phase): NavItem[] {
+  return navItems.filter((item) => !item.phases || item.phases.includes(phase));
+}
 
 /**
  * Static class strings per tool — Tailwind's JIT cannot scan dynamic
@@ -115,5 +147,23 @@ export const toolColors: Record<
     ring: "ring-nursery",
     gradientFrom: "from-nursery-soft",
     gradientVia: "via-nursery-soft/60",
+  },
+  logger: {
+    bg: "bg-logger",
+    bgSoft: "bg-logger-soft",
+    text: "text-logger",
+    border: "border-logger",
+    ring: "ring-logger",
+    gradientFrom: "from-logger-soft",
+    gradientVia: "via-logger-soft/60",
+  },
+  notes: {
+    bg: "bg-notes",
+    bgSoft: "bg-notes-soft",
+    text: "text-notes",
+    border: "border-notes",
+    ring: "ring-notes",
+    gradientFrom: "from-notes-soft",
+    gradientVia: "via-notes-soft/60",
   },
 };

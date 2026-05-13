@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LogOut, Users } from "lucide-react";
+import { LogOut, Settings, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function initialsFrom(email: string) {
@@ -69,6 +69,16 @@ export function UserMenu({
         >
           <Users className="h-3.5 w-3.5" />
           Couple settings
+        </Link>
+        <Link
+          href="/settings"
+          className={cn(
+            "w-full flex items-center justify-center gap-2 rounded-xl border border-border/50 bg-muted/30",
+            "py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors",
+          )}
+        >
+          <Settings className="h-3.5 w-3.5" />
+          Settings
         </Link>
         <form action="/auth/signout" method="post">
           <button

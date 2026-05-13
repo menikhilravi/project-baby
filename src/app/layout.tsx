@@ -5,6 +5,7 @@ import { SideNav } from "@/components/side-nav";
 import { BottomNav } from "@/components/bottom-nav";
 import { UserMenu } from "@/components/user-menu";
 import { createClient } from "@/lib/supabase/server";
+import { getPhase } from "@/lib/phase";
 
 const geistSans = Geist({
   variable: "--font-sans",
@@ -59,6 +60,7 @@ export default async function RootLayout({
 }>) {
   const email = await getUserEmail();
   const authed = Boolean(email);
+  const phase = authed ? await getPhase() : "prenatal";
 
   return (
     <html
@@ -66,7 +68,7 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased dark`}
     >
       <body className="min-h-full text-foreground">
-        {authed ? <SideNav userEmail={email} /> : null}
+        {authed ? <SideNav userEmail={email} phase={phase} /> : null}
         {authed ? <UserMenu email={email!} variant="mobile" /> : null}
         <main
           className={
@@ -77,7 +79,7 @@ export default async function RootLayout({
         >
           {children}
         </main>
-        {authed ? <BottomNav /> : null}
+        {authed ? <BottomNav phase={phase} /> : null}
       </body>
     </html>
   );

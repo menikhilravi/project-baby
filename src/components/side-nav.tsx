@@ -4,11 +4,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Baby } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { navItems, toolColors } from "@/lib/nav";
+import { navItemsForPhase, toolColors, type Phase } from "@/lib/nav";
 import { UserMenu } from "@/components/user-menu";
 
-export function SideNav({ userEmail }: { userEmail?: string | null }) {
+export function SideNav({
+  userEmail,
+  phase,
+}: {
+  userEmail?: string | null;
+  phase: Phase;
+}) {
   const pathname = usePathname();
+  const items = navItemsForPhase(phase);
 
   return (
     <aside className="hidden md:flex fixed inset-y-0 left-0 w-60 flex-col border-r border-border/50 bg-sidebar z-30">
@@ -25,7 +32,7 @@ export function SideNav({ userEmail }: { userEmail?: string | null }) {
       </Link>
 
       <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {navItems.map((item) => {
+        {items.map((item) => {
           const Icon = item.icon;
           const active =
             pathname === item.href || pathname.startsWith(item.href + "/");

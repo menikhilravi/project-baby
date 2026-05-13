@@ -19,10 +19,26 @@ export interface Database {
           email: string | null;
           couple_id: string | null;
           role: "mom" | "dad" | null;
+          birth_date: string | null;
+          phase_override: "prenatal" | "postnatal" | null;
           created_at: string;
         };
-        Insert: { id: string; email?: string | null; couple_id?: string | null; role?: "mom" | "dad" | null; created_at?: string };
-        Update: { email?: string | null; couple_id?: string | null; role?: "mom" | "dad" | null };
+        Insert: {
+          id: string;
+          email?: string | null;
+          couple_id?: string | null;
+          role?: "mom" | "dad" | null;
+          birth_date?: string | null;
+          phase_override?: "prenatal" | "postnatal" | null;
+          created_at?: string;
+        };
+        Update: {
+          email?: string | null;
+          couple_id?: string | null;
+          role?: "mom" | "dad" | null;
+          birth_date?: string | null;
+          phase_override?: "prenatal" | "postnatal" | null;
+        };
         Relationships: [];
       };
       couples: {
@@ -245,6 +261,61 @@ export interface Database {
           couple_id?: string | null;
           checked?: boolean;
           sort_order?: number;
+        };
+        Relationships: [];
+      };
+      baby_events: {
+        Row: {
+          id: number;
+          user_id: string;
+          couple_id: string | null;
+          kind: "feed" | "diaper" | "sleep";
+          occurred_at: string;
+          ended_at: string | null;
+          notes: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          user_id: string;
+          couple_id?: string | null;
+          kind: "feed" | "diaper" | "sleep";
+          occurred_at?: string;
+          ended_at?: string | null;
+          notes?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          kind?: "feed" | "diaper" | "sleep";
+          occurred_at?: string;
+          ended_at?: string | null;
+          notes?: string | null;
+        };
+        Relationships: [];
+      };
+      notes: {
+        Row: {
+          id: number;
+          user_id: string;
+          couple_id: string | null;
+          title: string;
+          body: string;
+          pinned: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: number;
+          user_id: string;
+          couple_id?: string | null;
+          title: string;
+          body?: string;
+          pinned?: boolean;
+        };
+        Update: {
+          title?: string;
+          body?: string;
+          pinned?: boolean;
         };
         Relationships: [];
       };

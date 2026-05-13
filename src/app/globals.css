@@ -49,6 +49,10 @@
   --color-rewards-soft: var(--rewards-soft);
   --color-nursery: var(--nursery);
   --color-nursery-soft: var(--nursery-soft);
+  --color-logger: var(--logger);
+  --color-logger-soft: var(--logger-soft);
+  --color-notes: var(--notes);
+  --color-notes-soft: var(--notes-soft);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -102,6 +106,10 @@
   --rewards-soft: oklch(0.96 0.05 75);
   --nursery: oklch(0.58 0.13 295);
   --nursery-soft: oklch(0.95 0.04 295);
+  --logger: oklch(0.50 0.10 260);
+  --logger-soft: oklch(0.94 0.035 260);
+  --notes: oklch(0.55 0.08 110);
+  --notes-soft: oklch(0.95 0.035 110);
 }
 
 .dark {
@@ -145,6 +153,12 @@
   --hospital-soft: oklch(0.22 0.07 155);
   --rewards: oklch(0.82 0.15 75);
   --rewards-soft: oklch(0.24 0.08 75);
+  --nursery: oklch(0.76 0.16 295);
+  --nursery-soft: oklch(0.23 0.07 295);
+  --logger: oklch(0.74 0.13 260);
+  --logger-soft: oklch(0.22 0.06 260);
+  --notes: oklch(0.78 0.12 110);
+  --notes-soft: oklch(0.22 0.06 110);
 }
 
 @layer base {
