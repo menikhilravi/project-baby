@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   TrendingDown,
   TrendingUp,
@@ -18,6 +19,7 @@ import {
   type WatcherRow,
 } from "./_components/watchers-list";
 import { PriceHistorySparkline } from "./_components/price-history-sparkline";
+import { SuppliesList, type SupplyRow } from "./_components/supplies-list";
 import { removeGearItem } from "./actions";
 
 const fmt = (n: number) =>
@@ -32,9 +34,12 @@ type ItemView = {
   user_id: string;
   name: string;
   emoji: string;
-  target_price: number;
+  target_price: number | null;
   last_target_hit_at: string | null;
   is_target_hit_acknowledged: boolean;
+  kind: "registry" | "supplies";
+  quantity: number;
+  low_threshold: number;
   created_at: string;
   updated_at: string;
   best_price: number | null;
@@ -68,7 +73,17 @@ export default async function GearPage() {
       .order("recorded_at", { ascending: true }),
   ]);
 
-  const items = (itemsRes.data ?? []) as unknown as ItemView[];
+  const allItems = (itemsRes.data ?? []) as unknown as ItemView[];
+  const items = allItems.filter((i) => i.kind !== "supplies");
+  const supplies: SupplyRow[] = allItems
+    .filter((i) => i.kind === "supplies")
+    .map((i) => ({
+      id: i.id,
+      name: i.name,
+      emoji: i.emoji,
+      quantity: i.quantity,
+      low_threshold: i.low_threshold,
+    }));
   const watchers = watchersRes.data ?? [];
   const history = (historyRes.data ?? []) as unknown as HistoryRow[];
 
@@ -150,23 +165,62 @@ export default async function GearPage() {
 
   const isEmpty = items.length === 0;
 
+  const lowCount = supplies.filter(
+    (s) => s.low_threshold > 0 && s.quantity <= s.low_threshold,
+  ).length;
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 md:px-8 md:py-12">
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-7">
-        <PageHero
-          tool="gear"
-          icon={ShoppingCart}
-          eyebrow="Price Pulse"
-          title="Gear at the right price."
-          subtitle="Track each item across retailers — we'll fetch the price and ping you when it drops."
-        />
-        <div className="flex items-center gap-3 pt-2 shrink-0">
-          <RefreshButton lastCheckedAt={lastCheckedAt} />
-          <AddItemForm />
-        </div>
-      </div>
+      <PageHero
+        tool="gear"
+        icon={ShoppingCart}
+        eyebrow="Essentials"
+        title="Registry & supplies."
+        subtitle="Track big-ticket gear and the consumables you restock — all in one place."
+      />
 
-      <TargetHitBanner hits={hits} />
+      <Tabs defaultValue="registry" className="mt-2">
+        <TabsList className="grid grid-cols-2 w-full bg-card/50 p-1.5 rounded-2xl !h-auto gap-1 mb-5">
+          <TabsTrigger
+            value="registry"
+            className={cn(
+              "rounded-xl py-2.5 flex flex-col items-center gap-0.5 !h-auto transition-all",
+              "data-active:!bg-muted data-active:!text-foreground data-active:!shadow-sm",
+            )}
+          >
+            <span className="text-sm font-medium">Registry</span>
+            <span className="text-[10.5px] text-muted-foreground tabular-nums">
+              {items.length} {items.length === 1 ? "item" : "items"}
+            </span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="supplies"
+            className={cn(
+              "rounded-xl py-2.5 flex flex-col items-center gap-0.5 !h-auto transition-all",
+              "data-active:!bg-muted data-active:!text-foreground data-active:!shadow-sm",
+            )}
+          >
+            <span className="text-sm font-medium">
+              Supplies
+              {lowCount > 0 ? (
+                <span className="ml-1.5 inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-destructive text-white text-[9px] font-bold">
+                  {lowCount}
+                </span>
+              ) : null}
+            </span>
+            <span className="text-[10.5px] text-muted-foreground tabular-nums">
+              {supplies.length} {supplies.length === 1 ? "item" : "items"}
+            </span>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="registry">
+          <div className="flex items-center justify-end gap-3 mb-4">
+            <RefreshButton lastCheckedAt={lastCheckedAt} />
+            <AddItemForm />
+          </div>
+
+          <TargetHitBanner hits={hits} />
 
       {isEmpty ? (
         <Card className="border-dashed">
@@ -331,6 +385,12 @@ export default async function GearPage() {
           })}
         </ul>
       )}
+        </TabsContent>
+
+        <TabsContent value="supplies">
+          <SuppliesList rows={supplies} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

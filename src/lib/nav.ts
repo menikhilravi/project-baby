@@ -40,8 +40,8 @@ export const navItems: NavItem[] = [
   },
   {
     href: "/gear",
-    label: "Price Pulse",
-    tagline: "Track gear, buy at the right moment.",
+    label: "Essentials",
+    tagline: "Registry & supplies in one place.",
     icon: ShoppingCart,
     key: "gear",
   },

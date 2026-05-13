@@ -29,6 +29,12 @@ function asPositiveNumber(v: FormDataEntryValue | null): number {
   return Math.round(n * 100) / 100;
 }
 
+function asInt(v: FormDataEntryValue | null, min = 0): number {
+  const n = parseInt(String(v ?? ""), 10);
+  if (!Number.isFinite(n) || n < min) throw new Error("Invalid number");
+  return n;
+}
+
 function isValidUrl(s: string): boolean {
   try {
     const u = new URL(s);
@@ -65,6 +71,83 @@ export async function addGearItem(formData: FormData) {
 
   revalidatePath("/gear");
 }
+
+// ---------------------------------------------------------------------------
+// Supplies (consumables)
+// ---------------------------------------------------------------------------
+
+export async function addSupplyItem(formData: FormData) {
+  const { supabase, user } = await requireUser();
+
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) throw new Error("Name is required");
+  const emoji = String(formData.get("emoji") ?? "").trim() || "📦";
+  const quantity = asInt(formData.get("quantity"));
+  const low_threshold = asInt(formData.get("low_threshold"));
+
+  const coupleId = await getUserCoupleId(supabase, user.id);
+  const { error } = await supabase.from("gear_items").insert({
+    user_id: user.id,
+    couple_id: coupleId,
+    name,
+    emoji,
+    kind: "supplies",
+    quantity,
+    low_threshold,
+    target_price: null,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/gear");
+}
+
+export async function adjustSupplyQuantity(formData: FormData) {
+  const { supabase } = await requireUser();
+  const id = String(formData.get("id") ?? "");
+  const delta = parseInt(String(formData.get("delta") ?? "0"), 10);
+  if (!id || !Number.isFinite(delta) || delta === 0) {
+    throw new Error("Invalid adjustment");
+  }
+  const { data: item } = await supabase
+    .from("gear_items")
+    .select("quantity, kind")
+    .eq("id", id)
+    .maybeSingle();
+  if (!item || item.kind !== "supplies") throw new Error("Not a supply item");
+  const next = Math.max(0, item.quantity + delta);
+  const { error } = await supabase
+    .from("gear_items")
+    .update({ quantity: next })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/gear");
+}
+
+export async function updateSupply(formData: FormData) {
+  const { supabase } = await requireUser();
+  const id = String(formData.get("id") ?? "");
+  if (!id) throw new Error("Missing id");
+  const patch: { quantity?: number; low_threshold?: number; name?: string } = {};
+  const q = formData.get("quantity");
+  if (q !== null) patch.quantity = asInt(q);
+  const t = formData.get("low_threshold");
+  if (t !== null) patch.low_threshold = asInt(t);
+  const name = formData.get("name");
+  if (name !== null) {
+    const s = String(name).trim();
+    if (s) patch.name = s;
+  }
+  if (Object.keys(patch).length === 0) return;
+  const { error } = await supabase
+    .from("gear_items")
+    .update(patch)
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/gear");
+}
+
+// ---------------------------------------------------------------------------
+// Item lifecycle (shared)
+// ---------------------------------------------------------------------------
 
 export async function removeGearItem(formData: FormData) {
   const { supabase, user } = await requireUser();
