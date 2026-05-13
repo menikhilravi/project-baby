@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Fraunces } from "next/font/google";
 import "./globals.css";
 import { SideNav } from "@/components/side-nav";
@@ -25,6 +25,19 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: "Parent Prep Hub",
   description: "Your gentle, all-in-one companion for the road to parenthood.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "Baby 2026",
+    statusBarStyle: "black-translucent",
+  },
+  icons: {
+    apple: "/icons/apple-touch-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#14161f",
 };
 
 async function getUserEmail(): Promise<string | null> {
