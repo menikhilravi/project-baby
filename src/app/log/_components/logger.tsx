@@ -104,6 +104,19 @@ export function Logger({
     });
   };
 
+  const handleRemove = (id: number) => {
+    const snapshot = events;
+    setEvents((prev) => prev.filter((e) => e.id !== id));
+    startTransition(async () => {
+      try {
+        await removeEvent(id);
+      } catch (err) {
+        console.error(err);
+        setEvents(snapshot);
+      }
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-3 gap-3">
@@ -134,6 +147,7 @@ export function Logger({
         events={events}
         currentUserId={currentUserId}
         roleMap={roleMap}
+        onRemove={handleRemove}
       />
     </div>
   );
@@ -215,23 +229,14 @@ function Timeline({
   events,
   currentUserId,
   roleMap,
+  onRemove,
 }: {
   events: BabyEventRow[];
   currentUserId: string;
   roleMap: RoleMap;
+  onRemove: (id: number) => void;
 }) {
-  const [, startTransition] = useTransition();
   const grouped = useMemo(() => groupByDay(events), [events]);
-
-  const handleRemove = (id: number) => {
-    startTransition(async () => {
-      try {
-        await removeEvent(id);
-      } catch (err) {
-        console.error(err);
-      }
-    });
-  };
 
   if (events.length === 0) {
     return (
@@ -257,7 +262,7 @@ function Timeline({
                 row={row}
                 isMine={row.user_id === currentUserId}
                 role={roleMap[row.user_id] ?? null}
-                onRemove={() => handleRemove(row.id)}
+                onRemove={() => onRemove(row.id)}
               />
             ))}
           </ul>

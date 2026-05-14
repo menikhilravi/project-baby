@@ -33,3 +33,25 @@ export async function updatePhase(formData: FormData) {
 
   revalidatePath("/", "layout");
 }
+
+export async function updateHiddenSections(hidden: string[]) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const cleaned = Array.from(new Set(hidden.map((s) => s.trim()).filter(Boolean)));
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({ hidden_sections: cleaned })
+    .eq("id", user.id)
+    .select("id");
+  if (error) throw new Error(error.message);
+  if (!data || data.length === 0) {
+    throw new Error("Profile row not updated.");
+  }
+
+  revalidatePath("/", "layout");
+}

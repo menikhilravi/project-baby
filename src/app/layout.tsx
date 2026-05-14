@@ -41,16 +41,28 @@ export const viewport: Viewport = {
   themeColor: "#14161f",
 };
 
-async function getUserEmail(): Promise<string | null> {
+async function getUserContext(): Promise<{
+  email: string | null;
+  hiddenSections: string[];
+}> {
   if (
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
     !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   ) {
-    return null;
+    return { email: null, hiddenSections: [] };
   }
   const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  return data.user?.email ?? null;
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return { email: null, hiddenSections: [] };
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("hidden_sections")
+    .eq("id", auth.user.id)
+    .maybeSingle();
+  return {
+    email: auth.user.email ?? null,
+    hiddenSections: profile?.hidden_sections ?? [],
+  };
 }
 
 export default async function RootLayout({
@@ -58,7 +70,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const email = await getUserEmail();
+  const { email, hiddenSections } = await getUserContext();
   const authed = Boolean(email);
   const phase = authed ? await getPhase() : "prenatal";
 
@@ -68,7 +80,13 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased dark`}
     >
       <body className="min-h-full text-foreground">
-        {authed ? <SideNav userEmail={email} phase={phase} /> : null}
+        {authed ? (
+          <SideNav
+            userEmail={email}
+            phase={phase}
+            hiddenSections={hiddenSections}
+          />
+        ) : null}
         {authed ? <UserMenu email={email!} variant="mobile" /> : null}
         <main
           className={
@@ -79,7 +97,9 @@ export default async function RootLayout({
         >
           {children}
         </main>
-        {authed ? <BottomNav phase={phase} /> : null}
+        {authed ? (
+          <BottomNav phase={phase} hiddenSections={hiddenSections} />
+        ) : null}
       </body>
     </html>
   );

@@ -3,11 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { navItemsForPhase, toolColors, type Phase } from "@/lib/nav";
+import { visibleNavItems, toolColors, type Phase } from "@/lib/nav";
 
-export function BottomNav({ phase }: { phase: Phase }) {
+export function BottomNav({
+  phase,
+  hiddenSections,
+}: {
+  phase: Phase;
+  hiddenSections: readonly string[];
+}) {
   const pathname = usePathname();
-  const items = navItemsForPhase(phase);
+  const items = visibleNavItems(phase, hiddenSections);
 
   // Tailwind needs literal class strings; cover the realistic 4–6 item range.
   const colsClass =

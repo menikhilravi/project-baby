@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { PageHero } from "@/components/page-hero";
 import { createClient } from "@/lib/supabase/server";
 import { SettingsForm } from "./_components/settings-form";
+import { HideSectionsForm } from "./_components/hide-sections-form";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -13,7 +14,7 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("birth_date, phase_override")
+    .select("birth_date, phase_override, hidden_sections")
     .eq("id", user.id)
     .single();
 
@@ -31,6 +32,16 @@ export default async function SettingsPage() {
         initialBirthDate={profile?.birth_date ?? ""}
         initialOverride={profile?.phase_override ?? ""}
       />
+
+      <div className="mt-10">
+        <h2 className="text-sm font-medium mb-1">Visible sections</h2>
+        <p className="text-xs text-muted-foreground mb-3">
+          Turn sections off if you don&apos;t use them. They&apos;ll disappear from the nav but remain accessible by URL.
+        </p>
+        <HideSectionsForm
+          initialHidden={profile?.hidden_sections ?? []}
+        />
+      </div>
     </div>
   );
 }

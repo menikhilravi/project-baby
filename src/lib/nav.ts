@@ -51,6 +51,7 @@ export const navItems: NavItem[] = [
     tagline: "Swipe through names — find a favorite.",
     icon: Heart,
     key: "names",
+    phases: ["prenatal"],
   },
   {
     href: "/hospital",
@@ -73,6 +74,7 @@ export const navItems: NavItem[] = [
     tagline: "Get the nest ready.",
     icon: Baby,
     key: "nursery",
+    phases: ["prenatal"],
   },
   {
     href: "/notes",
@@ -86,6 +88,23 @@ export const navItems: NavItem[] = [
 export function navItemsForPhase(phase: Phase): NavItem[] {
   return navItems.filter((item) => !item.phases || item.phases.includes(phase));
 }
+
+export function visibleNavItems(
+  phase: Phase,
+  hiddenSections: readonly string[] = [],
+): NavItem[] {
+  const hidden = new Set(hiddenSections);
+  return navItemsForPhase(phase).filter((item) => !hidden.has(item.key));
+}
+
+/** Sections users are allowed to hide via Settings. */
+export const HIDEABLE_KEYS: ToolKey[] = [
+  "rewards",
+  "nursery",
+  "hospital",
+  "names",
+  "notes",
+];
 
 /**
  * Static class strings per tool — Tailwind's JIT cannot scan dynamic

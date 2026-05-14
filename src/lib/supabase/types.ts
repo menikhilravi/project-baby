@@ -21,6 +21,7 @@ export interface Database {
           role: "mom" | "dad" | null;
           birth_date: string | null;
           phase_override: "prenatal" | "postnatal" | null;
+          hidden_sections: string[];
           created_at: string;
         };
         Insert: {
@@ -30,6 +31,7 @@ export interface Database {
           role?: "mom" | "dad" | null;
           birth_date?: string | null;
           phase_override?: "prenatal" | "postnatal" | null;
+          hidden_sections?: string[];
           created_at?: string;
         };
         Update: {
@@ -38,6 +40,7 @@ export interface Database {
           role?: "mom" | "dad" | null;
           birth_date?: string | null;
           phase_override?: "prenatal" | "postnatal" | null;
+          hidden_sections?: string[];
         };
         Relationships: [];
       };
