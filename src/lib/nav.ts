@@ -6,6 +6,7 @@ import {
   Baby,
   Moon,
   BookOpen,
+  Sun,
   type LucideIcon,
 } from "lucide-react";
 
@@ -18,7 +19,8 @@ export type ToolKey =
   | "rewards"
   | "nursery"
   | "logger"
-  | "notes";
+  | "notes"
+  | "today";
 
 export type NavItem = {
   href: string;
@@ -30,6 +32,14 @@ export type NavItem = {
 };
 
 export const navItems: NavItem[] = [
+  {
+    href: "/today",
+    label: "Today",
+    tagline: "At-a-glance: feeds, diapers, sleep, supplies.",
+    icon: Sun,
+    key: "today",
+    phases: ["postnatal"],
+  },
   {
     href: "/log",
     label: "Night Shift",
@@ -184,5 +194,14 @@ export const toolColors: Record<
     ring: "ring-notes",
     gradientFrom: "from-notes-soft",
     gradientVia: "via-notes-soft/60",
+  },
+  today: {
+    bg: "bg-today",
+    bgSoft: "bg-today-soft",
+    text: "text-today",
+    border: "border-today",
+    ring: "ring-today",
+    gradientFrom: "from-today-soft",
+    gradientVia: "via-today-soft/60",
   },
 };
