@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 export type KickSession = {
@@ -15,7 +18,26 @@ type DayBucket = {
 };
 
 export function HistoryStrip({ sessions }: { sessions: KickSession[] }) {
-  const days = buildLastSevenDays(sessions);
+  // Bucket in user local time. Defer "now" until the client renders so SSR
+  // (UTC) doesn't skew which day a kick lands in (the bug where Thursday
+  // kicks showed up under Friday in west-of-UTC timezones).
+  const [now] = useState<Date | null>(() =>
+    typeof window === "undefined" ? null : new Date(),
+  );
+  if (!now) {
+    // SSR placeholder — same shape, neutral content. Hydrates immediately.
+    return (
+      <section>
+        <div className="flex items-baseline justify-between mb-3">
+          <h2 className="text-sm font-semibold tracking-tight">Last 7 days</h2>
+        </div>
+        <div className="rounded-2xl border border-border/60 bg-card/50 px-3 py-4">
+          <div className="grid grid-cols-7 gap-2 items-end h-32" />
+        </div>
+      </section>
+    );
+  }
+  const days = buildLastSevenDays(sessions, now);
   const maxKicks = Math.max(1, ...days.map((d) => d.totalKicks));
   const totalSessions = sessions.length;
 
@@ -68,9 +90,8 @@ export function HistoryStrip({ sessions }: { sessions: KickSession[] }) {
   );
 }
 
-function buildLastSevenDays(sessions: KickSession[]): DayBucket[] {
+function buildLastSevenDays(sessions: KickSession[], now: Date): DayBucket[] {
   const buckets = new Map<string, DayBucket>();
-  const now = new Date();
   for (let i = 6; i >= 0; i--) {
     const d = new Date(now);
     d.setDate(now.getDate() - i);

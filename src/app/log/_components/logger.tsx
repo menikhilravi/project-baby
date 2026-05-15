@@ -62,6 +62,13 @@ export function Logger({
           ...(coupleId ? { filter: `couple_id=eq.${coupleId}` } : {}),
         },
         (payload) => {
+          // /log is the Night Shift timeline — feed/diaper/sleep only.
+          // Kicks live on /kicks with their own UX.
+          const rowKind =
+            payload.eventType === "DELETE"
+              ? undefined
+              : (payload.new as { kind?: string }).kind;
+          if (rowKind === "kick") return;
           setEvents((prev) => {
             if (payload.eventType === "INSERT") {
               const row = payload.new as BabyEventRow;

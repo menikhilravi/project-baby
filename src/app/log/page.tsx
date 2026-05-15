@@ -32,6 +32,7 @@ export default async function LogPage() {
     .from("baby_events")
     .select("id, user_id, couple_id, kind, occurred_at, ended_at, notes")
     .gte("occurred_at", since)
+    .neq("kind", "kick")
     .order("occurred_at", { ascending: false });
 
   return (

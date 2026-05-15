@@ -1,9 +1,10 @@
-import { Footprints } from "lucide-react";
+import Link from "next/link";
+import { ChevronRight, Footprints } from "lucide-react";
 import { redirect } from "next/navigation";
 import { PageHero } from "@/components/page-hero";
 import { createClient } from "@/lib/supabase/server";
 import { KickCounter } from "./_components/kick-counter";
-import { HistoryStrip, type KickSession } from "./_components/history-strip";
+import { TwoHourBins } from "./_components/two-hour-bins";
 
 export default async function KicksPage() {
   const supabase = await createClient();
@@ -20,30 +21,23 @@ export default async function KicksPage() {
   const coupleId = profile?.couple_id ?? null;
   const role = profile?.role ?? null;
 
+  // Fetch ~30 hours so we cover both the rolling-2h counter and any local
+  // "today" (handles up to a 14h offset from server UTC). The TwoHourBins
+  // component buckets client-side using local time.
   // eslint-disable-next-line react-hooks/purity -- server component reading wall-clock time
-  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60_000).toISOString();
-  // eslint-disable-next-line react-hooks/purity -- server component reading wall-clock time
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60_000).toISOString();
+  const since = new Date(Date.now() - 30 * 60 * 60_000).toISOString();
 
-  const [kicksRes, sessionsRes] = await Promise.all([
-    supabase
-      .from("baby_events")
-      .select("id, occurred_at")
-      .eq("kind", "kick")
-      .gte("occurred_at", twoHoursAgo)
-      .order("occurred_at", { ascending: false }),
-    supabase.rpc("kick_sessions_for_couple", {
-      p_couple_id: coupleId,
-      p_user_id: user.id,
-      p_since: sevenDaysAgo,
-    }),
-  ]);
+  const { data: kicksData } = await supabase
+    .from("baby_events")
+    .select("id, occurred_at")
+    .eq("kind", "kick")
+    .gte("occurred_at", since)
+    .order("occurred_at", { ascending: false });
 
-  const initialKicks = (kicksRes.data ?? []).map((k) => ({
+  const initialKicks = (kicksData ?? []).map((k) => ({
     id: k.id,
     occurred_at: k.occurred_at,
   }));
-  const sessions: KickSession[] = sessionsRes.data ?? [];
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 md:px-8 md:py-12">
@@ -61,7 +55,19 @@ export default async function KicksPage() {
           canLog={role === "mom"}
           initialKicks={initialKicks}
         />
-        <HistoryStrip sessions={sessions} />
+        <TwoHourBins kicks={initialKicks} coupleId={coupleId} />
+        <Link
+          href="/kicks/history"
+          className="flex items-center justify-between rounded-2xl border border-border/60 bg-card/40 px-4 py-3 transition-all hover:bg-card hover:border-border/80 hover:shadow-sm"
+        >
+          <div>
+            <p className="text-sm font-medium">Last 7 days</p>
+            <p className="text-[11px] text-muted-foreground">
+              Daily totals, sessions, and time-to-10
+            </p>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
+        </Link>
       </div>
     </div>
   );
