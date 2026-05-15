@@ -7,6 +7,7 @@ import {
   Moon,
   BookOpen,
   Sun,
+  Footprints,
   type LucideIcon,
 } from "lucide-react";
 
@@ -20,7 +21,8 @@ export type ToolKey =
   | "nursery"
   | "logger"
   | "notes"
-  | "today";
+  | "today"
+  | "kicks";
 
 export type NavItem = {
   href: string;
@@ -84,6 +86,14 @@ export const navItems: NavItem[] = [
     tagline: "Get the nest ready.",
     icon: Baby,
     key: "nursery",
+    phases: ["prenatal"],
+  },
+  {
+    href: "/kicks",
+    label: "Kicks",
+    tagline: "Count kicks. Aim for 10 in 2h.",
+    icon: Footprints,
+    key: "kicks",
     phases: ["prenatal"],
   },
   {
@@ -203,5 +213,14 @@ export const toolColors: Record<
     ring: "ring-today",
     gradientFrom: "from-today-soft",
     gradientVia: "via-today-soft/60",
+  },
+  kicks: {
+    bg: "bg-kicks",
+    bgSoft: "bg-kicks-soft",
+    text: "text-kicks",
+    border: "border-kicks",
+    ring: "ring-kicks",
+    gradientFrom: "from-kicks-soft",
+    gradientVia: "via-kicks-soft/60",
   },
 };

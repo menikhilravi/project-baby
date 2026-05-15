@@ -6,6 +6,7 @@ import { QuickLogPanel } from "@/app/log/_components/quick-log-panel";
 import { LastEventsRow, type LastEventCell } from "./_components/last-events-row";
 import { LowSuppliesCard, type LowSupply } from "./_components/low-supplies-card";
 import { PinnedNotesCard, type PinnedNote } from "./_components/pinned-notes-card";
+import { KicksTodayCard } from "./_components/kicks-today-card";
 
 export default async function TodayPage() {
   const supabase = await createClient();
@@ -16,13 +17,24 @@ export default async function TodayPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("couple_id")
+    .select("couple_id, role")
     .eq("id", user.id)
     .single();
   const coupleId = profile?.couple_id ?? null;
+  const role = profile?.role ?? null;
 
-  const [openSleepRes, lastFeedRes, lastDiaperRes, lastSleepRes, suppliesRes, notesRes] =
-    await Promise.all([
+  // eslint-disable-next-line react-hooks/purity -- server component reading wall-clock time
+  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60_000).toISOString();
+
+  const [
+    openSleepRes,
+    lastFeedRes,
+    lastDiaperRes,
+    lastSleepRes,
+    suppliesRes,
+    notesRes,
+    kicksRes,
+  ] = await Promise.all([
       supabase
         .from("baby_events")
         .select("id, occurred_at")
@@ -64,7 +76,14 @@ export default async function TodayPage() {
         .eq("pinned", true)
         .order("updated_at", { ascending: false })
         .limit(6),
+      supabase
+        .from("baby_events")
+        .select("id", { count: "exact", head: true })
+        .eq("kind", "kick")
+        .gte("occurred_at", twoHoursAgo),
     ]);
+
+  const kickCount = kicksRes.count ?? 0;
 
   // Build a roleMap for "you" vs partner labelling.
   const membersQuery = coupleId
@@ -147,6 +166,8 @@ export default async function TodayPage() {
         />
 
         <LastEventsRow cells={last} />
+
+        <KicksTodayCard count={kickCount} canLog={role === "mom"} />
 
         {supplies.length > 0 ? <LowSuppliesCard supplies={supplies} /> : null}
 

@@ -281,7 +281,7 @@ export interface Database {
           id: number;
           user_id: string;
           couple_id: string | null;
-          kind: "feed" | "diaper" | "sleep";
+          kind: "feed" | "diaper" | "sleep" | "kick";
           occurred_at: string;
           ended_at: string | null;
           notes: string | null;
@@ -291,14 +291,14 @@ export interface Database {
           id?: number;
           user_id: string;
           couple_id?: string | null;
-          kind: "feed" | "diaper" | "sleep";
+          kind: "feed" | "diaper" | "sleep" | "kick";
           occurred_at?: string;
           ended_at?: string | null;
           notes?: string | null;
           created_at?: string;
         };
         Update: {
-          kind?: "feed" | "diaper" | "sleep";
+          kind?: "feed" | "diaper" | "sleep" | "kick";
           occurred_at?: string;
           ended_at?: string | null;
           notes?: string | null;
@@ -333,7 +333,21 @@ export interface Database {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      kick_sessions_for_couple: {
+        Args: {
+          p_couple_id: string | null;
+          p_user_id: string;
+          p_since: string;
+        };
+        Returns: {
+          session_start: string;
+          session_end: string;
+          kick_count: number;
+          reached_ten_at: string | null;
+        }[];
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

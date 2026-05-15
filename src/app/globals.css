@@ -55,6 +55,8 @@
   --color-notes-soft: var(--notes-soft);
   --color-today: var(--today);
   --color-today-soft: var(--today-soft);
+  --color-kicks: var(--kicks);
+  --color-kicks-soft: var(--kicks-soft);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -114,6 +116,8 @@
   --notes-soft: oklch(0.95 0.035 110);
   --today: oklch(0.62 0.14 50);
   --today-soft: oklch(0.96 0.05 50);
+  --kicks: oklch(0.62 0.15 335);
+  --kicks-soft: oklch(0.96 0.04 335);
 }
 
 .dark {
@@ -165,6 +169,8 @@
   --notes-soft: oklch(0.22 0.06 110);
   --today: oklch(0.80 0.14 50);
   --today-soft: oklch(0.24 0.07 50);
+  --kicks: oklch(0.80 0.15 335);
+  --kicks-soft: oklch(0.24 0.08 335);
 }
 
 @layer base {
