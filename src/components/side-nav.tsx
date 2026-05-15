@@ -22,7 +22,7 @@ export function SideNav({
   return (
     <aside className="hidden md:flex fixed inset-y-0 left-0 w-60 flex-col border-r border-border/50 bg-sidebar z-30">
       <Link
-        href="/gear"
+        href="/"
         className="flex items-center gap-3 px-5 py-5 border-b border-border/50 group"
       >
         <span className="grid place-items-center h-8 w-8 rounded-xl bg-gradient-to-br from-names-soft via-rewards-soft to-hospital-soft ring-1 ring-border/40 transition-all group-hover:scale-105 group-hover:ring-border/60">
