@@ -11,7 +11,12 @@ const SWIPE_THRESHOLD = 80;
 export function NameDeck({ pool: initialPool }: { pool: NameEntry[] }) {
   const [pool, setPool] = useState(initialPool);
   const [index, setIndex] = useState(0);
-  const [isPending, startTransition] = useTransition();
+  // `recordSwipe` is a quick DB write — fine inside a transition.
+  // `generateMoreNames` is a long Gemini call — must NOT be inside a transition,
+  // otherwise pending transitions block App Router <Link> navigations and the
+  // user can't switch pages until Gemini responds.
+  const [, startTransition] = useTransition();
+  const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [hint, setHint] = useState("");
   const [showHintInput, setShowHintInput] = useState(false);
@@ -40,7 +45,7 @@ export function NameDeck({ pool: initialPool }: { pool: NameEntry[] }) {
   const exhausted = remaining <= 0;
   const current = pool[index];
   const upcoming = pool[index + 1];
-  const generating = isPending;
+  const generating = isGenerating;
 
   useEffect(() => {
     if (cardRef.current) cardRef.current.style.cursor = "grab";
