@@ -51,14 +51,18 @@ export function NameDeck({ pool: initialPool }: { pool: NameEntry[] }) {
     if (cardRef.current) cardRef.current.style.cursor = "grab";
   }, []);
 
-  // Manual generate (with optional hint)
+  // Manual generate (with optional hint). NOT wrapped in startTransition —
+  // App Router <Link> navigations are themselves transitions, and React
+  // serializes pending transitions, so a long Gemini call would block the
+  // user from switching pages.
   const handleGenerate = useCallback((hintText?: string) => {
     if (isGeneratingRef.current) return;
     isGeneratingRef.current = true;
+    setIsGenerating(true);
     setGenerateError(null);
     setShowHintInput(false);
 
-    startTransition(async () => {
+    (async () => {
       try {
         const result = await generateMoreNames(hintText);
         if ("error" in result) {
@@ -72,16 +76,19 @@ export function NameDeck({ pool: initialPool }: { pool: NameEntry[] }) {
         );
       } finally {
         isGeneratingRef.current = false;
+        setIsGenerating(false);
       }
-    });
-  }, [startTransition]);
+    })();
+  }, []);
 
-  // Auto-generate whenever deck is exhausted (covers initial empty pool too)
+  // Auto-generate whenever deck is exhausted (covers initial empty pool too).
+  // Same reason as above — no startTransition wrapper here.
   useEffect(() => {
     if (exhausted && !isGeneratingRef.current) {
       isGeneratingRef.current = true;
+      setIsGenerating(true);
       setGenerateError(null);
-      startTransition(async () => {
+      (async () => {
         try {
           const result = await generateMoreNames();
           if ("error" in result) {
@@ -95,10 +102,10 @@ export function NameDeck({ pool: initialPool }: { pool: NameEntry[] }) {
           );
         } finally {
           isGeneratingRef.current = false;
+          setIsGenerating(false);
         }
-      });
+      })();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exhausted]);
 
   const applyDrag = useCallback((dx: number) => {
