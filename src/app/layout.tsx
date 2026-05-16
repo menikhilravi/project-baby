@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Fraunces } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { SideNav } from "@/components/side-nav";
 import { BottomNav } from "@/components/bottom-nav";
@@ -100,6 +101,7 @@ export default async function RootLayout({
         {authed ? (
           <BottomNav phase={phase} hiddenSections={hiddenSections} />
         ) : null}
+        <Analytics />
       </body>
     </html>
   );
