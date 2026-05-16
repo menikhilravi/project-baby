@@ -313,6 +313,7 @@ export interface Database {
           title: string;
           body: string;
           pinned: boolean;
+          embedding: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -323,11 +324,13 @@ export interface Database {
           title: string;
           body?: string;
           pinned?: boolean;
+          embedding?: string | null;
         };
         Update: {
           title?: string;
           body?: string;
           pinned?: boolean;
+          embedding?: string | null;
         };
         Relationships: [];
       };
@@ -345,6 +348,24 @@ export interface Database {
           session_end: string;
           kick_count: number;
           reached_ten_at: string | null;
+        }[];
+      };
+      search_notes: {
+        Args: {
+          p_query: string;
+          p_query_embedding: string | null;
+          p_couple_id: string | null;
+          p_user_id: string;
+          p_limit?: number;
+          p_rrf_k?: number;
+        };
+        Returns: {
+          id: number;
+          title: string;
+          body: string;
+          pinned: boolean;
+          updated_at: string;
+          score: number;
         }[];
       };
     };

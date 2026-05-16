@@ -1,12 +1,21 @@
-import { BookOpen, Pin, Plus, Search } from "lucide-react";
+import { BookOpen, Pin, Plus, Search, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageHero } from "@/components/page-hero";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/server";
+import { tryEmbed } from "@/lib/embed";
 import { cn } from "@/lib/utils";
 
 type SearchParams = Promise<{ q?: string }>;
+
+type NoteListItem = {
+  id: number;
+  title: string;
+  body: string;
+  pinned: boolean;
+  updated_at: string;
+};
 
 export default async function NotesPage({
   searchParams,
@@ -20,18 +29,46 @@ export default async function NotesPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  let query = supabase
-    .from("notes")
-    .select("id, title, body, pinned, updated_at")
-    .order("pinned", { ascending: false })
-    .order("updated_at", { ascending: false });
+  const trimmed = q?.trim() ?? "";
+  let notes: NoteListItem[] = [];
+  let isSmartSearch = false;
 
-  if (q && q.trim()) {
-    const pattern = `%${q.trim().replace(/[%_]/g, "\\$&")}%`;
-    query = query.or(`title.ilike.${pattern},body.ilike.${pattern}`);
+  if (trimmed) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("couple_id")
+      .eq("id", user.id)
+      .single();
+    const coupleId = profile?.couple_id ?? null;
+
+    // Embed the query (RETRIEVAL_QUERY task type), then call the hybrid
+    // search RPC. If embedding fails (Gemini down / key missing), the RPC
+    // still does trigram-only ranking — we just lose the semantic signal.
+    const queryEmbedding = await tryEmbed(trimmed, "RETRIEVAL_QUERY");
+    isSmartSearch = queryEmbedding !== null;
+
+    const { data: results } = await supabase.rpc("search_notes", {
+      p_query: trimmed,
+      p_query_embedding: queryEmbedding,
+      p_couple_id: coupleId,
+      p_user_id: user.id,
+      p_limit: 30,
+    });
+    notes = (results ?? []).map((r) => ({
+      id: r.id,
+      title: r.title,
+      body: r.body,
+      pinned: r.pinned,
+      updated_at: r.updated_at,
+    }));
+  } else {
+    const { data } = await supabase
+      .from("notes")
+      .select("id, title, body, pinned, updated_at")
+      .order("pinned", { ascending: false })
+      .order("updated_at", { ascending: false });
+    notes = data ?? [];
   }
-
-  const { data: notes } = await query;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 md:px-8 md:py-12">
@@ -50,7 +87,7 @@ export default async function NotesPage({
             type="search"
             name="q"
             defaultValue={q ?? ""}
-            placeholder="Search notes…"
+            placeholder="Ask anything — by meaning, not exact words"
             className="pl-9 rounded-2xl"
           />
         </form>
@@ -63,12 +100,19 @@ export default async function NotesPage({
         </Link>
       </div>
 
-      {!notes || notes.length === 0 ? (
+      {trimmed && isSmartSearch ? (
+        <p className="mb-3 -mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <Sparkles className="h-3 w-3 text-notes" />
+          Smart search · ranked by meaning + keywords
+        </p>
+      ) : null}
+
+      {notes.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border/60 px-6 py-12 text-center">
           <p className="text-sm text-muted-foreground">
-            {q ? "No notes match that search." : "No notes yet."}
+            {trimmed ? "No notes match that search." : "No notes yet."}
           </p>
-          {!q ? (
+          {!trimmed ? (
             <Link
               href="/notes/new"
               className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-notes hover:underline"
