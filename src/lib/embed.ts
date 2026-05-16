@@ -5,7 +5,11 @@ import "server-only";
  * Used by notes hybrid search — server-only because it needs GEMINI_API_KEY.
  */
 
-const EMBED_MODEL = "text-embedding-004";
+// gemini-embedding-001 defaults to 3072 dims; we pin to 768 via
+// outputDimensionality so the pgvector column stays compact and the
+// ivfflat index works (limit is 2000 dims).
+const EMBED_MODEL = "gemini-embedding-001";
+const EMBED_DIMS = 768;
 const EMBED_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${EMBED_MODEL}:embedContent`;
 
 export type EmbedTaskType = "RETRIEVAL_DOCUMENT" | "RETRIEVAL_QUERY";
@@ -36,6 +40,7 @@ export async function embedText(
         model: `models/${EMBED_MODEL}`,
         content: { parts: [{ text: input }] },
         taskType,
+        outputDimensionality: EMBED_DIMS,
       }),
       signal: ctrl.signal,
     });

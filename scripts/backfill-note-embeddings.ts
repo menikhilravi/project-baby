@@ -14,7 +14,10 @@
 
 import { createClient } from "@supabase/supabase-js";
 
-const EMBED_MODEL = "text-embedding-004";
+// Must match src/lib/embed.ts exactly (model + dims) so vectors are
+// comparable to the ones written by createNote / updateNote.
+const EMBED_MODEL = "gemini-embedding-001";
+const EMBED_DIMS = 768;
 const EMBED_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${EMBED_MODEL}:embedContent`;
 
 async function embed(text: string): Promise<number[]> {
@@ -27,6 +30,7 @@ async function embed(text: string): Promise<number[]> {
       model: `models/${EMBED_MODEL}`,
       content: { parts: [{ text: text.trim().slice(0, 8000) }] },
       taskType: "RETRIEVAL_DOCUMENT",
+      outputDimensionality: EMBED_DIMS,
     }),
   });
   if (!res.ok) {
