@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -12,15 +14,78 @@ export type KickSession = {
   reached_ten_at: string | null;
 };
 
+const TWO_HOURS_MS = 2 * 60 * 60_000;
+const GOAL = 10;
+
+/**
+ * Derive kick-counting sessions from raw kicks, clinical-style:
+ *   - A session starts on the first kick after a >2h gap (or the very first kick).
+ *   - It ends when either (a) the 10th kick is logged → "hit 10", or
+ *     (b) 2 hours pass with no kick → timeout.
+ *   - The next kick after closure starts a new session.
+ *
+ * This matters because the previous SQL definition treated a contiguous
+ * afternoon of 30 kicks as ONE session = one "Hit 10" badge, even though
+ * the user actually counted to 10 three times.
+ */
+function deriveSessions(kicks: KickRow[]): KickSession[] {
+  if (kicks.length === 0) return [];
+  const asc = [...kicks].sort(
+    (a, b) =>
+      new Date(a.occurred_at).getTime() - new Date(b.occurred_at).getTime(),
+  );
+  const out: KickSession[] = [];
+  let current: { start: string; end: string; count: number; tenAt: string | null } | null = null;
+  for (const k of asc) {
+    if (!current) {
+      current = { start: k.occurred_at, end: k.occurred_at, count: 1, tenAt: null };
+      continue;
+    }
+    const gap = new Date(k.occurred_at).getTime() - new Date(current.end).getTime();
+    if (gap > TWO_HOURS_MS) {
+      out.push({
+        session_start: current.start,
+        session_end: current.end,
+        kick_count: current.count,
+        reached_ten_at: current.tenAt,
+      });
+      current = { start: k.occurred_at, end: k.occurred_at, count: 1, tenAt: null };
+      continue;
+    }
+    current.count += 1;
+    current.end = k.occurred_at;
+    if (current.count === GOAL) {
+      current.tenAt = k.occurred_at;
+      out.push({
+        session_start: current.start,
+        session_end: current.end,
+        kick_count: current.count,
+        reached_ten_at: current.tenAt,
+      });
+      current = null;
+    }
+  }
+  if (current) {
+    out.push({
+      session_start: current.start,
+      session_end: current.end,
+      kick_count: current.count,
+      reached_ten_at: current.tenAt,
+    });
+  }
+  return out.reverse(); // newest first for display
+}
+
 const BIN_START_HOURS = [6, 8, 10, 12, 14, 16, 18, 20] as const;
 const BIN_END_HOURS = [8, 10, 12, 14, 16, 18, 20, 22] as const;
 
 export function Dashboard({
   kicks,
-  sessions,
+  weekOffset,
 }: {
   kicks: KickRow[];
-  sessions: KickSession[];
+  /** 0 = current week (ending today), 1 = previous week, etc. */
+  weekOffset: number;
 }) {
   // Defer "now" to client render so day-bucketing uses the user's local
   // timezone (server is UTC on Vercel; was the source of the GMT bug).
@@ -29,20 +94,36 @@ export function Dashboard({
   );
   if (!now) return <DashboardSkeleton />;
 
-  return <DashboardContent now={now} kicks={kicks} sessions={sessions} />;
+  return <DashboardContent now={now} kicks={kicks} weekOffset={weekOffset} />;
 }
 
 function DashboardContent({
   now,
   kicks,
-  sessions,
+  weekOffset,
 }: {
   now: Date;
   kicks: KickRow[];
-  sessions: KickSession[];
+  weekOffset: number;
 }) {
-  // Build 7 days in local time, oldest → newest
-  const days = useMemo(() => buildLocalDays(now, 7), [now]);
+  // Build the 7 days for the selected week in LOCAL time.
+  // weekOffset=0 → days ending today; weekOffset=N → shifted N*7 days earlier.
+  const days = useMemo(
+    () => buildLocalDays(now, 7, weekOffset),
+    [now, weekOffset],
+  );
+  const windowStart = days[0].start;
+  const windowEnd = days[days.length - 1].end;
+
+  // Filter raw kicks down to this week's window, then derive sessions.
+  const windowKicks = useMemo(() => {
+    return kicks.filter((k) => {
+      const t = new Date(k.occurred_at).getTime();
+      return t >= windowStart.getTime() && t < windowEnd.getTime();
+    });
+  }, [kicks, windowStart, windowEnd]);
+
+  const sessions = useMemo(() => deriveSessions(windowKicks), [windowKicks]);
 
   // Per-day kick counts and per-window-per-day matrix
   const { perDay, matrix } = useMemo(() => {
@@ -92,10 +173,16 @@ function DashboardContent({
 
   return (
     <div className="space-y-8">
+      <WeekNav days={days} weekOffset={weekOffset} />
+
       {/* Top stats */}
       <div className="grid grid-cols-4 gap-2">
         <Stat label="Kicks" value={totalKicks} />
-        <Stat label="Today" value={todayCount} delta={todayVsAvg} />
+        <Stat
+          label={weekOffset === 0 ? "Today" : "Latest"}
+          value={todayCount}
+          delta={todayVsAvg}
+        />
         <Stat label="Hit 10" value={sessionsReachingTen} />
         <Stat
           label="Best to 10"
@@ -103,11 +190,70 @@ function DashboardContent({
         />
       </div>
 
-      <PerDayChart days={days} perDay={perDay} avg={avgPerActiveDay} />
+      <PerDayChart
+        days={days}
+        perDay={perDay}
+        avg={avgPerActiveDay}
+        weekOffset={weekOffset}
+      />
 
-      <WindowHeatmap days={days} matrix={matrix} />
+      <WindowHeatmap days={days} matrix={matrix} weekOffset={weekOffset} />
 
       <TopSessions sessions={sessions} />
+    </div>
+  );
+}
+
+function WeekNav({
+  days,
+  weekOffset,
+}: {
+  days: LocalDay[];
+  weekOffset: number;
+}) {
+  const first = days[0].start;
+  const last = days[days.length - 1].start; // last *day*'s start, not end
+  const sameMonth = first.getMonth() === last.getMonth();
+  const rangeLabel = sameMonth
+    ? `${first.toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${last.toLocaleDateString(undefined, { day: "numeric" })}`
+    : `${first.toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${last.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+  const subtitle =
+    weekOffset === 0
+      ? "This week"
+      : weekOffset === 1
+        ? "Last week"
+        : `${weekOffset} weeks ago`;
+
+  return (
+    <div className="flex items-center gap-2">
+      <Link
+        href={`?offset=${weekOffset + 1}`}
+        scroll={false}
+        className="grid place-items-center h-9 w-9 rounded-xl border border-border/60 bg-card/40 text-muted-foreground transition-all hover:bg-card hover:text-foreground"
+        aria-label="Previous week"
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </Link>
+      <div className="flex-1 text-center">
+        <p className="text-sm font-semibold tracking-tight tabular-nums">
+          {rangeLabel}
+        </p>
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+          {subtitle}
+        </p>
+      </div>
+      {weekOffset > 0 ? (
+        <Link
+          href={`?offset=${weekOffset - 1}`}
+          scroll={false}
+          className="grid place-items-center h-9 w-9 rounded-xl border border-border/60 bg-card/40 text-muted-foreground transition-all hover:bg-card hover:text-foreground"
+          aria-label="Next week"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Link>
+      ) : (
+        <div className="h-9 w-9" aria-hidden />
+      )}
     </div>
   );
 }
@@ -148,10 +294,12 @@ function PerDayChart({
   days,
   perDay,
   avg,
+  weekOffset,
 }: {
   days: LocalDay[];
   perDay: number[];
   avg: number;
+  weekOffset: number;
 }) {
   const max = Math.max(1, ...perDay);
   return (
@@ -166,8 +314,8 @@ function PerDayChart({
         {days.map((d, i) => {
           const count = perDay[i];
           const pct = (count / max) * 100;
-          const isToday = i === days.length - 1;
-          const isYesterday = i === days.length - 2;
+          const isToday = weekOffset === 0 && i === days.length - 1;
+          const isYesterday = weekOffset === 0 && i === days.length - 2;
           return (
             <li
               key={d.key}
@@ -192,6 +340,8 @@ function PerDayChart({
                     ? "Yesterday"
                     : d.start.toLocaleDateString(undefined, {
                         weekday: "short",
+                        month: "short",
+                        day: "numeric",
                       })}
               </span>
               <div className="relative h-3 rounded-full bg-border/40 overflow-hidden">
@@ -230,9 +380,11 @@ function PerDayChart({
 function WindowHeatmap({
   days,
   matrix,
+  weekOffset,
 }: {
   days: LocalDay[];
   matrix: number[][];
+  weekOffset: number;
 }) {
   // Per-window 7-day average + max (for color scaling)
   const windowAvg = matrix.map((row) => {
@@ -251,21 +403,24 @@ function WindowHeatmap({
           <thead>
             <tr className="text-muted-foreground">
               <th className="text-left font-medium pr-2 pb-2">Window</th>
-              {days.map((d, i) => (
-                <th
-                  key={d.key}
-                  className={cn(
-                    "px-1 pb-2 font-medium text-center",
-                    i === days.length - 1 && "text-kicks",
-                  )}
-                >
-                  {i === days.length - 1
-                    ? "Tdy"
-                    : d.start.toLocaleDateString(undefined, {
-                        weekday: "narrow",
-                      })}
-                </th>
-              ))}
+              {days.map((d, i) => {
+                const isToday = weekOffset === 0 && i === days.length - 1;
+                return (
+                  <th
+                    key={d.key}
+                    className={cn(
+                      "px-1 pb-2 font-medium text-center",
+                      isToday && "text-kicks",
+                    )}
+                  >
+                    {isToday
+                      ? "Tdy"
+                      : d.start.toLocaleDateString(undefined, {
+                          weekday: "narrow",
+                        })}
+                  </th>
+                );
+              })}
               <th className="text-right font-medium pl-2 pb-2">Avg</th>
             </tr>
           </thead>
@@ -431,13 +586,20 @@ function DashboardSkeleton() {
 
 type LocalDay = { key: string; start: Date; end: Date };
 
-function buildLocalDays(now: Date, count: number): LocalDay[] {
+function buildLocalDays(
+  now: Date,
+  count: number,
+  weekOffset = 0,
+): LocalDay[] {
   const days: LocalDay[] = [];
-  const todayStart = new Date(now);
-  todayStart.setHours(0, 0, 0, 0);
+  const anchor = new Date(now);
+  anchor.setHours(0, 0, 0, 0);
+  // Shift the anchor back by weekOffset * count days. The window is still
+  // `count` days ending on the anchor day (inclusive).
+  anchor.setDate(anchor.getDate() - weekOffset * count);
   for (let i = count - 1; i >= 0; i--) {
-    const start = new Date(todayStart);
-    start.setDate(todayStart.getDate() - i);
+    const start = new Date(anchor);
+    start.setDate(anchor.getDate() - i);
     const end = new Date(start);
     end.setDate(start.getDate() + 1);
     days.push({
