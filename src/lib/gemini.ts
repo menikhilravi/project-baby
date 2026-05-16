@@ -8,7 +8,7 @@ import "server-only";
  * for a two-person app).
  */
 
-const MODEL = "gemini-3-flash-preview";
+const MODEL = "gemini-3-pro-preview";
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 export type GeneratedNameEntry = {
@@ -43,24 +43,15 @@ export async function generateTeluguNames(opts: {
 
   const prompt = buildPrompt({ count, excluded, liked, passed, userHint });
 
+  // Google Search grounding is incompatible with responseSchema, so we
+  // request JSON in the prompt and parse it from text (stripping any code
+  // fences the model adds).
   const body = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
+    tools: [{ google_search: {} }],
     generationConfig: {
-      temperature: 0.95,
+      temperature: 0.9,
       topP: 0.9,
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: "ARRAY",
-        items: {
-          type: "OBJECT",
-          properties: {
-            name: { type: "STRING" },
-            origin: { type: "STRING" },
-            meaning: { type: "STRING" },
-          },
-          required: ["name", "origin", "meaning"],
-        },
-      },
     },
   };
 
@@ -98,7 +89,7 @@ export async function generateTeluguNames(opts: {
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(text);
+    parsed = JSON.parse(extractJsonArray(text));
   } catch {
     throw new Error("Gemini response was not valid JSON");
   }
@@ -126,6 +117,15 @@ export async function generateTeluguNames(opts: {
 
 function normalize(s: string) {
   return s.trim().toLowerCase();
+}
+
+// Grounded responses sometimes wrap JSON in ```json fences or include a
+// short preamble. Pull out the first top-level JSON array.
+function extractJsonArray(s: string): string {
+  const start = s.indexOf("[");
+  const end = s.lastIndexOf("]");
+  if (start === -1 || end === -1 || end < start) return s;
+  return s.slice(start, end + 1);
 }
 
 function buildPrompt({
