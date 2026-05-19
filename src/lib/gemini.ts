@@ -8,7 +8,9 @@ import "server-only";
  * for a two-person app).
  */
 
-const MODEL = "gemini-3-flash-preview";
+// Stable GA model — preview variants (gemini-3-*-preview) have very tight
+// free-tier quotas that exhaust after a handful of requests.
+const MODEL = "gemini-2.5-flash";
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 export type GeneratedNameEntry = {
@@ -74,6 +76,11 @@ export async function generateTeluguNames(opts: {
   }
 
   if (!res.ok) {
+    if (res.status === 429) {
+      throw new Error(
+        "Gemini free-tier quota hit. Wait a minute and try again, or check ai.dev/rate-limit.",
+      );
+    }
     const text = await res.text().catch(() => "");
     throw new Error(`Gemini HTTP ${res.status}: ${text.slice(0, 300)}`);
   }
@@ -91,7 +98,9 @@ export async function generateTeluguNames(opts: {
   try {
     parsed = JSON.parse(extractJsonArray(text));
   } catch {
-    throw new Error("Gemini response was not valid JSON");
+    throw new Error(
+      `Gemini response was not valid JSON. Raw: ${text.slice(0, 300)}`,
+    );
   }
 
   if (!Array.isArray(parsed)) {
