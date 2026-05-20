@@ -26,8 +26,10 @@ export async function scrapePrice(url: string): Promise<ScrapeResult> {
 
   let html: string;
   try {
+    // Keep this comfortably below the serverless function limit (Vercel Hobby
+     // is 10s) so revalidate + return can complete after the fetch resolves.
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 10_000);
+    const timer = setTimeout(() => ctrl.abort(), 6_000);
     const res = await fetch(url, {
       headers: {
         "User-Agent": UA,

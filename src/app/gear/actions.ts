@@ -543,7 +543,18 @@ async function createWatcherAndScrape(itemId: string, url: string) {
     .single();
   if (insErr || !w) throw new Error(insErr?.message ?? "Failed to add watcher");
 
-  const result = await scrapePrice(url);
+  // Scrape on a best-effort basis. We never want a scraper hiccup to fail
+  // the whole action — the watcher row is already saved and the user can
+  // always set the price manually.
+  let result: Awaited<ReturnType<typeof scrapePrice>>;
+  try {
+    result = await scrapePrice(url);
+  } catch (e) {
+    result = {
+      ok: false,
+      error: e instanceof Error ? e.message : "Scrape threw unexpectedly",
+    };
+  }
   const now = new Date().toISOString();
   if (result.ok) {
     await supabase
