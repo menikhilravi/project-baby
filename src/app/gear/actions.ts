@@ -54,20 +54,48 @@ export async function addGearItem(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   if (!name) throw new Error("Name is required");
 
+  const kindInput = String(formData.get("kind") ?? "registry");
+  const kind: "registry" | "shortlist" =
+    kindInput === "shortlist" ? "shortlist" : "registry";
+
   const emoji = String(formData.get("emoji") ?? "").trim() || "🛒";
-  const target_price = asPositiveNumber(formData.get("target_price"));
   const url = String(formData.get("url") ?? "").trim();
-  if (!isValidUrl(url)) throw new Error("Enter a valid product URL");
+
+  // Registry items need a target price and a starting URL. Shortlist items
+  // are just a parent for candidate URLs added later — both are optional.
+  let target_price: number | null = null;
+  if (kind === "registry") {
+    target_price = asPositiveNumber(formData.get("target_price"));
+    if (!isValidUrl(url)) throw new Error("Enter a valid product URL");
+  } else if (url && !isValidUrl(url)) {
+    throw new Error("Enter a valid product URL");
+  }
+
+  const nurseryIdRaw = formData.get("nursery_item_id");
+  const nursery_item_id =
+    nurseryIdRaw !== null && String(nurseryIdRaw).trim() !== ""
+      ? parseInt(String(nurseryIdRaw), 10)
+      : null;
 
   const coupleId = await getUserCoupleId(supabase, user.id);
   const { data: item, error: itemErr } = await supabase
     .from("gear_items")
-    .insert({ user_id: user.id, couple_id: coupleId, name, emoji, target_price })
+    .insert({
+      user_id: user.id,
+      couple_id: coupleId,
+      name,
+      emoji,
+      target_price,
+      kind,
+      nursery_item_id,
+    })
     .select("id")
     .single();
   if (itemErr || !item) throw new Error(itemErr?.message ?? "Failed to add");
 
-  await createWatcherAndScrape(item.id, url);
+  if (url) {
+    await createWatcherAndScrape(item.id, url);
+  }
 
   revalidatePath("/gear");
 }

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { defaultNurseryChecklist, type NurseryOwner } from "@/data/default-nursery-checklist";
 
@@ -98,4 +99,48 @@ export async function removeItem(id: number) {
     .eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/nursery");
+}
+
+/**
+ * Create (or reuse) a shortlist gear item for a nursery row, then jump to
+ * the gear page so the user can start adding candidate URLs. Idempotent —
+ * if a shortlist already exists for this nursery item, redirects to it
+ * instead of creating a duplicate.
+ */
+export async function createShortlistFromNursery(formData: FormData) {
+  const { supabase, user } = await requireUser();
+
+  const nurseryId = parseInt(String(formData.get("nursery_item_id") ?? ""), 10);
+  if (!Number.isFinite(nurseryId)) throw new Error("Missing nursery_item_id");
+
+  // Auth via RLS: select returns the row only if the user can see it.
+  const { data: nurseryRow } = await supabase
+    .from("nursery_checklist")
+    .select("id, item")
+    .eq("id", nurseryId)
+    .maybeSingle();
+  if (!nurseryRow) throw new Error("Nursery item not found");
+
+  const { data: existing } = await supabase
+    .from("gear_items")
+    .select("id")
+    .eq("nursery_item_id", nurseryId)
+    .maybeSingle();
+
+  if (!existing) {
+    const coupleId = await getUserCoupleId(supabase, user.id);
+    const { error } = await supabase.from("gear_items").insert({
+      user_id: user.id,
+      couple_id: coupleId,
+      name: nurseryRow.item,
+      kind: "shortlist",
+      nursery_item_id: nurseryId,
+      target_price: null,
+    });
+    if (error) throw new Error(error.message);
+  }
+
+  revalidatePath("/gear");
+  revalidatePath("/nursery");
+  redirect("/gear");
 }

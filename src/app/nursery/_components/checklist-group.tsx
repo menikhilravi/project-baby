@@ -1,14 +1,19 @@
 "use client";
 
 import { useOptimistic, useState, useTransition, useRef } from "react";
-import { Plus, Check, Trash2 } from "lucide-react";
+import { Plus, Check, Trash2, ShoppingBag } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { NurseryOwner } from "@/data/default-nursery-checklist";
-import { toggleItem, addCustomItem, removeItem } from "../actions";
+import {
+  toggleItem,
+  addCustomItem,
+  removeItem,
+  createShortlistFromNursery,
+} from "../actions";
 
 export type ChecklistRow = {
   id: number;
@@ -132,6 +137,21 @@ export function ChecklistGroup({
             </Label>
             {row.checked ? (
               <Check className="h-4 w-4 text-nursery mr-1" />
+            ) : null}
+            {row.id > 0 ? (
+              <form action={createShortlistFromNursery}>
+                <input type="hidden" name="nursery_item_id" value={row.id} />
+                <Button
+                  type="submit"
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 rounded-lg text-muted-foreground/50 hover:text-gear hover:bg-gear-soft/40"
+                  aria-label={`Shop options for ${row.item}`}
+                  title="Shop options"
+                >
+                  <ShoppingBag className="h-3.5 w-3.5" />
+                </Button>
+              </form>
             ) : null}
             <Button
               type="button"

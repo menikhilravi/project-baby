@@ -64,9 +64,10 @@ export interface Database {
           target_price: number | null;
           last_target_hit_at: string | null;
           is_target_hit_acknowledged: boolean;
-          kind: "registry" | "supplies";
+          kind: "registry" | "supplies" | "shortlist";
           quantity: number;
           low_threshold: number;
+          nursery_item_id: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -79,9 +80,10 @@ export interface Database {
           target_price?: number | null;
           last_target_hit_at?: string | null;
           is_target_hit_acknowledged?: boolean;
-          kind?: "registry" | "supplies";
+          kind?: "registry" | "supplies" | "shortlist";
           quantity?: number;
           low_threshold?: number;
+          nursery_item_id?: number | null;
         };
         Update: {
           name?: string;
@@ -90,9 +92,10 @@ export interface Database {
           couple_id?: string | null;
           last_target_hit_at?: string | null;
           is_target_hit_acknowledged?: boolean;
-          kind?: "registry" | "supplies";
+          kind?: "registry" | "supplies" | "shortlist";
           quantity?: number;
           low_threshold?: number;
+          nursery_item_id?: number | null;
         };
         Relationships: [];
       };

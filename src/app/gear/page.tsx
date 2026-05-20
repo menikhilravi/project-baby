@@ -37,9 +37,10 @@ type ItemView = {
   target_price: number | null;
   last_target_hit_at: string | null;
   is_target_hit_acknowledged: boolean;
-  kind: "registry" | "supplies";
+  kind: "registry" | "supplies" | "shortlist";
   quantity: number;
   low_threshold: number;
+  nursery_item_id: number | null;
   created_at: string;
   updated_at: string;
   best_price: number | null;
@@ -74,7 +75,8 @@ export default async function GearPage() {
   ]);
 
   const allItems = (itemsRes.data ?? []) as unknown as ItemView[];
-  const items = allItems.filter((i) => i.kind !== "supplies");
+  const items = allItems.filter((i) => i.kind === "registry");
+  const shortlistItems = allItems.filter((i) => i.kind === "shortlist");
   const supplies: SupplyRow[] = allItems
     .filter((i) => i.kind === "supplies")
     .map((i) => ({
@@ -181,7 +183,7 @@ export default async function GearPage() {
       />
 
       <Tabs defaultValue="registry" className="mt-2">
-        <TabsList className="grid grid-cols-2 w-full bg-card/50 p-1.5 rounded-2xl !h-auto gap-1 mb-5">
+        <TabsList className="grid grid-cols-3 w-full bg-card/50 p-1.5 rounded-2xl !h-auto gap-1 mb-5">
           <TabsTrigger
             value="registry"
             className={cn(
@@ -192,6 +194,19 @@ export default async function GearPage() {
             <span className="text-sm font-medium">Registry</span>
             <span className="text-[10.5px] text-muted-foreground tabular-nums">
               {items.length} {items.length === 1 ? "item" : "items"}
+            </span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="shortlist"
+            className={cn(
+              "rounded-xl py-2.5 flex flex-col items-center gap-0.5 !h-auto transition-all",
+              "data-active:!bg-muted data-active:!text-foreground data-active:!shadow-sm",
+            )}
+          >
+            <span className="text-sm font-medium">Shortlist</span>
+            <span className="text-[10.5px] text-muted-foreground tabular-nums">
+              {shortlistItems.length}{" "}
+              {shortlistItems.length === 1 ? "item" : "items"}
             </span>
           </TabsTrigger>
           <TabsTrigger
@@ -388,10 +403,101 @@ export default async function GearPage() {
       )}
         </TabsContent>
 
+        <TabsContent value="shortlist">
+          <ShortlistTab
+            items={shortlistItems}
+            watchersByItem={watchersByItem}
+          />
+        </TabsContent>
+
         <TabsContent value="supplies">
           <SuppliesList rows={supplies} />
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function ShortlistTab({
+  items,
+  watchersByItem,
+}: {
+  items: ItemView[];
+  watchersByItem: Map<string, WatcherRow[]>;
+}) {
+  if (items.length === 0) {
+    return (
+      <Card className="border-dashed">
+        <CardContent className="py-12 flex flex-col items-center text-center gap-3">
+          <span className="text-4xl" aria-hidden>
+            🛍️
+          </span>
+          <h3 className="font-display text-xl font-semibold">
+            Nothing on the shortlist yet
+          </h3>
+          <p className="text-sm text-muted-foreground max-w-sm">
+            Use the shopping bag icon on any nursery checklist item to start
+            comparing products. Star the one you decide on.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <ul className="space-y-4">
+      {items.map((item) => {
+        const itemWatchers = watchersByItem.get(item.id) ?? [];
+        const chosen = itemWatchers.find((w) => w.is_chosen) ?? null;
+        return (
+          <li key={item.id}>
+            <Card className="overflow-hidden transition-all hover:shadow-md">
+              <CardContent className="p-5">
+                <div className="flex items-start gap-4">
+                  <span
+                    aria-hidden
+                    className="grid place-items-center h-12 w-12 rounded-2xl bg-gear-soft text-2xl shadow-inner shrink-0"
+                  >
+                    {item.emoji}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="font-medium leading-tight truncate">
+                          {item.name}
+                        </h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {itemWatchers.length}{" "}
+                          {itemWatchers.length === 1 ? "option" : "options"}
+                          {chosen ? ` · chose ${chosen.retailer}` : ""}
+                        </p>
+                      </div>
+                      <form action={removeGearItem}>
+                        <input type="hidden" name="id" value={item.id} />
+                        <Button
+                          type="submit"
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 rounded-md text-muted-foreground/60 hover:text-destructive"
+                          aria-label="Remove item"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </form>
+                    </div>
+
+                    <WatchersList
+                      itemId={item.id}
+                      watchers={itemWatchers}
+                      bestPrice={null}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
