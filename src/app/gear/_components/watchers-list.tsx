@@ -129,6 +129,7 @@ function WatcherRowView({
   isLast: boolean;
 }) {
   const [editing, setEditing] = useState(false);
+  const [showError, setShowError] = useState(false);
   const [draft, setDraft] = useState(
     watcher.current_price !== null ? String(watcher.current_price) : "",
   );
@@ -139,10 +140,9 @@ function WatcherRowView({
   return (
     <li
       className={cn(
-        "flex items-center gap-2 rounded-xl border bg-background/40 px-3 py-2 text-sm",
+        "flex flex-wrap items-center gap-2 rounded-xl border bg-background/40 px-3 py-2 text-sm",
         isBest && "border-hospital/30 bg-hospital-soft/30",
         chosen && "border-gear/50 bg-gear-soft/40 ring-1 ring-gear/30",
-        failed && !editing && "border-names/30 bg-names-soft/20",
       )}
     >
       <div className="flex flex-col -my-1">
@@ -210,6 +210,18 @@ function WatcherRowView({
               best
             </span>
           ) : null}
+          {failed && watcher.last_error ? (
+            <button
+              type="button"
+              onClick={() => setShowError((v) => !v)}
+              title={watcher.last_error}
+              aria-label="Show price-fetch error"
+              aria-expanded={showError}
+              className="inline-flex items-center justify-center h-4 w-4 rounded-full text-muted-foreground/60 hover:text-names hover:bg-names-soft/30 transition-colors"
+            >
+              <AlertTriangle className="h-3 w-3" />
+            </button>
+          ) : null}
           <a
             href={watcher.url}
             target="_blank"
@@ -222,14 +234,6 @@ function WatcherRowView({
         </div>
         <p className="text-[11px] text-muted-foreground mt-0.5">
           checked {relative(watcher.last_checked_at)}
-          {failed && watcher.last_error ? (
-            <span className="ml-1 inline-flex items-center gap-0.5 text-names">
-              <AlertTriangle className="h-3 w-3" />
-              {watcher.last_error.length > 40
-                ? watcher.last_error.slice(0, 40) + "…"
-                : watcher.last_error}
-            </span>
-          ) : null}
         </p>
       </div>
 
@@ -310,6 +314,12 @@ function WatcherRowView({
           </form>
         </>
       )}
+
+      {failed && watcher.last_error && showError ? (
+        <div className="basis-full text-[11px] text-muted-foreground bg-muted/40 rounded-md px-2.5 py-1.5">
+          {watcher.last_error}
+        </div>
+      ) : null}
     </li>
   );
 }
