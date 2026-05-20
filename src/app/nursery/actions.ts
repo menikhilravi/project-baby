@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { defaultNurseryChecklist, type NurseryOwner } from "@/data/default-nursery-checklist";
 
@@ -102,10 +101,10 @@ export async function removeItem(id: number) {
 }
 
 /**
- * Create (or reuse) a shortlist gear item for a nursery row, then jump to
- * the gear page so the user can start adding candidate URLs. Idempotent —
- * if a shortlist already exists for this nursery item, redirects to it
- * instead of creating a duplicate.
+ * Create (or reuse) a shortlist gear item for a nursery row. The shortlist
+ * UI is rendered inline on the nursery page, so this just ensures the
+ * gear_item exists and lets the page re-render with the new shortlist
+ * section visible. Idempotent.
  */
 export async function createShortlistFromNursery(formData: FormData) {
   const { supabase, user } = await requireUser();
@@ -140,7 +139,6 @@ export async function createShortlistFromNursery(formData: FormData) {
     if (error) throw new Error(error.message);
   }
 
-  revalidatePath("/gear");
   revalidatePath("/nursery");
-  redirect("/gear");
+  revalidatePath("/gear");
 }

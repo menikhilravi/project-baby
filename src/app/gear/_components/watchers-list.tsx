@@ -57,12 +57,41 @@ export function WatchersList({
   itemId,
   watchers,
   bestPrice,
+  embedded = false,
+  optionLabel = "retailer",
 }: {
   itemId: string;
   watchers: WatcherRow[];
   bestPrice: number | null;
+  /** When true, skip the collapsible header and always render the list. */
+  embedded?: boolean;
+  /** Singular noun used in the header ("retailer", "option", etc.). */
+  optionLabel?: string;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(embedded);
+
+  const list = (
+    <ul className={cn(embedded ? "space-y-1.5" : "mt-3 space-y-1.5")}>
+      {watchers.map((w, i) => (
+        <WatcherRowView
+          key={w.id}
+          watcher={w}
+          isBest={
+            bestPrice !== null &&
+            w.current_price !== null &&
+            Number(w.current_price) === Number(bestPrice)
+          }
+          isFirst={i === 0}
+          isLast={i === watchers.length - 1}
+        />
+      ))}
+      <li>
+        <AddWatcherForm itemId={itemId} optionLabel={optionLabel} />
+      </li>
+    </ul>
+  );
+
+  if (embedded) return list;
 
   return (
     <div className="mt-3 pt-3 border-t border-border/60">
@@ -72,7 +101,8 @@ export function WatchersList({
         className="w-full flex items-center justify-between text-[11px] uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
       >
         <span>
-          {watchers.length} {watchers.length === 1 ? "retailer" : "retailers"}
+          {watchers.length}{" "}
+          {watchers.length === 1 ? optionLabel : `${optionLabel}s`}
         </span>
         <ChevronDown
           className={cn(
@@ -82,26 +112,7 @@ export function WatchersList({
         />
       </button>
 
-      {open ? (
-        <ul className="mt-3 space-y-1.5">
-          {watchers.map((w, i) => (
-            <WatcherRowView
-              key={w.id}
-              watcher={w}
-              isBest={
-                bestPrice !== null &&
-                w.current_price !== null &&
-                Number(w.current_price) === Number(bestPrice)
-              }
-              isFirst={i === 0}
-              isLast={i === watchers.length - 1}
-            />
-          ))}
-          <li>
-            <AddWatcherForm itemId={itemId} />
-          </li>
-        </ul>
-      ) : null}
+      {open ? list : null}
     </div>
   );
 }
@@ -303,7 +314,13 @@ function WatcherRowView({
   );
 }
 
-function AddWatcherForm({ itemId }: { itemId: string }) {
+function AddWatcherForm({
+  itemId,
+  optionLabel,
+}: {
+  itemId: string;
+  optionLabel: string;
+}) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -316,7 +333,7 @@ function AddWatcherForm({ itemId }: { itemId: string }) {
         className="w-full flex items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-border/60 py-2 text-xs text-muted-foreground hover:text-foreground hover:border-gear/40 transition-colors"
       >
         <Plus className="h-3 w-3" />
-        Add another retailer
+        Add another {optionLabel}
       </button>
     );
   }

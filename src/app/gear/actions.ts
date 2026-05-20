@@ -5,6 +5,13 @@ import { createClient } from "@/lib/supabase/server";
 import { scrapePrice } from "@/lib/price-scraper";
 import { detectRetailer } from "@/lib/retailer";
 
+// Shortlist gear_items are surfaced inline on /nursery, so any watcher
+// change has to invalidate both pages.
+function revalidateGearAndNursery() {
+  revalidateGearAndNursery();
+  revalidatePath("/nursery");
+}
+
 async function requireUser() {
   const supabase = await createClient();
   const {
@@ -97,7 +104,7 @@ export async function addGearItem(formData: FormData) {
     await createWatcherAndScrape(item.id, url);
   }
 
-  revalidatePath("/gear");
+  revalidateGearAndNursery();
 }
 
 // ---------------------------------------------------------------------------
@@ -125,7 +132,7 @@ export async function addSupplyItem(formData: FormData) {
     target_price: null,
   });
   if (error) throw new Error(error.message);
-  revalidatePath("/gear");
+  revalidateGearAndNursery();
 }
 
 export async function adjustSupplyQuantity(formData: FormData) {
@@ -147,7 +154,7 @@ export async function adjustSupplyQuantity(formData: FormData) {
     .update({ quantity: next })
     .eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath("/gear");
+  revalidateGearAndNursery();
 }
 
 export async function updateSupply(formData: FormData) {
@@ -170,7 +177,7 @@ export async function updateSupply(formData: FormData) {
     .update(patch)
     .eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath("/gear");
+  revalidateGearAndNursery();
 }
 
 // ---------------------------------------------------------------------------
@@ -186,7 +193,7 @@ export async function removeGearItem(formData: FormData) {
     .delete()
     .eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath("/gear");
+  revalidateGearAndNursery();
 }
 
 export async function updateGearItemTarget(formData: FormData) {
@@ -199,7 +206,7 @@ export async function updateGearItemTarget(formData: FormData) {
     .update({ target_price })
     .eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath("/gear");
+  revalidateGearAndNursery();
 }
 
 // ---------------------------------------------------------------------------
@@ -225,7 +232,7 @@ export async function addWatcher(formData: FormData) {
 
   // Recompute target hit (in case the new watcher's price is below target).
   await recomputeTargetHit(itemId);
-  revalidatePath("/gear");
+  revalidateGearAndNursery();
 }
 
 export async function removeWatcher(formData: FormData) {
@@ -237,7 +244,7 @@ export async function removeWatcher(formData: FormData) {
     .delete()
     .eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath("/gear");
+  revalidateGearAndNursery();
 }
 
 export async function setWatcherPriceManual(formData: FormData) {
@@ -265,7 +272,7 @@ export async function setWatcherPriceManual(formData: FormData) {
   if (error) throw new Error(error.message);
 
   await recomputeTargetHit(w.item_id);
-  revalidatePath("/gear");
+  revalidateGearAndNursery();
 }
 
 // ---------------------------------------------------------------------------
@@ -307,7 +314,7 @@ export async function setChosenWatcher(formData: FormData) {
     if (setErr) throw new Error(setErr.message);
   }
 
-  revalidatePath("/gear");
+  revalidateGearAndNursery();
 }
 
 export async function reorderWatcher(formData: FormData) {
@@ -357,7 +364,7 @@ export async function reorderWatcher(formData: FormData) {
     .eq("id", neighbor.id);
   if (e2) throw new Error(e2.message);
 
-  revalidatePath("/gear");
+  revalidateGearAndNursery();
 }
 
 // ---------------------------------------------------------------------------
@@ -372,7 +379,7 @@ export async function refreshUserPrices() {
     .select("id, target_price");
 
   if (!items?.length) {
-    revalidatePath("/gear");
+    revalidateGearAndNursery();
     return { scanned: 0, ok: 0, failed: 0 };
   }
 
@@ -433,7 +440,7 @@ export async function refreshUserPrices() {
     await recomputeTargetHit(item.id, oldBestByItem.get(item.id) ?? null);
   }
 
-  revalidatePath("/gear");
+  revalidateGearAndNursery();
   return { scanned: watchers?.length ?? 0, ok: okCount, failed: failedCount };
 }
 
@@ -502,7 +509,7 @@ export async function acknowledgeTargetHit(formData: FormData) {
     .update({ is_target_hit_acknowledged: true })
     .eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath("/gear");
+  revalidateGearAndNursery();
 }
 
 // ---------------------------------------------------------------------------

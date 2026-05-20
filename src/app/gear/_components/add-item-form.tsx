@@ -14,17 +14,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
 import { addGearItem } from "../actions";
-
-type Kind = "registry" | "shortlist";
 
 export function AddItemForm() {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [kind, setKind] = useState<Kind>("registry");
-  const isShortlist = kind === "shortlist";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -42,32 +37,14 @@ export function AddItemForm() {
       <DialogContent className="sm:max-w-md rounded-3xl">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">
-            {isShortlist ? "Compare options" : "Track a new item"}
+            Track a new item
           </DialogTitle>
           <DialogDescription>
-            {isShortlist
-              ? "Pick a category (e.g. Dresser). You'll add candidate product URLs after."
-              : "Paste a product URL and we'll grab the price. Add more retailers afterwards."}
+            Paste a product URL and we&apos;ll grab the price. Add more
+            retailers afterwards. To compare different products, add the item
+            to your nursery checklist and use the shopping bag icon there.
           </DialogDescription>
         </DialogHeader>
-
-        <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1 text-xs">
-          {(["registry", "shortlist"] as Kind[]).map((k) => (
-            <button
-              key={k}
-              type="button"
-              onClick={() => setKind(k)}
-              className={cn(
-                "rounded-lg py-1.5 font-medium transition-colors",
-                kind === k
-                  ? "bg-background shadow-sm text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {k === "registry" ? "One product" : "Shortlist"}
-            </button>
-          ))}
-        </div>
 
         <form
           action={(fd) => {
@@ -83,7 +60,6 @@ export function AddItemForm() {
           }}
           className="space-y-3"
         >
-          <input type="hidden" name="kind" value={kind} />
           <div className="space-y-1.5">
             <Label htmlFor="name" className="text-sm">
               Name
@@ -92,9 +68,7 @@ export function AddItemForm() {
               id="name"
               name="name"
               required
-              placeholder={
-                isShortlist ? "Dresser" : "UPPAbaby Vista Stroller"
-              }
+              placeholder="UPPAbaby Vista Stroller"
               className="rounded-xl bg-background/60"
             />
           </div>
@@ -107,59 +81,54 @@ export function AddItemForm() {
               <Input
                 id="emoji"
                 name="emoji"
-                defaultValue={isShortlist ? "🛍️" : "🛒"}
+                defaultValue="🛒"
                 maxLength={4}
                 className="rounded-xl bg-background/60 text-center"
               />
             </div>
-            {!isShortlist ? (
-              <div className="space-y-1.5">
-                <Label htmlFor="target_price" className="text-sm">
-                  Target price
-                </Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                    $
-                  </span>
-                  <Input
-                    id="target_price"
-                    name="target_price"
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    required
-                    inputMode="decimal"
-                    placeholder="750"
-                    className="rounded-xl bg-background/60 pl-6"
-                  />
-                </div>
-              </div>
-            ) : null}
-          </div>
-
-          {!isShortlist ? (
             <div className="space-y-1.5">
-              <Label htmlFor="url" className="text-sm">
-                Product URL
+              <Label htmlFor="target_price" className="text-sm">
+                Target price
               </Label>
               <div className="relative">
-                <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                  $
+                </span>
                 <Input
-                  id="url"
-                  name="url"
-                  type="url"
+                  id="target_price"
+                  name="target_price"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
                   required
-                  placeholder="https://www.babylist.com/store/…"
-                  className="rounded-xl bg-background/60 pl-9"
+                  inputMode="decimal"
+                  placeholder="750"
+                  className="rounded-xl bg-background/60 pl-6"
                 />
               </div>
-              <p className="text-[11px] text-muted-foreground">
-                Babylist, Pottery Barn Kids, Target, Nordstrom, etc. Amazon
-                &amp; Walmart aren&apos;t auto-trackable yet — set those
-                manually.
-              </p>
             </div>
-          ) : null}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="url" className="text-sm">
+              Product URL
+            </Label>
+            <div className="relative">
+              <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="url"
+                name="url"
+                type="url"
+                required
+                placeholder="https://www.babylist.com/store/…"
+                className="rounded-xl bg-background/60 pl-9"
+              />
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Babylist, Pottery Barn Kids, Target, Nordstrom, etc. Amazon &amp;
+              Walmart aren&apos;t auto-trackable yet — set those manually.
+            </p>
+          </div>
 
           {error ? <p className="text-xs text-destructive">{error}</p> : null}
 
@@ -169,13 +138,7 @@ export function AddItemForm() {
               disabled={pending}
               className="rounded-xl bg-gear hover:bg-gear/90 text-white"
             >
-              {pending
-                ? isShortlist
-                  ? "Creating…"
-                  : "Checking price…"
-                : isShortlist
-                  ? "Create shortlist"
-                  : "Add item"}
+              {pending ? "Checking price…" : "Add item"}
             </Button>
           </DialogFooter>
         </form>
