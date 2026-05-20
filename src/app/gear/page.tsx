@@ -64,9 +64,9 @@ export default async function GearPage() {
     supabase
       .from("gear_watchers")
       .select(
-        "id, item_id, retailer, url, current_price, last_checked_at, last_checked_status, last_error, is_paused",
+        "id, item_id, retailer, url, current_price, last_checked_at, last_checked_status, last_error, is_paused, is_chosen, sort_order",
       )
-      .order("created_at", { ascending: true }),
+      .order("sort_order", { ascending: true }),
     supabase
       .from("gear_price_history")
       .select("watcher_id, price, recorded_at")
@@ -87,7 +87,7 @@ export default async function GearPage() {
   const watchers = watchersRes.data ?? [];
   const history = (historyRes.data ?? []) as unknown as HistoryRow[];
 
-  // Group watchers by item_id
+  // Group watchers by item_id (preserves sort_order via parent ORDER BY)
   const watchersByItem = new Map<string, WatcherRow[]>();
   for (const w of watchers) {
     const arr = watchersByItem.get(w.item_id) ?? [];
@@ -99,6 +99,7 @@ export default async function GearPage() {
       last_checked_at: w.last_checked_at,
       last_checked_status: w.last_checked_status,
       last_error: w.last_error,
+      is_chosen: w.is_chosen,
     });
     watchersByItem.set(w.item_id, arr);
   }

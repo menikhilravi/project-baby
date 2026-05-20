@@ -241,6 +241,98 @@ export async function setWatcherPriceManual(formData: FormData) {
 }
 
 // ---------------------------------------------------------------------------
+// Candidate selection + ordering
+// ---------------------------------------------------------------------------
+
+export async function setChosenWatcher(formData: FormData) {
+  const { supabase } = await requireUser();
+  const id = String(formData.get("id") ?? "");
+  if (!id) throw new Error("Missing id");
+
+  const { data: target } = await supabase
+    .from("gear_watchers")
+    .select("item_id, is_chosen")
+    .eq("id", id)
+    .maybeSingle();
+  if (!target) throw new Error("Watcher not found");
+
+  // Toggle: if already chosen, unset; else clear siblings then set this one.
+  if (target.is_chosen) {
+    const { error } = await supabase
+      .from("gear_watchers")
+      .update({ is_chosen: false })
+      .eq("id", id);
+    if (error) throw new Error(error.message);
+  } else {
+    // Clear siblings first to satisfy the partial unique index.
+    const { error: clearErr } = await supabase
+      .from("gear_watchers")
+      .update({ is_chosen: false })
+      .eq("item_id", target.item_id)
+      .eq("is_chosen", true);
+    if (clearErr) throw new Error(clearErr.message);
+
+    const { error: setErr } = await supabase
+      .from("gear_watchers")
+      .update({ is_chosen: true })
+      .eq("id", id);
+    if (setErr) throw new Error(setErr.message);
+  }
+
+  revalidatePath("/gear");
+}
+
+export async function reorderWatcher(formData: FormData) {
+  const { supabase } = await requireUser();
+  const id = String(formData.get("id") ?? "");
+  const direction = String(formData.get("direction") ?? "");
+  if (!id) throw new Error("Missing id");
+  if (direction !== "up" && direction !== "down") {
+    throw new Error("Invalid direction");
+  }
+
+  const { data: current } = await supabase
+    .from("gear_watchers")
+    .select("item_id, sort_order")
+    .eq("id", id)
+    .maybeSingle();
+  if (!current) throw new Error("Watcher not found");
+
+  // Find the immediate neighbor in the requested direction.
+  const base = supabase
+    .from("gear_watchers")
+    .select("id, sort_order")
+    .eq("item_id", current.item_id);
+  const neighborRes = await (direction === "up"
+    ? base
+        .lt("sort_order", current.sort_order)
+        .order("sort_order", { ascending: false })
+    : base
+        .gt("sort_order", current.sort_order)
+        .order("sort_order", { ascending: true })
+  )
+    .limit(1)
+    .maybeSingle();
+  const neighbor = neighborRes.data;
+
+  if (!neighbor) return; // already at the edge
+
+  // Swap sort_order values.
+  const { error: e1 } = await supabase
+    .from("gear_watchers")
+    .update({ sort_order: neighbor.sort_order })
+    .eq("id", id);
+  if (e1) throw new Error(e1.message);
+  const { error: e2 } = await supabase
+    .from("gear_watchers")
+    .update({ sort_order: current.sort_order })
+    .eq("id", neighbor.id);
+  if (e2) throw new Error(e2.message);
+
+  revalidatePath("/gear");
+}
+
+// ---------------------------------------------------------------------------
 // Refresh + target-hit
 // ---------------------------------------------------------------------------
 
@@ -393,6 +485,16 @@ async function createWatcherAndScrape(itemId: string, url: string) {
   const supabase = (await requireUser()).supabase;
   const retailer = detectRetailer(url);
 
+  // Append to the end of the per-item ordered list.
+  const { data: last } = await supabase
+    .from("gear_watchers")
+    .select("sort_order")
+    .eq("item_id", itemId)
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const nextOrder = (last?.sort_order ?? 0) + 1;
+
   const { data: w, error: insErr } = await supabase
     .from("gear_watchers")
     .insert({
@@ -400,6 +502,7 @@ async function createWatcherAndScrape(itemId: string, url: string) {
       retailer,
       url,
       last_checked_status: "pending",
+      sort_order: nextOrder,
     })
     .select("id")
     .single();

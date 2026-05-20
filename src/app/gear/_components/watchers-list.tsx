@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import {
   ChevronDown,
+  ChevronUp,
   ExternalLink,
   Pencil,
   Trash2,
@@ -10,6 +11,7 @@ import {
   Check,
   X,
   AlertTriangle,
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +20,8 @@ import {
   removeWatcher,
   setWatcherPriceManual,
   addWatcher,
+  setChosenWatcher,
+  reorderWatcher,
 } from "../actions";
 
 export type WatcherRow = {
@@ -28,6 +32,7 @@ export type WatcherRow = {
   last_checked_at: string | null;
   last_checked_status: "pending" | "ok" | "failed";
   last_error: string | null;
+  is_chosen: boolean;
 };
 
 const fmt = (n: number) =>
@@ -79,7 +84,7 @@ export function WatchersList({
 
       {open ? (
         <ul className="mt-3 space-y-1.5">
-          {watchers.map((w) => (
+          {watchers.map((w, i) => (
             <WatcherRowView
               key={w.id}
               watcher={w}
@@ -88,6 +93,8 @@ export function WatchersList({
                 w.current_price !== null &&
                 Number(w.current_price) === Number(bestPrice)
               }
+              isFirst={i === 0}
+              isLast={i === watchers.length - 1}
             />
           ))}
           <li>
@@ -102,9 +109,13 @@ export function WatchersList({
 function WatcherRowView({
   watcher,
   isBest,
+  isFirst,
+  isLast,
 }: {
   watcher: WatcherRow;
   isBest: boolean;
+  isFirst: boolean;
+  isLast: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(
@@ -112,18 +123,77 @@ function WatcherRowView({
   );
   const [, startTransition] = useTransition();
   const failed = watcher.last_checked_status === "failed";
+  const chosen = watcher.is_chosen;
 
   return (
     <li
       className={cn(
         "flex items-center gap-2 rounded-xl border bg-background/40 px-3 py-2 text-sm",
         isBest && "border-hospital/30 bg-hospital-soft/30",
+        chosen && "border-gear/50 bg-gear-soft/40 ring-1 ring-gear/30",
         failed && !editing && "border-names/30 bg-names-soft/20",
       )}
     >
+      <div className="flex flex-col -my-1">
+        <form action={reorderWatcher}>
+          <input type="hidden" name="id" value={watcher.id} />
+          <input type="hidden" name="direction" value="up" />
+          <Button
+            type="submit"
+            size="icon"
+            variant="ghost"
+            disabled={isFirst}
+            className="h-5 w-5 rounded text-muted-foreground/60 hover:text-foreground disabled:opacity-30"
+            aria-label="Move up"
+          >
+            <ChevronUp className="h-3 w-3" />
+          </Button>
+        </form>
+        <form action={reorderWatcher}>
+          <input type="hidden" name="id" value={watcher.id} />
+          <input type="hidden" name="direction" value="down" />
+          <Button
+            type="submit"
+            size="icon"
+            variant="ghost"
+            disabled={isLast}
+            className="h-5 w-5 rounded text-muted-foreground/60 hover:text-foreground disabled:opacity-30"
+            aria-label="Move down"
+          >
+            <ChevronDown className="h-3 w-3" />
+          </Button>
+        </form>
+      </div>
+
+      <form action={setChosenWatcher}>
+        <input type="hidden" name="id" value={watcher.id} />
+        <Button
+          type="submit"
+          size="icon"
+          variant="ghost"
+          className={cn(
+            "h-7 w-7 rounded-md shrink-0",
+            chosen
+              ? "text-gear hover:text-gear/80"
+              : "text-muted-foreground/60 hover:text-gear",
+          )}
+          aria-label={chosen ? "Unchoose this option" : "Choose this option"}
+          aria-pressed={chosen}
+        >
+          <Star
+            className={cn("h-3.5 w-3.5", chosen && "fill-current")}
+          />
+        </Button>
+      </form>
+
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <span className="font-medium truncate">{watcher.retailer}</span>
+          {chosen ? (
+            <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-gear text-white font-semibold">
+              chosen
+            </span>
+          ) : null}
           {isBest ? (
             <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-hospital text-white font-semibold">
               best

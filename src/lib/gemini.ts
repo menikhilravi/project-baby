@@ -57,28 +57,44 @@ export async function generateTeluguNames(opts: {
     },
   };
 
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 60_000);
+  // Retry once on transient 5xx (Gemini "high demand" / 503). 429s don't
+  // retry — they're quota, not capacity, and retrying just wastes the budget.
+  let res: Response | null = null;
+  let lastErr: string | null = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 60_000);
+    try {
+      res = await fetch(`${ENDPOINT}?key=${apiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal: ctrl.signal,
+      });
+    } catch (e) {
+      lastErr = e instanceof Error ? e.message : String(e);
+      res = null;
+    } finally {
+      clearTimeout(timer);
+    }
+    if (res && res.ok) break;
+    if (res && res.status < 500) break; // 4xx — don't retry
+    if (attempt === 0) await new Promise((r) => setTimeout(r, 1500));
+  }
 
-  let res: Response;
-  try {
-    res = await fetch(`${ENDPOINT}?key=${apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      signal: ctrl.signal,
-    });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    throw new Error(`Gemini request failed: ${msg}`);
-  } finally {
-    clearTimeout(timer);
+  if (!res) {
+    throw new Error(`Gemini request failed: ${lastErr ?? "unknown"}`);
   }
 
   if (!res.ok) {
     if (res.status === 429) {
       throw new Error(
         "Gemini free-tier quota hit. Wait a minute and try again, or check ai.dev/rate-limit.",
+      );
+    }
+    if (res.status === 503) {
+      throw new Error(
+        "Gemini is overloaded right now (not your fault). Try again in a few seconds.",
       );
     }
     const text = await res.text().catch(() => "");

@@ -107,6 +107,8 @@ export interface Database {
           last_checked_status: "pending" | "ok" | "failed";
           last_error: string | null;
           is_paused: boolean;
+          is_chosen: boolean;
+          sort_order: number;
           created_at: string;
         };
         Insert: {
@@ -119,6 +121,8 @@ export interface Database {
           last_checked_status?: "pending" | "ok" | "failed";
           last_error?: string | null;
           is_paused?: boolean;
+          is_chosen?: boolean;
+          sort_order?: number;
         };
         Update: {
           retailer?: string;
@@ -128,6 +132,8 @@ export interface Database {
           last_checked_status?: "pending" | "ok" | "failed";
           last_error?: string | null;
           is_paused?: boolean;
+          is_chosen?: boolean;
+          sort_order?: number;
         };
         Relationships: [];
       };
