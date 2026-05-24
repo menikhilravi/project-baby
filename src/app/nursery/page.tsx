@@ -11,19 +11,29 @@ import {
 import { cn } from "@/lib/utils";
 
 export default async function NurseryPage() {
+  // Step markers so we can trace which line was last reached before a
+  // production-redacted Server Components render error. Appears in Vercel
+  // function logs alongside the digest.
+  const TAG = "[nursery-render]";
+  console.log(`${TAG} 1 start`);
+
   const supabase = await createClient();
+  console.log(`${TAG} 2 supabase client created`);
 
   const { count: initial } = await supabase
     .from("nursery_checklist")
     .select("id", { count: "exact", head: true });
+  console.log(`${TAG} 3 nursery count=${initial ?? 0}`);
   if ((initial ?? 0) === 0) {
     await seedDefaultList();
+    console.log(`${TAG} 3a seeded default list`);
   }
 
   const { data: rows } = await supabase
     .from("nursery_checklist")
     .select("id, owner, item, checked, sort_order")
     .order("sort_order", { ascending: true });
+  console.log(`${TAG} 4 fetched ${rows?.length ?? 0} nursery rows`);
 
   // Pull any shortlist gear_items linked to these nursery rows + their
   // candidate watchers, so we can render the comparison UI inline. Keyed
@@ -57,6 +67,9 @@ export default async function NurseryPage() {
     shortlistItems = (itemsRes.data ?? []) as typeof shortlistItems;
 
     const shortlistGearIds = shortlistItems.map((i) => i.id);
+    console.log(
+      `${TAG} 5 fetched ${shortlistItems.length} shortlist gear_items`,
+    );
     if (shortlistGearIds.length > 0) {
       const watchersRes = await supabase
         .from("gear_watchers")
@@ -71,8 +84,10 @@ export default async function NurseryPage() {
         );
       }
       shortlistWatchers = (watchersRes.data ?? []) as ShortlistWatcherRow[];
+      console.log(`${TAG} 6 fetched ${shortlistWatchers.length} watchers`);
     }
   }
+  console.log(`${TAG} 7 data load complete, building maps`);
 
   const watchersByGearId = new Map<string, ShortlistWatcherRow[]>();
   for (const w of shortlistWatchers) {
@@ -139,6 +154,7 @@ export default async function NurseryPage() {
   const totalDone = Object.values(counts).reduce((n, c) => n + c.done, 0);
   const totalAll = Object.values(counts).reduce((n, c) => n + c.total, 0);
   const overall = totalAll === 0 ? 0 : Math.round((totalDone / totalAll) * 100);
+  console.log(`${TAG} 8 ready to render JSX`);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 md:px-8 md:py-12">
