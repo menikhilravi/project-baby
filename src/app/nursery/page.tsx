@@ -26,7 +26,9 @@ export default async function NurseryPage() {
     .order("sort_order", { ascending: true });
 
   // Pull any shortlist gear_items linked to these nursery rows + their
-  // candidate watchers, so we can render the comparison UI inline.
+  // candidate watchers, so we can render the comparison UI inline. Keyed
+  // as strings throughout because Supabase returns bigint as a JS string
+  // in some cases and we don't want a Map miss from "42" !== 42.
   type ShortlistWatcherRow = {
     id: string;
     item_id: string;
@@ -41,46 +43,60 @@ export default async function NurseryPage() {
   };
 
   const nurseryIds = (rows ?? []).map((r) => r.id);
-  let shortlistItems: { id: string; nursery_item_id: number }[] = [];
+  let shortlistItems: { id: string; nursery_item_id: number | string }[] = [];
   let shortlistWatchers: ShortlistWatcherRow[] = [];
   if (nurseryIds.length > 0) {
-    const [itemsRes, watchersRes] = await Promise.all([
-      supabase
-        .from("gear_items")
-        .select("id, nursery_item_id")
-        .in("nursery_item_id", nurseryIds)
-        .eq("kind", "shortlist"),
-      supabase
+    const itemsRes = await supabase
+      .from("gear_items")
+      .select("id, nursery_item_id")
+      .in("nursery_item_id", nurseryIds)
+      .eq("kind", "shortlist");
+    if (itemsRes.error) {
+      throw new Error(`gear_items query failed: ${itemsRes.error.message}`);
+    }
+    shortlistItems = (itemsRes.data ?? []) as typeof shortlistItems;
+
+    const shortlistGearIds = shortlistItems.map((i) => i.id);
+    if (shortlistGearIds.length > 0) {
+      const watchersRes = await supabase
         .from("gear_watchers")
         .select(
           "id, item_id, retailer, url, current_price, last_checked_at, last_checked_status, last_error, is_chosen, sort_order",
         )
-        .order("sort_order", { ascending: true }),
-    ]);
-    shortlistItems = (itemsRes.data ?? []) as typeof shortlistItems;
-    shortlistWatchers = (watchersRes.data ?? []) as ShortlistWatcherRow[];
+        .in("item_id", shortlistGearIds)
+        .order("sort_order", { ascending: true });
+      if (watchersRes.error) {
+        throw new Error(
+          `gear_watchers query failed: ${watchersRes.error.message}`,
+        );
+      }
+      shortlistWatchers = (watchersRes.data ?? []) as ShortlistWatcherRow[];
+    }
   }
 
   const watchersByGearId = new Map<string, ShortlistWatcherRow[]>();
   for (const w of shortlistWatchers) {
-    const arr = watchersByGearId.get(w.item_id) ?? [];
+    const key = String(w.item_id);
+    const arr = watchersByGearId.get(key) ?? [];
     arr.push(w);
-    watchersByGearId.set(w.item_id, arr);
+    watchersByGearId.set(key, arr);
   }
 
+  // Key on string form of nursery_item_id (handles bigint returned as string).
   const shortlistByNurseryId = new Map<
-    number,
+    string,
     { gearItemId: string; watchers: ShortlistWatcherRow[] }
   >();
   for (const item of shortlistItems) {
-    shortlistByNurseryId.set(item.nursery_item_id, {
+    if (item.nursery_item_id == null) continue;
+    shortlistByNurseryId.set(String(item.nursery_item_id), {
       gearItemId: item.id,
       watchers: watchersByGearId.get(item.id) ?? [],
     });
   }
 
   const safeRows: ChecklistRow[] = (rows ?? []).map((r) => {
-    const sl = shortlistByNurseryId.get(r.id);
+    const sl = shortlistByNurseryId.get(String(r.id));
     return {
       ...(r as ChecklistRow),
       shortlist: sl
@@ -106,7 +122,9 @@ export default async function NurseryPage() {
     safety: [],
     supplies: [],
   };
-  for (const r of safeRows) byOwner[r.owner].push(r);
+  for (const r of safeRows) {
+    if (r.owner in byOwner) byOwner[r.owner].push(r);
+  }
 
   const counts = (Object.keys(byOwner) as NurseryOwner[]).reduce(
     (acc, owner) => {
