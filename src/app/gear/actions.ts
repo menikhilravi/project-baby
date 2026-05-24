@@ -8,7 +8,7 @@ import { detectRetailer } from "@/lib/retailer";
 // Shortlist gear_items are surfaced inline on /nursery, so any watcher
 // change has to invalidate both pages.
 function revalidateGearAndNursery() {
-  revalidateGearAndNursery();
+  revalidatePath("/gear");
   revalidatePath("/nursery");
 }
 

@@ -14,8 +14,10 @@ import {
   removeItem,
   createShortlistFromNursery,
 } from "../actions";
-import { type WatcherRow } from "@/app/gear/_components/watchers-list";
-import { addWatcher, removeWatcher } from "@/app/gear/actions";
+import {
+  WatchersList,
+  type WatcherRow,
+} from "@/app/gear/_components/watchers-list";
 
 export type ChecklistRow = {
   id: number;
@@ -41,11 +43,6 @@ export function ChecklistGroup({
   owner: NurseryOwner;
   rows: ChecklistRow[];
 }) {
-  if (typeof window === "undefined") {
-    console.log(
-      `[checklist-group SSR] owner=${owner} rows=${rows.length} shortlists=${rows.filter((r) => r.shortlist).length}`,
-    );
-  }
   const [optimisticRows, applyPatch] = useOptimistic<ChecklistRow[], Patch>(
     rows,
     (state, patch) => {
@@ -233,56 +230,14 @@ export function ChecklistGroup({
               </Button>
             </div>
             {isExpanded && row.shortlist ? (
-              <div className="rounded-b-2xl border border-t-0 bg-card/60 px-4 py-3 text-xs text-muted-foreground space-y-2">
-                {/* DEBUG: bypassing WatchersList; minimal inline add/remove to
-                    test whether the recursion is inside WatchersList itself. */}
-                <p className="font-medium">
-                  Options ({row.shortlist.options.length}):
-                </p>
-                <ul className="space-y-1">
-                  {row.shortlist.options.map((o) => (
-                    <li key={o.id} className="flex items-center gap-2">
-                      <span className="flex-1 truncate">
-                        {o.retailer} — {o.current_price ?? "no price"}
-                      </span>
-                      <form action={removeWatcher}>
-                        <input type="hidden" name="id" value={o.id} />
-                        <Button
-                          type="submit"
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 px-2 text-[10px]"
-                        >
-                          Remove
-                        </Button>
-                      </form>
-                    </li>
-                  ))}
-                </ul>
-                <form
-                  action={addWatcher}
-                  className="flex items-center gap-2 pt-2 border-t border-border/40"
-                >
-                  <input
-                    type="hidden"
-                    name="item_id"
-                    value={row.shortlist.gearItemId}
-                  />
-                  <Input
-                    name="url"
-                    type="url"
-                    required
-                    placeholder="Paste a product URL"
-                    className="flex-1 h-7 text-xs"
-                  />
-                  <Button
-                    type="submit"
-                    size="sm"
-                    className="h-7 px-3 text-xs bg-gear hover:bg-gear/90 text-white"
-                  >
-                    Add
-                  </Button>
-                </form>
+              <div className="rounded-b-2xl border border-t-0 bg-card/60 px-4 py-3">
+                <WatchersList
+                  itemId={row.shortlist.gearItemId}
+                  watchers={row.shortlist.options}
+                  bestPrice={null}
+                  embedded
+                  optionLabel="option"
+                />
               </div>
             ) : null}
           </li>

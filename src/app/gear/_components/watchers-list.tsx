@@ -68,11 +68,6 @@ export function WatchersList({
   /** Singular noun used in the header ("retailer", "option", etc.). */
   optionLabel?: string;
 }) {
-  if (typeof window === "undefined") {
-    console.log(
-      `[watchers-list SSR] itemId=${itemId} count=${watchers?.length ?? "?"} embedded=${embedded}`,
-    );
-  }
   const [open, setOpen] = useState(embedded);
 
   const list = (
