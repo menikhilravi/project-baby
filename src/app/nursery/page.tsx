@@ -156,6 +156,20 @@ export default async function NurseryPage() {
   const overall = totalAll === 0 ? 0 : Math.round((totalDone / totalAll) * 100);
   console.log(`${TAG} 8 ready to render JSX`);
 
+  // Dump the shortlist data so we can see what's being passed down when the
+  // render crashes. Limited to shortlists only to keep noise down.
+  for (const r of safeRows) {
+    if (!r.shortlist) continue;
+    console.log(
+      `${TAG} 8a row id=${r.id} owner=${r.owner} item="${r.item}" gear=${r.shortlist.gearItemId} opts=${r.shortlist.options.length}`,
+    );
+    for (const o of r.shortlist.options) {
+      console.log(
+        `${TAG} 8b   option id=${o.id} retailer="${o.retailer}" price=${JSON.stringify(o.current_price)} status=${o.last_checked_status} chosen=${o.is_chosen}`,
+      );
+    }
+  }
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 md:px-8 md:py-12">
       <PageHero

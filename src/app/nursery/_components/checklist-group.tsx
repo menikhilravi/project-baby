@@ -43,6 +43,11 @@ export function ChecklistGroup({
   owner: NurseryOwner;
   rows: ChecklistRow[];
 }) {
+  if (typeof window === "undefined") {
+    console.log(
+      `[checklist-group SSR] owner=${owner} rows=${rows.length} shortlists=${rows.filter((r) => r.shortlist).length}`,
+    );
+  }
   const [optimisticRows, applyPatch] = useOptimistic<ChecklistRow[], Patch>(
     rows,
     (state, patch) => {
