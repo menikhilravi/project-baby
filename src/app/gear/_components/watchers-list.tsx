@@ -33,6 +33,8 @@ export type WatcherRow = {
   last_checked_status: "pending" | "ok" | "failed";
   last_error: string | null;
   is_chosen: boolean;
+  title: string | null;
+  image_url: string | null;
 };
 
 const fmt = (n: number) =>
@@ -51,6 +53,19 @@ function relative(iso: string | null) {
   if (hr < 24) return `${hr}h ago`;
   const d = Math.floor(hr / 24);
   return `${d}d ago`;
+}
+
+// Last segment of the URL path, lightly tidied. Used as a fallback hint
+// when the scrape didn't return a title.
+function urlSlug(url: string): string {
+  try {
+    const u = new URL(url);
+    const segs = u.pathname.split("/").filter(Boolean);
+    const last = segs[segs.length - 1] ?? u.hostname;
+    return last.replace(/[-_]+/g, " ").replace(/\.[a-z0-9]+$/i, "");
+  } catch {
+    return url;
+  }
 }
 
 export function WatchersList({
@@ -197,16 +212,28 @@ function WatcherRowView({
         </Button>
       </form>
 
+      {watcher.image_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={watcher.image_url}
+          alt=""
+          loading="lazy"
+          className="h-10 w-10 rounded-lg object-cover bg-muted shrink-0"
+        />
+      ) : null}
+
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
-          <span className="font-medium truncate">{watcher.retailer}</span>
+          <span className="font-medium truncate">
+            {watcher.title || watcher.retailer || urlSlug(watcher.url)}
+          </span>
           {chosen ? (
-            <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-gear text-white font-semibold">
+            <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-gear text-white font-semibold shrink-0">
               chosen
             </span>
           ) : null}
           {isBest ? (
-            <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-hospital text-white font-semibold">
+            <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-hospital text-white font-semibold shrink-0">
               best
             </span>
           ) : null}
@@ -217,7 +244,7 @@ function WatcherRowView({
               title={watcher.last_error}
               aria-label="Show price-fetch error"
               aria-expanded={showError}
-              className="inline-flex items-center justify-center h-4 w-4 rounded-full text-muted-foreground/60 hover:text-names hover:bg-names-soft/30 transition-colors"
+              className="inline-flex items-center justify-center h-4 w-4 rounded-full text-muted-foreground/60 hover:text-names hover:bg-names-soft/30 transition-colors shrink-0"
             >
               <AlertTriangle className="h-3 w-3" />
             </button>
@@ -227,12 +254,24 @@ function WatcherRowView({
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Open product"
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground shrink-0"
           >
             <ExternalLink className="h-3 w-3" />
           </a>
         </div>
-        <p className="text-[11px] text-muted-foreground mt-0.5">
+        <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+          {watcher.title ? (
+            <>{watcher.retailer}</>
+          ) : (
+            <>
+              {watcher.retailer}
+              <span className="mx-1">·</span>
+              <span className="text-muted-foreground/70">
+                {urlSlug(watcher.url)}
+              </span>
+            </>
+          )}
+          <span className="mx-1">·</span>
           checked {relative(watcher.last_checked_at)}
         </p>
       </div>

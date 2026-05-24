@@ -40,6 +40,8 @@ export default async function NurseryPage() {
     last_error: string | null;
     is_chosen: boolean;
     sort_order: number;
+    title: string | null;
+    image_url: string | null;
   };
 
   const nurseryIds = (rows ?? []).map((r) => r.id);
@@ -61,7 +63,7 @@ export default async function NurseryPage() {
       const watchersRes = await supabase
         .from("gear_watchers")
         .select(
-          "id, item_id, retailer, url, current_price, last_checked_at, last_checked_status, last_error, is_chosen, sort_order",
+          "id, item_id, retailer, url, current_price, last_checked_at, last_checked_status, last_error, is_chosen, sort_order, title, image_url",
         )
         .in("item_id", shortlistGearIds)
         .order("sort_order", { ascending: true });
@@ -111,6 +113,8 @@ export default async function NurseryPage() {
               last_checked_status: w.last_checked_status,
               last_error: w.last_error,
               is_chosen: w.is_chosen,
+              title: w.title,
+              image_url: w.image_url,
             })),
           }
         : undefined,

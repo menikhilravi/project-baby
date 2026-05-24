@@ -65,7 +65,7 @@ export default async function GearPage() {
     supabase
       .from("gear_watchers")
       .select(
-        "id, item_id, retailer, url, current_price, last_checked_at, last_checked_status, last_error, is_paused, is_chosen, sort_order",
+        "id, item_id, retailer, url, current_price, last_checked_at, last_checked_status, last_error, is_paused, is_chosen, sort_order, title, image_url",
       )
       .order("sort_order", { ascending: true }),
     supabase
@@ -101,6 +101,8 @@ export default async function GearPage() {
       last_checked_status: w.last_checked_status,
       last_error: w.last_error,
       is_chosen: w.is_chosen,
+      title: w.title,
+      image_url: w.image_url,
     });
     watchersByItem.set(w.item_id, arr);
   }

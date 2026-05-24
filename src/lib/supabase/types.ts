@@ -112,6 +112,8 @@ export interface Database {
           is_paused: boolean;
           is_chosen: boolean;
           sort_order: number;
+          title: string | null;
+          image_url: string | null;
           created_at: string;
         };
         Insert: {
@@ -126,6 +128,8 @@ export interface Database {
           is_paused?: boolean;
           is_chosen?: boolean;
           sort_order?: number;
+          title?: string | null;
+          image_url?: string | null;
         };
         Update: {
           retailer?: string;
@@ -137,6 +141,8 @@ export interface Database {
           is_paused?: boolean;
           is_chosen?: boolean;
           sort_order?: number;
+          title?: string | null;
+          image_url?: string | null;
         };
         Relationships: [];
       };

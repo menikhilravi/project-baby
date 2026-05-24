@@ -419,6 +419,8 @@ export async function refreshUserPrices() {
           last_checked_at: now,
           last_checked_status: "ok",
           last_error: null,
+          title: result.title ?? null,
+          image_url: result.image ?? null,
         })
         .eq("id", w.id);
       okCount++;
@@ -564,6 +566,8 @@ async function createWatcherAndScrape(itemId: string, url: string) {
         last_checked_at: now,
         last_checked_status: "ok",
         last_error: null,
+        title: result.title ?? null,
+        image_url: result.image ?? null,
       })
       .eq("id", w.id);
   } else {
