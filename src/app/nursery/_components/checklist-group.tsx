@@ -235,14 +235,16 @@ export function ChecklistGroup({
               </Button>
             </div>
             {isExpanded && row.shortlist ? (
-              <div className="rounded-b-2xl border border-t-0 bg-card/60 px-4 py-3">
-                <WatchersList
-                  itemId={row.shortlist.gearItemId}
-                  watchers={row.shortlist.options}
-                  bestPrice={null}
-                  embedded
-                  optionLabel="option"
-                />
+              <div className="rounded-b-2xl border border-t-0 bg-card/60 px-4 py-3 text-xs text-muted-foreground">
+                {/* DEBUG: bypassing WatchersList to test if it's the recursion source */}
+                <p>Options ({row.shortlist.options.length}):</p>
+                <ul className="mt-2 space-y-1">
+                  {row.shortlist.options.map((o) => (
+                    <li key={o.id}>
+                      {o.retailer} — {o.current_price ?? "no price"}
+                    </li>
+                  ))}
+                </ul>
               </div>
             ) : null}
           </li>
