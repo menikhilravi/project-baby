@@ -1,0 +1,33 @@
+name: kick reminder cron
+
+# Vercel Hobby cron is once-a-day, so we use GitHub Actions to ping our
+# protected API route every two hours. The route does all the work; this
+# workflow just provides the schedule + auth.
+
+on:
+  schedule:
+    # Every 2 hours, on the hour, UTC.
+    - cron: "0 */2 * * *"
+  workflow_dispatch: {}  # allows manual run from the Actions tab
+
+concurrency:
+  group: kick-reminder
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit kick reminder endpoint
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "Missing APP_URL or CRON_SECRET repo secret" >&2
+            exit 1
+          fi
+          response=$(curl --silent --show-error --fail-with-body \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$APP_URL/api/cron/kick-reminder")
+          echo "Response: $response"

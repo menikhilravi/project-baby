@@ -5,6 +5,7 @@ import { PageHero } from "@/components/page-hero";
 import { createClient } from "@/lib/supabase/server";
 import { KickCounter } from "./_components/kick-counter";
 import { TwoHourBins } from "./_components/two-hour-bins";
+import { KickReminders } from "./_components/kick-reminders";
 
 export default async function KicksPage() {
   const supabase = await createClient();
@@ -56,6 +57,7 @@ export default async function KicksPage() {
           initialKicks={initialKicks}
         />
         <TwoHourBins kicks={initialKicks} coupleId={coupleId} />
+        {role === "mom" ? <KickReminders /> : null}
         <Link
           href="/kicks/history"
           className="flex items-center justify-between rounded-2xl border border-border/60 bg-card/40 px-4 py-3 transition-all hover:bg-card hover:border-border/80 hover:shadow-sm"
