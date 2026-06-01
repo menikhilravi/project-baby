@@ -88,13 +88,24 @@ export function KickReminders() {
         if (!serialized.endpoint || !serialized.keys?.p256dh || !serialized.keys?.auth) {
           throw new Error("Browser returned an incomplete subscription");
         }
-        await subscribeToPush({
-          endpoint: serialized.endpoint,
-          keys: {
-            p256dh: serialized.keys.p256dh,
-            auth: serialized.keys.auth,
+        // Capture the device's IANA timezone so the cron can respect
+        // quiet hours (6am–10pm local). Falls back to null if unavailable.
+        let tz: string | null = null;
+        try {
+          tz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? null;
+        } catch {
+          tz = null;
+        }
+        await subscribeToPush(
+          {
+            endpoint: serialized.endpoint,
+            keys: {
+              p256dh: serialized.keys.p256dh,
+              auth: serialized.keys.auth,
+            },
           },
-        });
+          tz,
+        );
         setStatus("Subscribed. We'll send a test now…");
         const result = await sendTestPush();
         setStatus(
@@ -180,8 +191,8 @@ export function KickReminders() {
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
             {subscribed
-              ? "We'll nudge this device every couple of hours if no kicks are logged."
-              : "We'll send a push every couple of hours if you haven't logged a kick recently."}
+              ? "We'll nudge this device every 2h between 6am–10pm if no kicks were logged in the last 2h."
+              : "We'll send a push every 2h between 6am–10pm if no kicks were logged in the last 2h."}
           </p>
           {isIOS && !isStandalone ? (
             <div className="mt-3 rounded-xl bg-muted/60 p-3 text-[11px] text-muted-foreground">

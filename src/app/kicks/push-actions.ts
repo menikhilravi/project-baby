@@ -18,7 +18,10 @@ async function requireUser() {
   return { supabase, user };
 }
 
-export async function subscribeToPush(sub: SerializedSubscription) {
+export async function subscribeToPush(
+  sub: SerializedSubscription,
+  timezone?: string | null,
+) {
   const { supabase, user } = await requireUser();
   const h = await headers();
   const ua = h.get("user-agent");
@@ -31,10 +34,17 @@ export async function subscribeToPush(sub: SerializedSubscription) {
         p256dh: sub.keys.p256dh,
         auth: sub.keys.auth,
         user_agent: ua,
+        timezone: timezone ?? null,
       },
       { onConflict: "user_id,endpoint" },
     );
-  if (error) throw new Error(error.message);
+  if (error) {
+    // Surface the real Supabase error so the client banner shows something
+    // useful (e.g. "relation push_subscriptions does not exist" when the
+    // migration hasn't been applied yet).
+    console.error("[push] upsert failed", error);
+    throw new Error(`push_subscriptions upsert failed: ${error.message}`);
+  }
 }
 
 export async function unsubscribeFromPush(endpoint: string) {

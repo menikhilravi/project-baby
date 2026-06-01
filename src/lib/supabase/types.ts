@@ -21,6 +21,7 @@ export interface Database {
           p256dh: string;
           auth: string;
           user_agent: string | null;
+          timezone: string | null;
           created_at: string;
           last_used_at: string | null;
         };
@@ -31,6 +32,7 @@ export interface Database {
           p256dh: string;
           auth: string;
           user_agent?: string | null;
+          timezone?: string | null;
           last_used_at?: string | null;
         };
         Update: {
@@ -38,6 +40,7 @@ export interface Database {
           p256dh?: string;
           auth?: string;
           user_agent?: string | null;
+          timezone?: string | null;
           last_used_at?: string | null;
         };
         Relationships: [];

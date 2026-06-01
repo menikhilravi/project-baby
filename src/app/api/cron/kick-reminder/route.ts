@@ -23,17 +23,27 @@ export async function GET(req: NextRequest) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const thresholdHours = Number(process.env.KICK_REMINDER_HOURS ?? "3");
+  const thresholdHours = Number(process.env.KICK_REMINDER_HOURS ?? "2");
   const cutoff = new Date(
     Date.now() - thresholdHours * 60 * 60_000,
   ).toISOString();
 
   const supabase = createServiceClient();
 
+  // Quiet hours: local 6am (inclusive) – 10pm (exclusive). Subscribers
+  // outside this window get skipped. Tunable via env, comma-separated.
+  const [quietStartRaw, quietEndRaw] = (
+    process.env.KICK_REMINDER_HOURS_WINDOW ?? "6,22"
+  )
+    .split(",")
+    .map((s) => Number(s.trim()));
+  const quietStart = Number.isFinite(quietStartRaw) ? quietStartRaw : 6;
+  const quietEnd = Number.isFinite(quietEndRaw) ? quietEndRaw : 22;
+
   // 1. Pull all subscriptions, joined with user role so we only ping moms.
   const { data: allSubs, error: subErr } = await supabase
     .from("push_subscriptions")
-    .select("id, user_id, endpoint, p256dh, auth");
+    .select("id, user_id, endpoint, p256dh, auth, timezone");
   if (subErr) {
     return Response.json({ error: subErr.message }, { status: 500 });
   }
@@ -55,9 +65,19 @@ export async function GET(req: NextRequest) {
 
   let sent = 0;
   let skipped = 0;
+  let skippedQuiet = 0;
   let pruned = 0;
 
   for (const sub of momSubs) {
+    // Quiet-hours check. If the subscription has no timezone (legacy row),
+    // we err on the side of sending so we don't silently stop reminders.
+    if (sub.timezone) {
+      const localHour = currentHourInTz(sub.timezone);
+      if (localHour !== null && (localHour < quietStart || localHour >= quietEnd)) {
+        skippedQuiet++;
+        continue;
+      }
+    }
     // Last kick for this user (only mom can log kicks, so user_id is enough).
     const { data: lastKick } = await supabase
       .from("baby_events")
@@ -115,8 +135,26 @@ export async function GET(req: NextRequest) {
   return Response.json({
     sent,
     skipped,
+    skipped_quiet: skippedQuiet,
     pruned,
     total: momSubs.length,
     threshold_hours: thresholdHours,
+    quiet_window: `${quietStart}-${quietEnd}`,
   });
+}
+
+// Returns the current hour (0-23) in the given IANA timezone, or null if
+// the TZ string isn't recognized by Intl.
+function currentHourInTz(tz: string): number | null {
+  try {
+    const hourStr = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      hour: "numeric",
+      hour12: false,
+    }).format(new Date());
+    const hour = parseInt(hourStr, 10);
+    return Number.isFinite(hour) ? hour : null;
+  } catch {
+    return null;
+  }
 }
