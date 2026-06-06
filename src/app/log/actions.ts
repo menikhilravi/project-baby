@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import type { EventDetail } from "@/lib/baby-events";
 
 async function ctx() {
   const supabase = await createClient();
@@ -17,11 +18,19 @@ async function ctx() {
   return { supabase, userId: user.id, coupleId: profile?.couple_id ?? null };
 }
 
-export async function logEvent(kind: "feed" | "diaper") {
+export async function logEvent(
+  kind: "feed" | "diaper",
+  detail?: EventDetail,
+) {
   const { supabase, userId, coupleId } = await ctx();
-  const { error } = await supabase
-    .from("baby_events")
-    .insert({ user_id: userId, couple_id: coupleId, kind });
+  const { error } = await supabase.from("baby_events").insert({
+    user_id: userId,
+    couple_id: coupleId,
+    kind,
+    subtype: detail?.subtype ?? null,
+    amount: detail?.amount ?? null,
+    unit: detail?.unit ?? null,
+  });
   if (error) throw new Error(error.message);
   revalidatePath("/log");
 }

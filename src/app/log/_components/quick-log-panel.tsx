@@ -1,9 +1,15 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { Droplets, Moon, Utensils } from "lucide-react";
+import { Droplets, Minus, Moon, Plus, Utensils } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import {
+  DIAPER_SUBTYPES,
+  FEED_SUBTYPES,
+  subtypeLabel,
+  type EventDetail,
+} from "@/lib/baby-events";
 import { logEvent, toggleSleep } from "../actions";
 
 export type OpenSleep = {
@@ -20,6 +26,10 @@ const KIND_META = {
 /**
  * Three tap buttons (Feed / Diaper / Sleep) with realtime tracking of the
  * couple's open sleep session. Used by /log and /today.
+ *
+ * Tapping Feed or Diaper expands an inline detail picker (pee/poop, side,
+ * bottle oz…). Every picker keeps a "Just log" path so a fast tap still
+ * records a typeless event.
  */
 export function QuickLogPanel({
   coupleId,
@@ -32,6 +42,7 @@ export function QuickLogPanel({
   channelName: string;
 }) {
   const [openSleep, setOpenSleep] = useState<OpenSleep>(initialOpenSleep);
+  const [expanded, setExpanded] = useState<"feed" | "diaper" | null>(null);
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -79,17 +90,23 @@ export function QuickLogPanel({
     };
   }, [coupleId, channelName]);
 
-  const handleLog = (kind: "feed" | "diaper") => {
+  const log = (kind: "feed" | "diaper", detail?: EventDetail) => {
+    setExpanded(null);
     startTransition(async () => {
       try {
-        await logEvent(kind);
+        await logEvent(kind, detail);
       } catch (err) {
         console.error(err);
       }
     });
   };
 
+  const toggleExpanded = (kind: "feed" | "diaper") => {
+    setExpanded((cur) => (cur === kind ? null : kind));
+  };
+
   const handleSleep = () => {
+    setExpanded(null);
     // Optimistic toggle: if there's no open sleep, start one locally with
     // a temporary id so the button flips immediately. Realtime will reconcile
     // with the real row.
@@ -112,13 +129,15 @@ export function QuickLogPanel({
       <div className="grid grid-cols-3 gap-3">
         <LogButton
           kind="feed"
-          onClick={() => handleLog("feed")}
+          onClick={() => toggleExpanded("feed")}
           disabled={pending}
+          active={expanded === "feed"}
         />
         <LogButton
           kind="diaper"
-          onClick={() => handleLog("diaper")}
+          onClick={() => toggleExpanded("diaper")}
           disabled={pending}
+          active={expanded === "diaper"}
         />
         <LogButton
           kind="sleep"
@@ -128,8 +147,176 @@ export function QuickLogPanel({
           sublabel={openSleep ? "Tap to wake" : undefined}
         />
       </div>
+
+      {expanded === "diaper" ? (
+        <DiaperPicker
+          disabled={pending}
+          onPick={(subtype) => log("diaper", { subtype })}
+          onSkip={() => log("diaper")}
+        />
+      ) : null}
+
+      {expanded === "feed" ? (
+        <FeedPicker
+          disabled={pending}
+          onPick={(detail) => log("feed", detail)}
+          onSkip={() => log("feed")}
+        />
+      ) : null}
+
       {openSleep ? <SleepingBanner startedAt={openSleep.occurred_at} /> : null}
     </div>
+  );
+}
+
+function PickerShell({
+  children,
+  onSkip,
+  disabled,
+}: {
+  children: React.ReactNode;
+  onSkip: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card/60 px-3 py-3 space-y-2">
+      <div className="flex flex-wrap gap-2">{children}</div>
+      <button
+        type="button"
+        onClick={onSkip}
+        disabled={disabled}
+        className="text-[11px] uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+      >
+        Just log it
+      </button>
+    </div>
+  );
+}
+
+function Chip({
+  label,
+  onClick,
+  disabled,
+  active,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  active?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "rounded-full border px-3.5 py-1.5 text-sm font-medium capitalize transition-all",
+        "hover:bg-card active:scale-[0.97] disabled:opacity-50",
+        active
+          ? "bg-logger-soft border-logger text-logger ring-1 ring-logger/30"
+          : "bg-card/40 border-border/60 text-foreground",
+      )}
+    >
+      {label}
+    </button>
+  );
+}
+
+function DiaperPicker({
+  onPick,
+  onSkip,
+  disabled,
+}: {
+  onPick: (subtype: (typeof DIAPER_SUBTYPES)[number]) => void;
+  onSkip: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <PickerShell onSkip={onSkip} disabled={disabled}>
+      {DIAPER_SUBTYPES.map((s) => (
+        <Chip
+          key={s}
+          label={subtypeLabel(s) ?? s}
+          onClick={() => onPick(s)}
+          disabled={disabled}
+        />
+      ))}
+    </PickerShell>
+  );
+}
+
+function FeedPicker({
+  onPick,
+  onSkip,
+  disabled,
+}: {
+  onPick: (detail: EventDetail) => void;
+  onSkip: () => void;
+  disabled?: boolean;
+}) {
+  const [oz, setOz] = useState(4);
+  const [bottle, setBottle] = useState(false);
+
+  if (bottle) {
+    return (
+      <PickerShell onSkip={onSkip} disabled={disabled}>
+        <div className="flex w-full items-center gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setOz((v) => Math.max(0.5, +(v - 0.5).toFixed(1)))}
+              disabled={disabled}
+              className="grid h-8 w-8 place-items-center rounded-full border border-border/60 bg-card/40 hover:bg-card disabled:opacity-50"
+              aria-label="Less"
+            >
+              <Minus className="h-4 w-4" />
+            </button>
+            <span className="min-w-16 text-center text-sm font-semibold tabular-nums">
+              {oz} oz
+            </span>
+            <button
+              type="button"
+              onClick={() => setOz((v) => +(v + 0.5).toFixed(1))}
+              disabled={disabled}
+              className="grid h-8 w-8 place-items-center rounded-full border border-border/60 bg-card/40 hover:bg-card disabled:opacity-50"
+              aria-label="More"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => onPick({ subtype: "bottle", amount: oz, unit: "oz" })}
+            disabled={disabled}
+            className="ml-auto rounded-full bg-logger px-4 py-1.5 text-sm font-semibold text-white hover:bg-logger/90 active:scale-[0.97] disabled:opacity-50"
+          >
+            Log bottle
+          </button>
+        </div>
+      </PickerShell>
+    );
+  }
+
+  return (
+    <PickerShell onSkip={onSkip} disabled={disabled}>
+      {FEED_SUBTYPES.map((s) =>
+        s === "bottle" ? (
+          <Chip
+            key={s}
+            label="bottle"
+            onClick={() => setBottle(true)}
+            disabled={disabled}
+          />
+        ) : (
+          <Chip
+            key={s}
+            label={subtypeLabel(s) ?? s}
+            onClick={() => onPick({ subtype: s })}
+            disabled={disabled}
+          />
+        ),
+      )}
+    </PickerShell>
   );
 }
 

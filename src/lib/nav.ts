@@ -8,6 +8,7 @@ import {
   BookOpen,
   Sun,
   Footprints,
+  BarChart3,
   type LucideIcon,
 } from "lucide-react";
 
@@ -22,7 +23,8 @@ export type ToolKey =
   | "logger"
   | "notes"
   | "today"
-  | "kicks";
+  | "kicks"
+  | "reports";
 
 export type NavItem = {
   href: string;
@@ -95,6 +97,14 @@ export const navItems: NavItem[] = [
     icon: Footprints,
     key: "kicks",
     phases: ["prenatal"],
+  },
+  {
+    href: "/reports",
+    label: "Reports",
+    tagline: "Sleep, feed & diaper patterns at a glance.",
+    icon: BarChart3,
+    key: "reports",
+    phases: ["postnatal"],
   },
   {
     href: "/notes",
@@ -222,5 +232,14 @@ export const toolColors: Record<
     ring: "ring-kicks",
     gradientFrom: "from-kicks-soft",
     gradientVia: "via-kicks-soft/60",
+  },
+  reports: {
+    bg: "bg-reports",
+    bgSoft: "bg-reports-soft",
+    text: "text-reports",
+    border: "border-reports",
+    ring: "ring-reports",
+    gradientFrom: "from-reports-soft",
+    gradientVia: "via-reports-soft/60",
   },
 };

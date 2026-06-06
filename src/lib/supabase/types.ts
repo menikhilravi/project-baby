@@ -329,6 +329,9 @@ export interface Database {
           user_id: string;
           couple_id: string | null;
           kind: "feed" | "diaper" | "sleep" | "kick";
+          subtype: string | null;
+          amount: number | null;
+          unit: string | null;
           occurred_at: string;
           ended_at: string | null;
           notes: string | null;
@@ -339,6 +342,9 @@ export interface Database {
           user_id: string;
           couple_id?: string | null;
           kind: "feed" | "diaper" | "sleep" | "kick";
+          subtype?: string | null;
+          amount?: number | null;
+          unit?: string | null;
           occurred_at?: string;
           ended_at?: string | null;
           notes?: string | null;
@@ -346,9 +352,40 @@ export interface Database {
         };
         Update: {
           kind?: "feed" | "diaper" | "sleep" | "kick";
+          subtype?: string | null;
+          amount?: number | null;
+          unit?: string | null;
           occurred_at?: string;
           ended_at?: string | null;
           notes?: string | null;
+        };
+        Relationships: [];
+      };
+      growth_measurements: {
+        Row: {
+          id: number;
+          user_id: string;
+          couple_id: string | null;
+          measured_on: string;
+          weight_g: number | null;
+          height_cm: number | null;
+          head_cm: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          user_id: string;
+          couple_id?: string | null;
+          measured_on?: string;
+          weight_g?: number | null;
+          height_cm?: number | null;
+          head_cm?: number | null;
+        };
+        Update: {
+          measured_on?: string;
+          weight_g?: number | null;
+          height_cm?: number | null;
+          head_cm?: number | null;
         };
         Relationships: [];
       };

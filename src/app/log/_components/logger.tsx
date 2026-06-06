@@ -5,6 +5,7 @@ import { Droplets, Moon, Trash2, Utensils } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { subtypeLabel } from "@/lib/baby-events";
 import { removeEvent } from "../actions";
 import { QuickLogPanel } from "./quick-log-panel";
 
@@ -13,6 +14,9 @@ export type BabyEventRow = {
   user_id: string;
   couple_id: string | null;
   kind: "feed" | "diaper" | "sleep";
+  subtype: string | null;
+  amount: number | null;
+  unit: string | null;
   occurred_at: string;
   ended_at: string | null;
   notes: string | null;
@@ -204,6 +208,8 @@ function TimelineRow({
     } else {
       detail = "ongoing";
     }
+  } else {
+    detail = subtypeLabel(row.subtype, row.amount, row.unit);
   }
 
   return (

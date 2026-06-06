@@ -30,7 +30,9 @@ export default async function LogPage() {
   const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
   const { data: events } = await supabase
     .from("baby_events")
-    .select("id, user_id, couple_id, kind, occurred_at, ended_at, notes")
+    .select(
+      "id, user_id, couple_id, kind, subtype, amount, unit, occurred_at, ended_at, notes",
+    )
     .gte("occurred_at", since)
     .neq("kind", "kick")
     .order("occurred_at", { ascending: false });

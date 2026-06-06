@@ -7,6 +7,7 @@ import { LastEventsRow, type LastEventCell } from "./_components/last-events-row
 import { LowSuppliesCard, type LowSupply } from "./_components/low-supplies-card";
 import { PinnedNotesCard, type PinnedNote } from "./_components/pinned-notes-card";
 import { KicksTodayCard } from "./_components/kicks-today-card";
+import { NextNapCard, type RawSleep } from "./_components/next-nap-card";
 
 export default async function TodayPage() {
   const supabase = await createClient();
@@ -17,14 +18,17 @@ export default async function TodayPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("couple_id, role")
+    .select("couple_id, role, birth_date")
     .eq("id", user.id)
     .single();
   const coupleId = profile?.couple_id ?? null;
   const role = profile?.role ?? null;
+  const birthDate = profile?.birth_date ?? null;
 
   // eslint-disable-next-line react-hooks/purity -- server component reading wall-clock time
   const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60_000).toISOString();
+  // eslint-disable-next-line react-hooks/purity -- server component reading wall-clock time
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60_000).toISOString();
 
   const [
     openSleepRes,
@@ -34,6 +38,7 @@ export default async function TodayPage() {
     suppliesRes,
     notesRes,
     kicksRes,
+    recentSleepsRes,
   ] = await Promise.all([
       supabase
         .from("baby_events")
@@ -81,9 +86,19 @@ export default async function TodayPage() {
         .select("id", { count: "exact", head: true })
         .eq("kind", "kick")
         .gte("occurred_at", twoHoursAgo),
+      supabase
+        .from("baby_events")
+        .select("occurred_at, ended_at")
+        .eq("kind", "sleep")
+        .gte("occurred_at", sevenDaysAgo)
+        .order("occurred_at", { ascending: true }),
     ]);
 
   const kickCount = kicksRes.count ?? 0;
+  const recentSleeps: RawSleep[] = (recentSleepsRes.data ?? []).map((s) => ({
+    occurred_at: s.occurred_at,
+    ended_at: s.ended_at,
+  }));
 
   // Build a roleMap for "you" vs partner labelling.
   const membersQuery = coupleId
@@ -166,6 +181,8 @@ export default async function TodayPage() {
         />
 
         <LastEventsRow cells={last} />
+
+        <NextNapCard birthDate={birthDate} sleeps={recentSleeps} />
 
         <KicksTodayCard count={kickCount} canLog={role === "mom"} />
 
