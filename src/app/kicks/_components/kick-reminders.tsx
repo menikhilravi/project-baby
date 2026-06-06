@@ -108,11 +108,13 @@ export function KickReminders() {
         );
         setStatus("Subscribed. We'll send a test now…");
         const result = await sendTestPush();
-        setStatus(
-          result.sent > 0
-            ? "Reminders on — test sent."
-            : "Subscribed, but the test send failed. Check server logs.",
-        );
+        if (result.sent > 0) {
+          setStatus("Reminders on — test sent.");
+        } else if (result.errors.length > 0) {
+          setStatus(`Subscribed, but test send failed: ${result.errors[0]}`);
+        } else {
+          setStatus("Subscribed, but no devices received a test push.");
+        }
       } catch (e) {
         console.error("[push] subscribe failed", e);
         setStatus(e instanceof Error ? e.message : "Subscribe failed");
@@ -142,11 +144,19 @@ export function KickReminders() {
     startTransition(async () => {
       try {
         const result = await sendTestPush();
-        setStatus(
-          result.sent > 0
-            ? `Sent to ${result.sent} device${result.sent === 1 ? "" : "s"}.`
-            : "No active subscriptions to send to.",
-        );
+        if (result.sent > 0) {
+          setStatus(
+            `Sent to ${result.sent} device${result.sent === 1 ? "" : "s"}.`,
+          );
+        } else if (result.total === 0) {
+          setStatus(
+            "No subscriptions in the database for this account. Try Unsubscribe → Subscribe to resync.",
+          );
+        } else if (result.errors.length > 0) {
+          setStatus(`Send failed: ${result.errors[0]}`);
+        } else {
+          setStatus("No active subscriptions reachable.");
+        }
       } catch (e) {
         setStatus(e instanceof Error ? e.message : "Test send failed");
       }

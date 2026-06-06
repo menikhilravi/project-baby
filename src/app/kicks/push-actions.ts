@@ -57,12 +57,20 @@ export async function unsubscribeFromPush(endpoint: string) {
   if (error) throw new Error(error.message);
 }
 
+export type TestPushResult = {
+  sent: number;
+  pruned: number;
+  total: number;
+  errors: string[];
+};
+
 /**
  * Fire a test notification to every device this user has subscribed.
- * Lets the user verify the wiring works without waiting two hours for
- * the cron job. Drops any subscriptions that come back as gone.
+ * Returns per-failure detail so the UI can show exactly why a send
+ * failed (most common: VAPID key mismatch between client/server, which
+ * the push service surfaces as 403/410).
  */
-export async function sendTestPush(): Promise<{ sent: number; pruned: number }> {
+export async function sendTestPush(): Promise<TestPushResult> {
   const { supabase, user } = await requireUser();
   const { data: subs } = await supabase
     .from("push_subscriptions")
@@ -71,6 +79,7 @@ export async function sendTestPush(): Promise<{ sent: number; pruned: number }> 
 
   let sent = 0;
   let pruned = 0;
+  const errors: string[] = [];
   for (const s of subs ?? []) {
     const result = await sendPush(
       { endpoint: s.endpoint, p256dh: s.p256dh, auth: s.auth },
@@ -87,10 +96,18 @@ export async function sendTestPush(): Promise<{ sent: number; pruned: number }> 
         .from("push_subscriptions")
         .update({ last_used_at: new Date().toISOString() })
         .eq("id", s.id);
-    } else if (result.gone) {
-      await supabase.from("push_subscriptions").delete().eq("id", s.id);
-      pruned++;
+    } else {
+      errors.push(
+        `${result.status ?? "?"}: ${result.error.slice(0, 200)}`,
+      );
+      // Only prune on a real gone (410). Some push services return 404 on
+      // misconfigured VAPID before the endpoint is actually invalidated, so
+      // don't auto-delete unless we're sure.
+      if (result.status === 410) {
+        await supabase.from("push_subscriptions").delete().eq("id", s.id);
+        pruned++;
+      }
     }
   }
-  return { sent, pruned };
+  return { sent, pruned, total: subs?.length ?? 0, errors };
 }
