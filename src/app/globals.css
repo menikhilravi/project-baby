@@ -216,3 +216,104 @@
     font-feature-settings: "ss01", "ss02";
   }
 }
+
+/* ----------------------------------------------------------------------------
+   View transitions — route navigations are wrapped in startViewTransition
+   (experimental.viewTransition). The page content crossfades with a soft blur
+   while the persistent nav chrome stays anchored so it never flickers.
+---------------------------------------------------------------------------- */
+
+::view-transition-old(root) {
+  animation: 180ms cubic-bezier(0.4, 0, 0.2, 1) both vt-page-out;
+}
+::view-transition-new(root) {
+  animation: 280ms cubic-bezier(0.16, 1, 0.3, 1) 40ms both vt-page-in;
+}
+
+@keyframes vt-page-out {
+  to {
+    opacity: 0;
+    filter: blur(3px);
+  }
+}
+@keyframes vt-page-in {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(8px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+
+/* Anchor the persistent chrome: pull it out of the root snapshot and freeze it
+   so the side nav, bottom nav, mobile actions and progress bar hold still. */
+::view-transition-group(side-nav),
+::view-transition-group(bottom-nav),
+::view-transition-group(mobile-actions),
+::view-transition-group(top-progress) {
+  animation: none;
+  z-index: 50;
+}
+::view-transition-old(side-nav),
+::view-transition-old(bottom-nav),
+::view-transition-old(mobile-actions),
+::view-transition-old(top-progress) {
+  /* Hide the old snapshot so the live (new) chrome shows through immediately. */
+  display: none;
+}
+::view-transition-new(side-nav),
+::view-transition-new(bottom-nav),
+::view-transition-new(mobile-actions),
+::view-transition-new(top-progress) {
+  animation: none;
+}
+
+/* Positional movement is the most common motion-sensitivity trigger — drop all
+   transition animation for users who ask for reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   Skeleton shimmer — upgrade the loading placeholders (bg-muted + animate-pulse)
+   from a flat pulse to a soft light sweep so loading reads as premium, and the
+   handoff to real content feels intentional rather than a hard pop.
+---------------------------------------------------------------------------- */
+
+.animate-pulse.bg-muted {
+  position: relative;
+  overflow: hidden;
+}
+.animate-pulse.bg-muted::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--foreground) 7%, transparent),
+    transparent
+  );
+  transform: translateX(-100%);
+  animation: skeleton-sweep 1.6s ease-in-out infinite;
+}
+@keyframes skeleton-sweep {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse.bg-muted::after {
+    animation: none;
+  }
+}

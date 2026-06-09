@@ -5,6 +5,7 @@ import "./globals.css";
 import { SideNav } from "@/components/side-nav";
 import { BottomNav } from "@/components/bottom-nav";
 import { UserMenu } from "@/components/user-menu";
+import { NavProgressProvider } from "@/components/nav-progress";
 import { createClient } from "@/lib/supabase/server";
 import { getPhase } from "@/lib/phase";
 
@@ -82,25 +83,21 @@ export default async function RootLayout({
     >
       <body className="min-h-full text-foreground">
         {authed ? (
-          <SideNav
-            userEmail={email}
-            phase={phase}
-            hiddenSections={hiddenSections}
-          />
-        ) : null}
-        {authed ? <UserMenu email={email!} variant="mobile" /> : null}
-        <main
-          className={
-            authed
-              ? "md:pl-60 pb-20 md:pb-0 pt-16 md:pt-0 min-h-screen"
-              : "min-h-screen"
-          }
-        >
-          {children}
-        </main>
-        {authed ? (
-          <BottomNav phase={phase} hiddenSections={hiddenSections} />
-        ) : null}
+          <NavProgressProvider>
+            <SideNav
+              userEmail={email}
+              phase={phase}
+              hiddenSections={hiddenSections}
+            />
+            <UserMenu email={email!} variant="mobile" />
+            <main className="md:pl-60 pb-20 md:pb-0 pt-16 md:pt-0 min-h-screen">
+              {children}
+            </main>
+            <BottomNav phase={phase} hiddenSections={hiddenSections} />
+          </NavProgressProvider>
+        ) : (
+          <main className="min-h-screen">{children}</main>
+        )}
         <Analytics />
       </body>
     </html>

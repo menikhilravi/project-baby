@@ -18,7 +18,10 @@ export function UserMenu({
 
   if (variant === "mobile") {
     return (
-      <div className="md:hidden fixed top-3 right-3 z-40 flex items-center gap-1.5">
+      <div
+        className="md:hidden fixed top-3 right-3 z-40 flex items-center gap-1.5"
+        style={{ viewTransitionName: "mobile-actions" }}
+      >
         <Link
           href="/settings"
           aria-label="Settings"

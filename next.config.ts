@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    // Wraps route navigations in document.startViewTransition so the browser
+    // crossfades between pages. Customised + nav anchored in globals.css.
+    viewTransition: true,
+  },
   async headers() {
     return [
       {
