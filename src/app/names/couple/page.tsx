@@ -16,7 +16,7 @@ export default async function CouplePage({
   const status = await getCoupleStatus();
 
   return (
-    <div className="mx-auto max-w-md px-4 py-8 md:py-12">
+    <div className="mx-auto max-w-md px-5 py-10 md:py-16">
       <Link
         href="/names"
         className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-3"

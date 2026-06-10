@@ -174,7 +174,7 @@ export default async function GearPage() {
   ).length;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 md:px-8 md:py-12">
+    <div className="mx-auto max-w-2xl px-5 py-10 md:px-8 md:py-16">
       <PageHero
         tool="gear"
         icon={ShoppingCart}
@@ -341,7 +341,7 @@ export default async function GearPage() {
                         </div>
 
                         <div className="mt-4 flex items-baseline gap-2">
-                          <span className="font-display text-3xl font-semibold tabular-nums tracking-tight">
+                          <span className="font-display nums text-4xl font-bold tracking-tight">
                             {best !== null ? fmt(best) : "—"}
                           </span>
                           <span className="text-xs text-muted-foreground">

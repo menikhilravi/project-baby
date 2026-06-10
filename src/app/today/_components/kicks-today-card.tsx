@@ -34,7 +34,7 @@ export function KicksTodayCard({
           <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
             Kicks · last 2h
           </p>
-          <p className="font-display text-lg font-semibold leading-tight tabular-nums">
+          <p className="font-display nums text-2xl font-bold leading-tight">
             {count}
             <span className="text-sm font-normal text-muted-foreground">
               {" "}

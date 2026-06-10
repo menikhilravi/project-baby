@@ -24,7 +24,7 @@ export default async function NamesPage() {
   const pool = generatedPool.slice(0, 20);
 
   return (
-    <div className="mx-auto max-w-md px-4 py-8 md:py-12 flex flex-col items-center">
+    <div className="mx-auto max-w-md px-5 py-10 md:py-16 flex flex-col items-center">
       <div className="w-full">
         <PageHero
           tool="names"

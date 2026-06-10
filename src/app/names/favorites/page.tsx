@@ -96,7 +96,7 @@ export default async function FavoritesPage() {
   const totalCount = myList.length + onlyPartner.length;
 
   return (
-    <div className="mx-auto max-w-md px-4 py-8 md:py-12">
+    <div className="mx-auto max-w-md px-5 py-10 md:py-16">
       <div className="flex items-center justify-between mb-3">
         <Link
           href="/names"
@@ -144,7 +144,7 @@ export default async function FavoritesPage() {
                 <Heart className="h-3.5 w-3.5 fill-current" />
                 Both love ({bothLoved.length})
               </h2>
-              <ul className="space-y-2">
+              <ul className="divide-y divide-border">
                 {bothLoved.map((row, i) => (
                   <NameRow
                     key={row.name}
@@ -165,7 +165,7 @@ export default async function FavoritesPage() {
               <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                 {inCouple ? `${myLabel}'s picks` : "Your picks"} ({onlyMe.length})
               </h2>
-              <ul className="space-y-2">
+              <ul className="divide-y divide-border">
                 {onlyMe.map((row, i) => (
                   <NameRow
                     key={row.name}
@@ -186,7 +186,7 @@ export default async function FavoritesPage() {
               <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                 {partnerLabel}&apos;s picks ({onlyPartner.length})
               </h2>
-              <ul className="space-y-2">
+              <ul className="divide-y divide-border">
                 {onlyPartner.map((row, i) => (
                   <NameRow
                     key={row.name}
@@ -227,12 +227,8 @@ function NameRow({
   const isLast = i === total - 1;
 
   return (
-    <li
-      className={`flex items-center gap-2 rounded-2xl border px-3 py-3 ${
-        highlight ? "bg-names-soft border-names/20" : "bg-card"
-      }`}
-    >
-      <span className="w-6 text-center text-xs font-mono font-semibold text-names tabular-nums select-none">
+    <li className="flex items-center gap-2.5 py-3">
+      <span className="w-6 text-center text-sm font-mono font-semibold text-names tabular-nums select-none">
         {i + 1}
       </span>
 

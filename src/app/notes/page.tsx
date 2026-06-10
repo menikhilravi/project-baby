@@ -5,7 +5,6 @@ import { PageHero } from "@/components/page-hero";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/server";
 import { tryEmbed } from "@/lib/embed";
-import { cn } from "@/lib/utils";
 
 type SearchParams = Promise<{ q?: string }>;
 
@@ -71,7 +70,7 @@ export default async function NotesPage({
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 md:px-8 md:py-12">
+    <div className="mx-auto max-w-xl px-5 py-10 md:px-8 md:py-16">
       <PageHero
         tool="notes"
         icon={BookOpen}
@@ -122,26 +121,23 @@ export default async function NotesPage({
           ) : null}
         </div>
       ) : (
-        <ul className="space-y-2">
+        <ul className="divide-y divide-border">
           {notes.map((note) => (
             <li key={note.id}>
               <Link
                 href={`/notes/${note.id}`}
-                className={cn(
-                  "block rounded-2xl border bg-card px-4 py-3 transition-all",
-                  "hover:border-notes/40 hover:shadow-sm hover:-translate-y-0.5",
-                )}
+                className="block py-4 transition-colors active:bg-card/40 -mx-2 px-2 rounded-xl"
               >
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-2.5">
                   {note.pinned ? (
                     <Pin className="h-3.5 w-3.5 text-notes mt-1 shrink-0 fill-current" />
                   ) : null}
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-sm tracking-tight truncate">
+                    <p className="font-medium text-[15px] tracking-tight truncate">
                       {note.title}
                     </p>
                     {note.body ? (
-                      <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
+                      <p className="mt-1 text-[13px] text-muted-foreground line-clamp-2 leading-relaxed">
                         {note.body}
                       </p>
                     ) : null}

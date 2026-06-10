@@ -62,7 +62,7 @@ function Cell({ cell }: { cell: LastEventCell }) {
       </div>
       <p
         className={cn(
-          "font-display text-lg leading-none font-semibold tabular-nums tracking-tight",
+          "font-display nums text-2xl leading-none font-bold tracking-tight",
           subtle && "text-muted-foreground/50",
           cell.ongoing && "text-logger",
         )}

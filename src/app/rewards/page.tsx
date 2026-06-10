@@ -31,7 +31,7 @@ export default function RewardsPage() {
   >(findBestCard, null);
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-8 md:px-8 md:py-12">
+    <div className="mx-auto max-w-xl px-5 py-10 md:px-8 md:py-16">
       <PageHero
         tool="rewards"
         icon={CreditCard}
@@ -112,7 +112,7 @@ export default function RewardsPage() {
                 <CreditCard className="h-6 w-6" />
               </div>
               <div className="min-w-0">
-                <p className="font-display text-2xl font-semibold leading-tight">
+                <p className="font-display text-3xl font-bold tracking-tight leading-tight">
                   {result.best.cardName}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
@@ -125,28 +125,28 @@ export default function RewardsPage() {
               </div>
             </div>
 
-            <div className="mt-5 grid grid-cols-3 gap-3 text-center">
-              <div className="rounded-xl bg-background/60 border p-3">
-                <p className="font-display text-xl font-semibold tabular-nums">
+            <div className="mt-6 grid grid-cols-3 gap-px rounded-2xl overflow-hidden bg-border text-center">
+              <div className="bg-card px-3 py-4">
+                <p className="font-display nums text-2xl font-bold">
                   {fmtNumber(result.best.points)}
                 </p>
-                <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground mt-0.5">
+                <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mt-1">
                   points
                 </p>
               </div>
-              <div className="rounded-xl bg-background/60 border p-3">
-                <p className="font-display text-xl font-semibold tabular-nums">
+              <div className="bg-card px-3 py-4">
+                <p className="font-display nums text-2xl font-bold text-rewards">
                   {fmtMoney(result.best.dollarValue)}
                 </p>
-                <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground mt-0.5">
+                <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mt-1">
                   est. value
                 </p>
               </div>
-              <div className="rounded-xl bg-background/60 border p-3">
-                <p className="font-display text-xl font-semibold tabular-nums">
+              <div className="bg-card px-3 py-4">
+                <p className="font-display nums text-2xl font-bold">
                   {result.best.multiplier.toFixed(1)}×
                 </p>
-                <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground mt-0.5">
+                <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mt-1">
                   multiplier
                 </p>
               </div>

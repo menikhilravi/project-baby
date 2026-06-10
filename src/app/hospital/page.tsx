@@ -50,7 +50,7 @@ export default async function HospitalPage() {
   const overall = totalAll === 0 ? 0 : Math.round((totalDone / totalAll) * 100);
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 md:px-8 md:py-12">
+    <div className="mx-auto max-w-xl px-5 py-10 md:px-8 md:py-16">
       <PageHero
         tool="hospital"
         icon={BriefcaseMedical}
@@ -59,14 +59,22 @@ export default async function HospitalPage() {
         subtitle="A gentle nudge so nothing gets forgotten on the big day."
       />
 
-      <div className="mb-6 rounded-2xl border bg-card p-4">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Overall progress</span>
-          <span className="font-medium tabular-nums">
-            {totalDone} / {totalAll} packed
-          </span>
+      <div className="mb-8">
+        <div className="flex items-end justify-between mb-2.5">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
+              Packed
+            </p>
+            <p className="font-display nums text-4xl font-bold tracking-tight mt-1.5">
+              {overall}
+              <span className="text-2xl text-muted-foreground">%</span>
+            </p>
+          </div>
+          <p className="text-sm text-muted-foreground tabular-nums">
+            {totalDone} / {totalAll}
+          </p>
         </div>
-        <div className="mt-2 h-2 rounded-full bg-muted overflow-hidden">
+        <div className="h-2 rounded-full bg-muted overflow-hidden">
           <div
             className="h-full rounded-full bg-hospital transition-all duration-500"
             style={{ width: `${overall}%` }}

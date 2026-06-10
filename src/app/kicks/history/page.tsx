@@ -51,7 +51,7 @@ export default async function KicksHistoryPage({
   }));
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 md:px-8 md:py-12">
+    <div className="mx-auto max-w-2xl px-5 py-10 md:px-8 md:py-16">
       <div className="mb-3">
         <Link
           href="/kicks"

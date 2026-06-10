@@ -1,7 +1,7 @@
 "use client";
 
 import { useOptimistic, useState, useTransition, useRef } from "react";
-import { Plus, Check, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -102,16 +102,10 @@ export function ChecklistGroup({
   };
 
   return (
-    <ul className="space-y-2.5 mt-5">
+    <ul className="divide-y divide-border mt-2">
       {optimisticRows.map((row) => (
         <li key={row.id}>
-          <div
-            className={cn(
-              "group flex items-center gap-3 rounded-2xl border bg-card pl-4 pr-2 py-3 transition-all",
-              "hover:border-hospital/40 hover:shadow-sm",
-              row.checked && "bg-hospital-soft/60 border-hospital/30",
-            )}
-          >
+          <div className="group flex items-center gap-3.5 py-3.5">
             <Checkbox
               id={`item-${row.id}`}
               checked={row.checked}
@@ -124,15 +118,12 @@ export function ChecklistGroup({
             <Label
               htmlFor={`item-${row.id}`}
               className={cn(
-                "text-sm font-normal cursor-pointer flex-1 py-1",
+                "text-[15px] font-normal cursor-pointer flex-1 py-0.5 transition-colors",
                 row.checked && "line-through text-muted-foreground",
               )}
             >
               {row.item}
             </Label>
-            {row.checked ? (
-              <Check className="h-4 w-4 text-hospital mr-1" />
-            ) : null}
             <Button
               type="button"
               size="icon"
@@ -151,7 +142,7 @@ export function ChecklistGroup({
         {adding ? (
           <form
             onSubmit={handleAdd}
-            className="flex items-center gap-2 rounded-2xl border bg-card px-3 py-2"
+            className="flex items-center gap-2 py-2"
           >
             <Input
               ref={inputRef}
@@ -162,7 +153,7 @@ export function ChecklistGroup({
                 if (!draft.trim()) setAdding(false);
               }}
               placeholder="Add an item…"
-              className="flex-1 h-8 border-0 shadow-none focus-visible:ring-0 px-1 bg-transparent"
+              className="flex-1 h-9 border-0 shadow-none focus-visible:ring-0 px-1 bg-transparent text-[15px]"
             />
             <Button
               type="submit"
@@ -176,9 +167,9 @@ export function ChecklistGroup({
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border bg-transparent py-3 text-xs text-muted-foreground hover:text-foreground hover:border-hospital/40 transition-colors"
+            className="w-full flex items-center gap-2.5 py-3.5 text-[15px] text-muted-foreground hover:text-foreground transition-colors"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-4 w-4" />
             Add item
           </button>
         )}

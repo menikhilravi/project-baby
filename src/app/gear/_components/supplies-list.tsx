@@ -98,7 +98,7 @@ export function SuppliesList({ rows }: { rows: SupplyRow[] }) {
           </button>
         </div>
       ) : (
-        <ul className="space-y-2.5">
+        <ul className="divide-y divide-border">
           {optimistic.map((row) => {
             const low = row.low_threshold > 0 && row.quantity <= row.low_threshold;
             return (
@@ -127,9 +127,9 @@ export function SuppliesList({ rows }: { rows: SupplyRow[] }) {
         <button
           type="button"
           onClick={() => setAdding(true)}
-          className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border bg-transparent py-3 text-xs text-muted-foreground hover:text-foreground hover:border-gear/40 transition-colors"
+          className="w-full flex items-center gap-2.5 border-t border-border py-3.5 text-[15px] text-muted-foreground hover:text-foreground transition-colors"
         >
-          <Plus className="h-3.5 w-3.5" />
+          <Plus className="h-4 w-4" />
           Add supply
         </button>
       )}
@@ -153,21 +153,16 @@ function SupplyCard({
   onRemove: () => void;
 }) {
   return (
-    <div
-      className={cn(
-        "group flex items-center gap-3 rounded-2xl border bg-card px-3 py-3 transition-all",
-        low && "border-destructive/40 bg-destructive/5",
-      )}
-    >
+    <div className="group flex items-center gap-3 py-3">
       <span
         aria-hidden
-        className="grid place-items-center h-11 w-11 rounded-2xl bg-gear-soft text-xl shrink-0 shadow-inner"
+        className="grid place-items-center h-11 w-11 rounded-2xl bg-gear-soft text-xl shrink-0"
       >
         {row.emoji}
       </span>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className="font-medium text-sm truncate">{row.name}</p>
+          <p className="font-medium text-[15px] truncate">{row.name}</p>
           {low ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-destructive/15 text-destructive px-2 py-0.5 text-[10px] font-medium">
               <AlertTriangle className="h-2.5 w-2.5" />
@@ -195,7 +190,7 @@ function SupplyCard({
         </Button>
         <span
           className={cn(
-            "min-w-[2ch] text-center font-display text-lg font-semibold tabular-nums",
+            "min-w-[2ch] text-center font-display nums text-xl font-bold",
             low && "text-destructive",
           )}
         >
