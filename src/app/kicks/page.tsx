@@ -41,7 +41,7 @@ export default async function KicksPage() {
   }));
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 md:px-8 md:py-12">
+    <div className="mx-auto max-w-xl px-5 py-10 md:px-8 md:py-16">
       <PageHero
         tool="kicks"
         icon={Footprints}
@@ -50,7 +50,7 @@ export default async function KicksPage() {
         subtitle="Tap each time you feel a kick. Aim for 10 in 2 hours."
       />
 
-      <div className="space-y-8">
+      <div className="space-y-12">
         <KickCounter
           coupleId={coupleId}
           canLog={role === "mom"}
@@ -60,15 +60,15 @@ export default async function KicksPage() {
         {role === "mom" ? <KickReminders /> : null}
         <Link
           href="/kicks/history"
-          className="flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 transition-all hover:bg-card hover:border-border hover:shadow-sm"
+          className="group flex items-center justify-between gap-3 border-t border-border pt-5 transition-colors"
         >
           <div>
-            <p className="text-sm font-medium">Last 7 days</p>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-[15px] font-medium tracking-tight">Last 7 days</p>
+            <p className="text-[13px] text-muted-foreground mt-0.5">
               Daily totals, sessions, and time-to-10
             </p>
           </div>
-          <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
+          <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-active:translate-x-0.5" />
         </Link>
       </div>
     </div>

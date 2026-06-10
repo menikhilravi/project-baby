@@ -105,87 +105,81 @@ export function TwoHourBins({
 
   return (
     <section>
-      <div className="flex items-baseline justify-between mb-3">
-        <h2 className="text-sm font-semibold tracking-tight">Today by 2-hour window</h2>
-        <p className="text-xs text-muted-foreground tabular-nums">
-          {totalToday} {totalToday === 1 ? "kick" : "kicks"}
+      <div className="flex items-baseline justify-between mb-1">
+        <h2 className="text-[11px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
+          Today
+        </h2>
+        <p className="text-sm tabular-nums text-muted-foreground">
+          <span className="text-foreground font-semibold">{totalToday}</span>{" "}
+          {totalToday === 1 ? "kick" : "kicks"}
         </p>
       </div>
-      <div className="rounded-2xl border border-border bg-card p-3">
-        <ul className="space-y-1.5">
-          {BIN_START_HOURS.map((start, i) => {
-            const end = BIN_END_HOURS[i];
-            const count = bins[i];
-            const isCurrent = i === currentBinIdx;
-            const isPast =
-              currentBinIdx === -1
-                ? now.getHours() >= 22
-                : i < currentBinIdx;
-            const reached = count >= GOAL;
-            const pct = Math.min(count / maxBin, 1);
-            return (
-              <li
-                key={start}
+      <ul className="divide-y divide-border">
+        {BIN_START_HOURS.map((start, i) => {
+          const count = bins[i];
+          const isCurrent = i === currentBinIdx;
+          const isPast =
+            currentBinIdx === -1 ? now.getHours() >= 22 : i < currentBinIdx;
+          const reached = count >= GOAL;
+          const pct = Math.min(count / maxBin, 1);
+          return (
+            <li
+              key={start}
+              className="grid grid-cols-[4rem_1fr_2.25rem] items-center gap-3 py-3.5"
+            >
+              <span
                 className={cn(
-                  "grid grid-cols-[5.5rem_1fr_2.5rem] items-center gap-2 rounded-xl px-2 py-1.5 transition-colors",
-                  isCurrent && "bg-kicks-soft/40 ring-1 ring-kicks/30",
+                  "text-[13px] tabular-nums font-medium",
+                  isCurrent
+                    ? "text-kicks"
+                    : isPast || count > 0
+                      ? "text-foreground"
+                      : "text-muted-foreground",
                 )}
               >
-                <span
+                {fmtHour(start)}
+              </span>
+              <div className="relative h-2 rounded-full bg-muted overflow-hidden">
+                <div
                   className={cn(
-                    "text-xs tabular-nums font-medium",
-                    isCurrent
-                      ? "text-kicks"
-                      : isPast || count > 0
-                        ? "text-foreground"
-                        : "text-muted-foreground",
+                    "absolute inset-y-0 left-0 rounded-full transition-all duration-300",
+                    count === 0
+                      ? "bg-transparent"
+                      : reached
+                        ? "bg-kicks"
+                        : isCurrent
+                          ? "bg-kicks/75"
+                          : "bg-kicks/50",
                   )}
-                >
-                  {fmtHour(start)}–{fmtHour(end)}
-                </span>
-                <div className="relative h-3 rounded-full bg-border/40 overflow-hidden">
-                  <div
-                    className={cn(
-                      "absolute inset-y-0 left-0 rounded-full transition-all",
-                      count === 0
-                        ? "bg-transparent"
-                        : reached
-                          ? "bg-kicks"
-                          : isCurrent
-                            ? "bg-kicks/70"
-                            : "bg-kicks/45",
-                    )}
-                    style={{ width: `${pct * 100}%` }}
-                  />
-                  {/* goal marker at GOAL/maxBin */}
-                  <div
-                    className="absolute inset-y-0 w-px bg-foreground/30"
-                    style={{ left: `${(GOAL / maxBin) * 100}%` }}
-                    aria-hidden
-                  />
-                </div>
-                <span
-                  className={cn(
-                    "text-xs tabular-nums font-semibold text-right",
-                    reached
-                      ? "text-kicks"
-                      : count === 0 && !isPast && !isCurrent
-                        ? "text-muted-foreground/40"
-                        : "text-foreground",
-                  )}
-                >
-                  {count === 0 && !isPast && !isCurrent ? "—" : count}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-        {outsideHours > 0 ? (
-          <p className="mt-2 text-[11px] text-muted-foreground text-center">
-            {outsideHours} {outsideHours === 1 ? "kick" : "kicks"} outside 6 AM – 10 PM
-          </p>
-        ) : null}
-      </div>
+                  style={{ width: `${pct * 100}%` }}
+                />
+                <div
+                  className="absolute inset-y-0 w-px bg-foreground/25"
+                  style={{ left: `${(GOAL / maxBin) * 100}%` }}
+                  aria-hidden
+                />
+              </div>
+              <span
+                className={cn(
+                  "text-base tabular-nums font-semibold text-right tracking-tight",
+                  reached
+                    ? "text-kicks"
+                    : count === 0 && !isPast && !isCurrent
+                      ? "text-muted-foreground/40"
+                      : "text-foreground",
+                )}
+              >
+                {count === 0 && !isPast && !isCurrent ? "—" : count}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      {outsideHours > 0 ? (
+        <p className="mt-3 text-[11px] text-muted-foreground">
+          {outsideHours} {outsideHours === 1 ? "kick" : "kicks"} outside 6 AM – 10 PM
+        </p>
+      ) : null}
     </section>
   );
 }
