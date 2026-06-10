@@ -208,28 +208,35 @@ function TapButton({
 }) {
   const pct = Math.min(count / goal, 1);
   return (
-    <div className="relative aspect-square w-full max-w-[18rem]">
+    <div className="relative aspect-square w-full max-w-[20rem]">
       <ProgressRing pct={pct} reachedTen={reachedTen} />
       <button
         type="button"
         onClick={onClick}
         disabled={disabled}
         className={cn(
-          "absolute inset-[12%] rounded-full grid place-items-center transition-all",
-          "bg-kicks-soft text-kicks border border-kicks/30 shadow-sm",
-          "hover:shadow-md hover:scale-[1.01] active:scale-[0.97]",
+          "absolute inset-[10%] rounded-full grid place-items-center transition-all duration-200",
+          "bg-card text-foreground border border-border",
+          "hover:scale-[1.015] active:scale-[0.97]",
           "disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100",
-          reachedTen && "ring-4 ring-kicks/30",
+          reachedTen
+            ? "shadow-[0_0_60px_-12px] shadow-kicks/60 border-kicks/40"
+            : "shadow-[0_0_50px_-20px] shadow-kicks/40",
         )}
         aria-label="Log a kick"
       >
-        <div className="flex flex-col items-center gap-1">
-          <Footprints className="h-8 w-8" />
-          <span className="font-display text-5xl font-semibold tabular-nums leading-none">
+        <div className="flex flex-col items-center gap-1.5">
+          <Footprints
+            className={cn(
+              "h-7 w-7 transition-colors",
+              reachedTen ? "text-kicks" : "text-kicks/70",
+            )}
+          />
+          <span className="font-display nums text-7xl font-bold leading-[0.9] text-foreground">
             {count}
           </span>
-          <span className="text-[10px] uppercase tracking-[0.18em] font-semibold text-kicks/80">
-            of {goal}
+          <span className="text-[10px] uppercase tracking-[0.22em] font-semibold text-muted-foreground">
+            of {goal} kicks
           </span>
         </div>
       </button>
@@ -245,7 +252,7 @@ function ProgressRing({
   reachedTen: boolean;
 }) {
   const size = 100;
-  const stroke = 6;
+  const stroke = 7;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const dash = c * pct;
@@ -261,7 +268,7 @@ function ProgressRing({
         r={r}
         fill="none"
         stroke="currentColor"
-        className="text-border/40"
+        className="text-border"
         strokeWidth={stroke}
       />
       <circle
