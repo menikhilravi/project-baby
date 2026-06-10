@@ -59,11 +59,13 @@ export function WeeklySummaryCard({ events }: { events: RawEvent[] }) {
       <CardHeader>
         <CardTitle>This week</CardTitle>
       </CardHeader>
-      <CardContent className="grid grid-cols-2 gap-4">
+      <CardContent className="grid grid-cols-2 gap-x-4 gap-y-5">
         {metrics.map((m) => (
-          <div key={m.label} className="space-y-0.5">
-            <p className="text-xs text-muted-foreground">{m.label}</p>
-            <p className="font-heading text-xl font-semibold tabular-nums">
+          <div key={m.label} className="space-y-1">
+            <p className="text-[10px] uppercase tracking-[0.14em] font-semibold text-muted-foreground">
+              {m.label}
+            </p>
+            <p className="font-display nums text-[1.75rem] font-bold tracking-tight leading-none">
               {m.value}
             </p>
             <Delta

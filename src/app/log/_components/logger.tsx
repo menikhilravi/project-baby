@@ -158,7 +158,7 @@ function Timeline({
           <h3 className="px-1 mb-2 text-[11px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
             {day}
           </h3>
-          <ul className="space-y-2">
+          <ul className="divide-y divide-border">
             {rows.map((row) => (
               <TimelineRow
                 key={row.id}
@@ -213,10 +213,10 @@ function TimelineRow({
   }
 
   return (
-    <li className="group flex items-center gap-3 rounded-2xl border bg-card pl-3 pr-2 py-2.5">
+    <li className="group flex items-center gap-3 py-3">
       <span
         className={cn(
-          "grid place-items-center h-9 w-9 rounded-xl bg-muted/60 ring-1 ring-border/40 shrink-0",
+          "grid place-items-center h-9 w-9 rounded-xl bg-muted ring-1 ring-border shrink-0",
           meta.accent,
         )}
       >
@@ -224,7 +224,7 @@ function TimelineRow({
       </span>
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2">
-          <span className="text-sm font-medium">{meta.label}</span>
+          <span className="text-[15px] font-medium">{meta.label}</span>
           {detail ? (
             <span className="text-xs text-muted-foreground tabular-nums">
               {detail}

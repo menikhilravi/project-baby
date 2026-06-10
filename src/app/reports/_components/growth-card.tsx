@@ -479,13 +479,13 @@ function EntryList({
   };
 
   return (
-    <ul className="space-y-1 border-t border-border pt-3">
+    <ul className="divide-y divide-border border-t border-border mt-3">
       {rows.map((r) => {
         const v = metricValue(r, metric);
         return (
           <li
             key={r.id}
-            className="group flex items-center gap-2 text-sm tabular-nums"
+            className="group flex items-center gap-2 text-sm tabular-nums py-2.5"
           >
             <span className="text-muted-foreground">
               {shortDate(r.measured_on)}

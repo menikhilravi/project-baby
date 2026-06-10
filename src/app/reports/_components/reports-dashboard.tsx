@@ -14,7 +14,6 @@ import { Droplets, Moon, Sparkles, Utensils } from "lucide-react";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -99,13 +98,18 @@ export function ReportsDashboard({ events }: { events: RawEvent[] }) {
       {/* Sleep */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Moon className="h-4 w-4 text-indigo-400" /> Sleep per day
+          <CardTitle className="flex items-center gap-2 text-[12px] uppercase tracking-[0.14em] font-semibold text-muted-foreground">
+            <Moon className="h-3.5 w-3.5 text-indigo-400" /> Sleep per day
           </CardTitle>
-          <CardDescription>
-            Avg {stats.avgSleepHours.toFixed(1)}h/day · longest stretch{" "}
-            {formatDuration(stats.longestSleepMin)}
-          </CardDescription>
+          <div className="flex items-baseline gap-2 mt-1">
+            <span className="font-display nums text-3xl font-bold tracking-tight">
+              {stats.avgSleepHours.toFixed(1)}
+              <span className="text-lg text-muted-foreground font-semibold">h</span>
+            </span>
+            <span className="text-xs text-muted-foreground">
+              avg/day · longest {formatDuration(stats.longestSleepMin)}
+            </span>
+          </div>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={180}>
@@ -138,12 +142,20 @@ export function ReportsDashboard({ events }: { events: RawEvent[] }) {
       {/* Diapers */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Droplets className="h-4 w-4 text-sky-500" /> Diapers per day
+          <CardTitle className="flex items-center gap-2 text-[12px] uppercase tracking-[0.14em] font-semibold text-muted-foreground">
+            <Droplets className="h-3.5 w-3.5 text-sky-500" /> Diapers per day
           </CardTitle>
-          <CardDescription>
-            {stats.totalDiapers} total · {stats.avgDiapers.toFixed(1)}/day
-          </CardDescription>
+          <div className="flex items-baseline gap-2 mt-1">
+            <span className="font-display nums text-3xl font-bold tracking-tight">
+              {stats.avgDiapers.toFixed(1)}
+              <span className="text-lg text-muted-foreground font-semibold">
+                /day
+              </span>
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {stats.totalDiapers} total
+            </span>
+          </div>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={180}>
@@ -202,12 +214,20 @@ export function ReportsDashboard({ events }: { events: RawEvent[] }) {
       {/* Feeds */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Utensils className="h-4 w-4 text-amber-500" /> Feeds per day
+          <CardTitle className="flex items-center gap-2 text-[12px] uppercase tracking-[0.14em] font-semibold text-muted-foreground">
+            <Utensils className="h-3.5 w-3.5 text-amber-500" /> Feeds per day
           </CardTitle>
-          <CardDescription>
-            {stats.totalFeeds} total · {stats.avgFeeds.toFixed(1)}/day
-          </CardDescription>
+          <div className="flex items-baseline gap-2 mt-1">
+            <span className="font-display nums text-3xl font-bold tracking-tight">
+              {stats.avgFeeds.toFixed(1)}
+              <span className="text-lg text-muted-foreground font-semibold">
+                /day
+              </span>
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {stats.totalFeeds} total
+            </span>
+          </div>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={180}>
