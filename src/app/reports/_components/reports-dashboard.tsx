@@ -69,7 +69,7 @@ export function ReportsDashboard({ events }: { events: RawEvent[] }) {
 
   if (!hasData) {
     return (
-      <div className="rounded-2xl border border-dashed border-border/60 px-6 py-12 text-center">
+      <div className="rounded-2xl border border-dashed border-border px-6 py-12 text-center">
         <p className="text-sm text-muted-foreground">
           No data yet — log a few feeds, diapers, and sleeps and your patterns
           will show up here.

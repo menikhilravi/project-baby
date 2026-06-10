@@ -229,7 +229,7 @@ function WeekNav({
       <Link
         href={`?offset=${weekOffset + 1}`}
         scroll={false}
-        className="grid place-items-center h-9 w-9 rounded-xl border border-border/60 bg-card/40 text-muted-foreground transition-all hover:bg-card hover:text-foreground"
+        className="grid place-items-center h-9 w-9 rounded-xl border border-border bg-card text-muted-foreground transition-all hover:bg-card hover:text-foreground"
         aria-label="Previous week"
       >
         <ChevronLeft className="h-4 w-4" />
@@ -246,7 +246,7 @@ function WeekNav({
         <Link
           href={`?offset=${weekOffset - 1}`}
           scroll={false}
-          className="grid place-items-center h-9 w-9 rounded-xl border border-border/60 bg-card/40 text-muted-foreground transition-all hover:bg-card hover:text-foreground"
+          className="grid place-items-center h-9 w-9 rounded-xl border border-border bg-card text-muted-foreground transition-all hover:bg-card hover:text-foreground"
           aria-label="Next week"
         >
           <ChevronRight className="h-4 w-4" />
@@ -268,7 +268,7 @@ function Stat({
   delta?: number | null;
 }) {
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/50 px-3 py-3">
+    <div className="rounded-2xl border border-border bg-card px-3 py-3">
       <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
         {label}
       </p>
@@ -310,7 +310,7 @@ function PerDayChart({
           avg {avg}/day
         </p>
       </div>
-      <ul className="space-y-1.5 rounded-2xl border border-border/60 bg-card/50 p-3">
+      <ul className="space-y-1.5 rounded-2xl border border-border bg-card p-3">
         {days.map((d, i) => {
           const count = perDay[i];
           const pct = (count / max) * 100;
@@ -398,7 +398,7 @@ function WindowHeatmap({
       <h2 className="text-sm font-semibold tracking-tight mb-3">
         When kicks happen
       </h2>
-      <div className="rounded-2xl border border-border/60 bg-card/50 p-3 overflow-x-auto">
+      <div className="rounded-2xl border border-border bg-card p-3 overflow-x-auto">
         <table className="w-full text-[11px] tabular-nums">
           <thead>
             <tr className="text-muted-foreground">
@@ -502,7 +502,7 @@ function TopSessions({ sessions }: { sessions: KickSession[] }) {
     return (
       <section>
         <h2 className="text-sm font-semibold tracking-tight mb-3">Sessions</h2>
-        <div className="rounded-2xl border border-dashed border-border/60 px-6 py-8 text-center">
+        <div className="rounded-2xl border border-dashed border-border px-6 py-8 text-center">
           <p className="text-sm text-muted-foreground">
             No kick sessions in the last 7 days.
           </p>
@@ -531,7 +531,7 @@ function SessionRow({ session }: { session: KickSession }) {
     ? new Date(session.reached_ten_at!).getTime() - start.getTime()
     : null;
   return (
-    <li className="flex items-center gap-3 rounded-2xl border border-border/60 bg-card/40 px-3 py-2.5">
+    <li className="flex items-center gap-3 rounded-2xl border border-border bg-card px-3 py-2.5">
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium">
           {start.toLocaleDateString(undefined, {

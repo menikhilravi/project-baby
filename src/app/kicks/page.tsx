@@ -60,7 +60,7 @@ export default async function KicksPage() {
         {role === "mom" ? <KickReminders /> : null}
         <Link
           href="/kicks/history"
-          className="flex items-center justify-between rounded-2xl border border-border/60 bg-card/40 px-4 py-3 transition-all hover:bg-card hover:border-border/80 hover:shadow-sm"
+          className="flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 transition-all hover:bg-card hover:border-border hover:shadow-sm"
         >
           <div>
             <p className="text-sm font-medium">Last 7 days</p>

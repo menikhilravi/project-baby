@@ -16,7 +16,7 @@ export function PageHero({ tool, icon: Icon, title, eyebrow, subtitle }: Props) 
     <header className="mb-7 md:mb-9 flex items-start gap-3.5">
       <span
         className={cn(
-          "shrink-0 grid place-items-center h-11 w-11 rounded-2xl border border-border/60 mt-0.5",
+          "shrink-0 grid place-items-center h-11 w-11 rounded-2xl border border-border mt-0.5",
           c.bgSoft,
           c.text,
         )}

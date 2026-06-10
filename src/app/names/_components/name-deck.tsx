@@ -200,7 +200,7 @@ export function NameDeck({ pool: initialPool }: { pool: NameEntry[] }) {
 
   if (exhausted) {
     return (
-      <div className="w-full max-w-xs aspect-[3/4] rounded-3xl border-2 border-dashed border-border/60 grid place-items-center text-center px-6">
+      <div className="w-full max-w-xs aspect-[3/4] rounded-3xl border-2 border-dashed border-border grid place-items-center text-center px-6">
         <div className="flex flex-col items-center gap-4 w-full">
           {generateError ? (
             <>
@@ -215,7 +215,7 @@ export function NameDeck({ pool: initialPool }: { pool: NameEntry[] }) {
                   onChange={(e) => setHint(e.target.value)}
                   placeholder={"Preferences (optional)\ne.g. starts with V, 4-5 letters…"}
                   rows={2}
-                  className="w-full text-xs px-3 py-2 rounded-xl border border-border/60 bg-background/60 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-names/40 resize-none"
+                  className="w-full text-xs px-3 py-2 rounded-xl border border-border bg-background/60 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-names/40 resize-none"
                 />
                 <Button
                   onClick={() => handleGenerate(hint || undefined)}
@@ -247,7 +247,7 @@ export function NameDeck({ pool: initialPool }: { pool: NameEntry[] }) {
         {upcoming && (
           <div
             aria-hidden
-            className="absolute inset-0 rounded-3xl bg-card/70 ring-1 ring-border/60 shadow-sm scale-[0.94] translate-y-3 opacity-70"
+            className="absolute inset-0 rounded-3xl bg-card ring-1 ring-border/60 shadow-sm scale-[0.94] translate-y-3 opacity-70"
           />
         )}
 
@@ -302,7 +302,7 @@ export function NameDeck({ pool: initialPool }: { pool: NameEntry[] }) {
           size="icon"
           variant="outline"
           aria-label="Pass"
-          className="h-16 w-16 rounded-full border-2 bg-card/80 hover:bg-card hover:border-foreground/40 hover:scale-105 active:scale-95 transition-all shadow-sm"
+          className="h-16 w-16 rounded-full border-2 bg-card hover:bg-card hover:border-foreground/40 hover:scale-105 active:scale-95 transition-all shadow-sm"
         >
           <X className="h-7 w-7" />
         </Button>
@@ -330,7 +330,7 @@ export function NameDeck({ pool: initialPool }: { pool: NameEntry[] }) {
             onChange={(e) => setHint(e.target.value)}
             placeholder={"Preferences (optional)\ne.g. starts with V, 4-5 letters…"}
             rows={2}
-            className="w-full text-xs px-3 py-2 rounded-xl border border-border/60 bg-background/60 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-names/40 resize-none"
+            className="w-full text-xs px-3 py-2 rounded-xl border border-border bg-background/60 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-names/40 resize-none"
           />
         )}
         <div className="flex items-center gap-2">

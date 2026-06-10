@@ -128,11 +128,11 @@
 
 .dark {
   /* Robinhood-style near-black — neutral, deep, high-contrast & flat. */
-  --background: oklch(0.082 0.003 280);
-  --foreground: oklch(0.96 0.004 280);
-  --card: oklch(0.132 0.004 280);
+  --background: oklch(0.072 0.003 280);
+  --foreground: oklch(0.97 0.004 280);
+  --card: oklch(0.148 0.005 280);
   --card-foreground: oklch(0.96 0.004 280);
-  --popover: oklch(0.142 0.005 280);
+  --popover: oklch(0.16 0.005 280);
   --popover-foreground: oklch(0.96 0.004 280);
   --primary: oklch(0.97 0.003 280);
   --primary-foreground: oklch(0.13 0.004 280);
@@ -143,8 +143,8 @@
   --accent: oklch(0.195 0.005 280);
   --accent-foreground: oklch(0.96 0.004 280);
   --destructive: oklch(0.68 0.20 22);
-  --border: oklch(1 0 0 / 6.5%);
-  --input: oklch(1 0 0 / 9%);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 11%);
   /* violet signature accent — focus rings, interactive touches */
   --ring: oklch(0.62 0.17 285);
   --chart-1: oklch(0.72 0.16 30);

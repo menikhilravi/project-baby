@@ -176,7 +176,7 @@ export function ChecklistGroup({
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border/60 bg-transparent py-3 text-xs text-muted-foreground hover:text-foreground hover:border-hospital/40 transition-colors"
+            className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border bg-transparent py-3 text-xs text-muted-foreground hover:text-foreground hover:border-hospital/40 transition-colors"
           >
             <Plus className="h-3.5 w-3.5" />
             Add item

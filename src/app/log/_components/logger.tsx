@@ -143,7 +143,7 @@ function Timeline({
 
   if (events.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border/60 px-6 py-10 text-center">
+      <div className="rounded-2xl border border-dashed border-border px-6 py-10 text-center">
         <p className="text-sm text-muted-foreground">
           No events yet — tap a button above to log the first one.
         </p>

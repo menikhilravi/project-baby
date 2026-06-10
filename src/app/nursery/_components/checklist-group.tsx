@@ -230,7 +230,7 @@ export function ChecklistGroup({
               </Button>
             </div>
             {isExpanded && row.shortlist ? (
-              <div className="rounded-b-2xl border border-t-0 bg-card/60 px-4 py-3">
+              <div className="rounded-b-2xl border border-t-0 bg-card px-4 py-3">
                 <WatchersList
                   itemId={row.shortlist.gearItemId}
                   watchers={row.shortlist.options}
@@ -273,7 +273,7 @@ export function ChecklistGroup({
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border/60 bg-transparent py-3 text-xs text-muted-foreground hover:text-foreground hover:border-nursery/40 transition-colors"
+            className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border bg-transparent py-3 text-xs text-muted-foreground hover:text-foreground hover:border-nursery/40 transition-colors"
           >
             <Plus className="h-3.5 w-3.5" />
             Add item

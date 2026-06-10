@@ -14,11 +14,11 @@ export function KicksTodayCard({
     <Link
       href="/kicks"
       className={cn(
-        "block rounded-2xl border bg-card/60 p-4 transition-all",
-        "hover:bg-card hover:border-border/80 hover:shadow-sm",
+        "block rounded-2xl border bg-card p-4 transition-all",
+        "hover:bg-card hover:border-border hover:shadow-sm",
         reachedTen
           ? "border-kicks/50 bg-kicks-soft/50"
-          : "border-border/60",
+          : "border-border",
       )}
     >
       <div className="flex items-center gap-3">

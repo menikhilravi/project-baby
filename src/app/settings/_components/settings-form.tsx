@@ -85,7 +85,7 @@ export function SettingsForm({
                 onClick={() => setOverride(c.value)}
                 aria-pressed={checked}
                 className={cn(
-                  "flex items-center justify-center gap-1.5 rounded-xl border bg-card/60 px-3 py-2.5 text-sm transition-all",
+                  "flex items-center justify-center gap-1.5 rounded-xl border bg-card px-3 py-2.5 text-sm transition-all",
                   "hover:bg-card",
                   checked &&
                     "border-foreground/40 bg-muted/60 font-medium ring-1 ring-foreground/10",

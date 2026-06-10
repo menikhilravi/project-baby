@@ -111,7 +111,7 @@ export function TwoHourBins({
           {totalToday} {totalToday === 1 ? "kick" : "kicks"}
         </p>
       </div>
-      <div className="rounded-2xl border border-border/60 bg-card/50 p-3">
+      <div className="rounded-2xl border border-border bg-card p-3">
         <ul className="space-y-1.5">
           {BIN_START_HOURS.map((start, i) => {
             const end = BIN_END_HOURS[i];

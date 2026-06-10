@@ -109,7 +109,7 @@ export function WatchersList({
   if (embedded) return list;
 
   return (
-    <div className="mt-3 pt-3 border-t border-border/60">
+    <div className="mt-3 pt-3 border-t border-border">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -379,7 +379,7 @@ function AddWatcherForm({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full flex items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-border/60 py-2 text-xs text-muted-foreground hover:text-foreground hover:border-gear/40 transition-colors"
+        className="w-full flex items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-border py-2 text-xs text-muted-foreground hover:text-foreground hover:border-gear/40 transition-colors"
       >
         <Plus className="h-3 w-3" />
         Add another {optionLabel}

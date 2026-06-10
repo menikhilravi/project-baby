@@ -30,7 +30,7 @@ export function BottomNav({
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-card border-t border-border/40"
+      className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-card border-t border-border"
       style={{
         paddingBottom: "env(safe-area-inset-bottom, 8px)",
         viewTransitionName: "bottom-nav",

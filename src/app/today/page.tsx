@@ -191,7 +191,7 @@ export default async function TodayPage() {
         {pinned.length > 0 ? <PinnedNotesCard notes={pinned} /> : null}
 
         {supplies.length === 0 && pinned.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border/60 px-6 py-8 text-center">
+          <div className="rounded-2xl border border-dashed border-border px-6 py-8 text-center">
             <p className="text-sm text-muted-foreground">
               Nothing urgent. Pin a note or set a supply&apos;s low threshold
               and it&apos;ll surface here.

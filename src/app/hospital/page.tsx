@@ -75,7 +75,7 @@ export default async function HospitalPage() {
       </div>
 
       <Tabs defaultValue="mom">
-        <TabsList className="grid grid-cols-3 w-full bg-card/50 p-1.5 rounded-2xl !h-auto gap-1">
+        <TabsList className="grid grid-cols-3 w-full bg-card p-1.5 rounded-2xl !h-auto gap-1">
           {(Object.keys(byOwner) as Owner[]).map((owner) => {
             const { done, total } = counts[owner];
             const complete = total > 0 && done === total;

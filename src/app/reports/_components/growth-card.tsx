@@ -385,7 +385,7 @@ function AddForm({ onDone }: { onDone: () => void }) {
   };
 
   return (
-    <div className="space-y-3 rounded-2xl border border-border/60 bg-card/40 p-3">
+    <div className="space-y-3 rounded-2xl border border-border bg-card p-3">
       <div className="grid grid-cols-2 gap-3">
         <Field label="Date">
           <Input
@@ -479,7 +479,7 @@ function EntryList({
   };
 
   return (
-    <ul className="space-y-1 border-t border-border/40 pt-3">
+    <ul className="space-y-1 border-t border-border pt-3">
       {rows.map((r) => {
         const v = metricValue(r, metric);
         return (

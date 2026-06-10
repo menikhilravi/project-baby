@@ -88,7 +88,7 @@ export default function RewardsPage() {
       </form>
 
       {result && !result.ok ? (
-        <div className="mt-6 rounded-3xl border bg-card/60 p-5 flex items-start gap-3">
+        <div className="mt-6 rounded-3xl border bg-card p-5 flex items-start gap-3">
           <AlertTriangle className="h-5 w-5 text-rewards mt-0.5 shrink-0" />
           <div className="text-sm">
             <p className="font-medium">Hmm.</p>

@@ -179,7 +179,7 @@ function PickerShell({
   disabled?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/60 px-3 py-3 space-y-2">
+    <div className="rounded-2xl border border-border bg-card px-3 py-3 space-y-2">
       <div className="flex flex-wrap gap-2">{children}</div>
       <button
         type="button"
@@ -214,7 +214,7 @@ function Chip({
         "hover:bg-card active:scale-[0.97] disabled:opacity-50",
         active
           ? "bg-logger-soft border-logger text-logger ring-1 ring-logger/30"
-          : "bg-card/40 border-border/60 text-foreground",
+          : "bg-card border-border text-foreground",
       )}
     >
       {label}
@@ -266,7 +266,7 @@ function FeedPicker({
               type="button"
               onClick={() => setOz((v) => Math.max(0.5, +(v - 0.5).toFixed(1)))}
               disabled={disabled}
-              className="grid h-8 w-8 place-items-center rounded-full border border-border/60 bg-card/40 hover:bg-card disabled:opacity-50"
+              className="grid h-8 w-8 place-items-center rounded-full border border-border bg-card hover:bg-card disabled:opacity-50"
               aria-label="Less"
             >
               <Minus className="h-4 w-4" />
@@ -278,7 +278,7 @@ function FeedPicker({
               type="button"
               onClick={() => setOz((v) => +(v + 0.5).toFixed(1))}
               disabled={disabled}
-              className="grid h-8 w-8 place-items-center rounded-full border border-border/60 bg-card/40 hover:bg-card disabled:opacity-50"
+              className="grid h-8 w-8 place-items-center rounded-full border border-border bg-card hover:bg-card disabled:opacity-50"
               aria-label="More"
             >
               <Plus className="h-4 w-4" />
@@ -342,7 +342,7 @@ function LogButton({
       disabled={disabled}
       className={cn(
         "group rounded-3xl border bg-card px-3 py-5 flex flex-col items-center gap-2 transition-all",
-        "hover:bg-card/80 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]",
+        "hover:bg-card hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]",
         "disabled:opacity-60 disabled:cursor-not-allowed",
         active && "bg-logger-soft border-logger ring-2 ring-logger/30",
       )}

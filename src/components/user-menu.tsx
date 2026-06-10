@@ -25,14 +25,14 @@ export function UserMenu({
         <Link
           href="/settings"
           aria-label="Settings"
-          className="flex items-center justify-center h-8 w-8 rounded-full bg-card/70 ring-1 ring-border/40 shadow-sm text-muted-foreground hover:text-foreground transition-all active:scale-95"
+          className="flex items-center justify-center h-8 w-8 rounded-full bg-card ring-1 ring-border/40 shadow-sm text-muted-foreground hover:text-foreground transition-all active:scale-95"
         >
           <Settings className="h-3.5 w-3.5" />
         </Link>
         <Link
           href="/names/couple"
           aria-label="Couple settings"
-          className="flex items-center justify-center h-8 w-8 rounded-full bg-card/70 ring-1 ring-border/40 shadow-sm text-muted-foreground hover:text-foreground transition-all active:scale-95"
+          className="flex items-center justify-center h-8 w-8 rounded-full bg-card ring-1 ring-border/40 shadow-sm text-muted-foreground hover:text-foreground transition-all active:scale-95"
         >
           <Users className="h-3.5 w-3.5" />
         </Link>
@@ -42,8 +42,8 @@ export function UserMenu({
             aria-label={`Sign out ${email}`}
             title={email}
             className={cn(
-              "flex items-center gap-1.5 rounded-full bg-card/70 ring-1 ring-border/40 shadow-sm",
-              "pl-1 pr-2.5 py-1 text-[11px] font-medium hover:bg-card/90 transition-all active:scale-95",
+              "flex items-center gap-1.5 rounded-full bg-card ring-1 ring-border/40 shadow-sm",
+              "pl-1 pr-2.5 py-1 text-[11px] font-medium hover:bg-card transition-all active:scale-95",
             )}
           >
             <span className="grid place-items-center h-6 w-6 rounded-full bg-gradient-to-br from-names-soft to-rewards-soft text-foreground/80 text-[11px] font-semibold">
@@ -57,7 +57,7 @@ export function UserMenu({
   }
 
   return (
-    <div className="px-3 py-3 border-t border-border/50">
+    <div className="px-3 py-3 border-t border-border">
       <div className="flex items-center gap-2.5 px-1">
         <span className="grid place-items-center h-8 w-8 rounded-full bg-gradient-to-br from-names-soft via-rewards-soft to-hospital-soft text-foreground/80 text-[13px] font-semibold ring-1 ring-border/40 flex-shrink-0">
           {initial}
@@ -73,7 +73,7 @@ export function UserMenu({
         <Link
           href="/names/couple"
           className={cn(
-            "w-full flex items-center justify-center gap-2 rounded-xl border border-border/50 bg-muted/30",
+            "w-full flex items-center justify-center gap-2 rounded-xl border border-border bg-muted/30",
             "py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors",
           )}
         >
@@ -83,7 +83,7 @@ export function UserMenu({
         <Link
           href="/settings"
           className={cn(
-            "w-full flex items-center justify-center gap-2 rounded-xl border border-border/50 bg-muted/30",
+            "w-full flex items-center justify-center gap-2 rounded-xl border border-border bg-muted/30",
             "py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors",
           )}
         >
@@ -94,7 +94,7 @@ export function UserMenu({
           <button
             type="submit"
             className={cn(
-              "w-full flex items-center justify-center gap-2 rounded-xl border border-border/50 bg-muted/30",
+              "w-full flex items-center justify-center gap-2 rounded-xl border border-border bg-muted/30",
               "py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors",
             )}
           >

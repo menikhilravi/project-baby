@@ -181,9 +181,9 @@ export function KickCounter({
         disabled={!canUndo || !canLog || pending}
         className={cn(
           "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium",
-          "border border-border/60 bg-card/60 text-muted-foreground transition-all",
+          "border border-border bg-card text-muted-foreground transition-all",
           "hover:bg-card hover:text-foreground hover:shadow-sm",
-          "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-card/60",
+          "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-card",
         )}
       >
         <Undo2 className="h-3.5 w-3.5" />

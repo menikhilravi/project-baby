@@ -33,7 +33,7 @@ export function LowSuppliesCard({ supplies }: { supplies: LowSupply[] }) {
         {supplies.slice(0, 5).map((s) => (
           <li
             key={s.id}
-            className="flex items-center gap-2.5 text-sm rounded-xl bg-card/40 px-2.5 py-1.5"
+            className="flex items-center gap-2.5 text-sm rounded-xl bg-card px-2.5 py-1.5"
           >
             <span aria-hidden className="text-base">
               {s.emoji}

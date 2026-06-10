@@ -85,7 +85,7 @@ export function SuppliesList({ rows }: { rows: SupplyRow[] }) {
       ) : null}
 
       {optimistic.length === 0 && !adding ? (
-        <div className="rounded-2xl border border-dashed border-border/60 px-6 py-10 text-center">
+        <div className="rounded-2xl border border-dashed border-border px-6 py-10 text-center">
           <p className="text-sm text-muted-foreground">
             No supplies yet. Add diapers, wipes, formula — anything you restock.
           </p>
@@ -127,7 +127,7 @@ export function SuppliesList({ rows }: { rows: SupplyRow[] }) {
         <button
           type="button"
           onClick={() => setAdding(true)}
-          className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border/60 bg-transparent py-3 text-xs text-muted-foreground hover:text-foreground hover:border-gear/40 transition-colors"
+          className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border bg-transparent py-3 text-xs text-muted-foreground hover:text-foreground hover:border-gear/40 transition-colors"
         >
           <Plus className="h-3.5 w-3.5" />
           Add supply

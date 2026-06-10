@@ -50,7 +50,7 @@ function Cell({ cell }: { cell: LastEventCell }) {
   return (
     <div
       className={cn(
-        "rounded-2xl border bg-card/60 px-3 py-3 flex flex-col gap-1.5",
+        "rounded-2xl border bg-card px-3 py-3 flex flex-col gap-1.5",
         cell.ongoing && "bg-logger-soft/40 border-logger/30",
       )}
     >

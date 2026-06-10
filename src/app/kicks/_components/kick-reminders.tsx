@@ -169,7 +169,7 @@ export function KickReminders() {
       return <IOSInstallHint />;
     }
     return (
-      <div className="rounded-2xl border border-dashed border-border bg-card/40 p-4 text-xs text-muted-foreground">
+      <div className="rounded-2xl border border-dashed border-border bg-card p-4 text-xs text-muted-foreground">
         Push notifications aren&apos;t supported in this browser. Try Chrome,
         Edge, or Firefox.
       </div>

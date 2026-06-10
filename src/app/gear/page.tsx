@@ -184,7 +184,7 @@ export default async function GearPage() {
       />
 
       <Tabs defaultValue="registry" className="mt-2">
-        <TabsList className="grid grid-cols-2 w-full bg-card/50 p-1.5 rounded-2xl !h-auto gap-1 mb-5">
+        <TabsList className="grid grid-cols-2 w-full bg-card p-1.5 rounded-2xl !h-auto gap-1 mb-5">
           <TabsTrigger
             value="registry"
             className={cn(

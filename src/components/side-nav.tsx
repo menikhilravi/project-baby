@@ -24,12 +24,12 @@ export function SideNav({
 
   return (
     <aside
-      className="hidden md:flex fixed inset-y-0 left-0 w-60 flex-col border-r border-border/50 bg-sidebar z-30"
+      className="hidden md:flex fixed inset-y-0 left-0 w-60 flex-col border-r border-border bg-sidebar z-30"
       style={{ viewTransitionName: "side-nav" }}
     >
       <Link
         href="/"
-        className="flex items-center gap-3 px-5 py-5 border-b border-border/50 group"
+        className="flex items-center gap-3 px-5 py-5 border-b border-border group"
       >
         <span className="grid place-items-center h-8 w-8 rounded-xl bg-gradient-to-br from-names-soft via-rewards-soft to-hospital-soft ring-1 ring-border/40 transition-all group-hover:scale-105 group-hover:ring-border/60">
           <Baby className="h-4.5 w-4.5 text-foreground/70" />
@@ -56,8 +56,8 @@ export function SideNav({
               className={cn(
                 "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 active:scale-[0.98]",
                 active
-                  ? "bg-card/80 text-foreground shadow-sm ring-1 ring-border/50"
-                  : "text-muted-foreground hover:bg-card/40 hover:text-foreground",
+                  ? "bg-card text-foreground shadow-sm ring-1 ring-border/50"
+                  : "text-muted-foreground hover:bg-card hover:text-foreground",
               )}
             >
               <span
@@ -82,7 +82,7 @@ export function SideNav({
       {userEmail ? (
         <UserMenu email={userEmail} variant="side" />
       ) : (
-        <div className="px-5 py-4 border-t border-border/50">
+        <div className="px-5 py-4 border-t border-border">
           <p className="font-display text-xs leading-relaxed text-muted-foreground/70 italic">
             &ldquo;Take it one little day at a time.&rdquo;
           </p>
