@@ -341,21 +341,23 @@ function LogButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "group rounded-3xl border bg-card px-3 py-5 flex flex-col items-center gap-2 transition-all",
-        "hover:bg-card hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]",
+        "group rounded-2xl border border-border bg-card px-3 py-5 flex flex-col items-center gap-2.5 transition-all duration-200",
+        "hover:border-foreground/20 active:scale-[0.98]",
         "disabled:opacity-60 disabled:cursor-not-allowed",
-        active && "bg-logger-soft border-logger ring-2 ring-logger/30",
+        active && "bg-logger-soft border-logger ring-1 ring-logger/40",
       )}
     >
       <span
         className={cn(
-          "grid place-items-center h-12 w-12 rounded-2xl ring-1 ring-border/40 transition-colors",
-          active ? "bg-logger text-white" : cn("bg-muted/60", meta.accent),
+          "grid place-items-center h-11 w-11 rounded-2xl transition-colors",
+          active ? "bg-logger text-white" : cn("bg-muted", meta.accent),
         )}
       >
-        <Icon className="h-6 w-6" />
+        <Icon className="h-5.5 w-5.5" />
       </span>
-      <span className="text-sm font-semibold tracking-tight">{meta.label}</span>
+      <span className="text-[15px] font-semibold tracking-tight">
+        {meta.label}
+      </span>
       {sublabel ? (
         <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
           {sublabel}

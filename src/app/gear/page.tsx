@@ -184,36 +184,40 @@ export default async function GearPage() {
       />
 
       <Tabs defaultValue="registry" className="mt-2">
-        <TabsList className="grid grid-cols-2 w-full bg-card p-1.5 rounded-2xl !h-auto gap-1 mb-5">
+        <TabsList className="w-full justify-start gap-7 border-b border-border rounded-none bg-transparent p-0 mb-6 h-auto">
           <TabsTrigger
             value="registry"
             className={cn(
-              "rounded-xl py-2.5 flex flex-col items-center gap-0.5 !h-auto transition-all",
-              "data-active:!bg-muted data-active:!text-foreground data-active:!shadow-sm",
+              "flex-none rounded-none bg-transparent border-0 border-b-2 border-transparent px-0 pb-2.5 -mb-px text-[15px] font-medium text-muted-foreground transition-colors",
+              "hover:text-foreground data-active:text-foreground data-active:border-foreground data-active:bg-transparent data-active:shadow-none",
+              "dark:data-active:bg-transparent dark:data-active:border-foreground",
             )}
           >
-            <span className="text-sm font-medium">Registry</span>
-            <span className="text-[10.5px] text-muted-foreground tabular-nums">
-              {items.length} {items.length === 1 ? "item" : "items"}
+            <span className="flex items-center gap-1.5">
+              Registry
+              <span className="text-xs text-muted-foreground/70 tabular-nums">
+                {items.length}
+              </span>
             </span>
           </TabsTrigger>
           <TabsTrigger
             value="supplies"
             className={cn(
-              "rounded-xl py-2.5 flex flex-col items-center gap-0.5 !h-auto transition-all",
-              "data-active:!bg-muted data-active:!text-foreground data-active:!shadow-sm",
+              "flex-none rounded-none bg-transparent border-0 border-b-2 border-transparent px-0 pb-2.5 -mb-px text-[15px] font-medium text-muted-foreground transition-colors",
+              "hover:text-foreground data-active:text-foreground data-active:border-foreground data-active:bg-transparent data-active:shadow-none",
+              "dark:data-active:bg-transparent dark:data-active:border-foreground",
             )}
           >
-            <span className="text-sm font-medium">
+            <span className="flex items-center gap-1.5">
               Supplies
+              <span className="text-xs text-muted-foreground/70 tabular-nums">
+                {supplies.length}
+              </span>
               {lowCount > 0 ? (
-                <span className="ml-1.5 inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-destructive text-white text-[9px] font-bold">
+                <span className="inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-destructive text-white text-[9px] font-bold">
                   {lowCount}
                 </span>
               ) : null}
-            </span>
-            <span className="text-[10.5px] text-muted-foreground tabular-nums">
-              {supplies.length} {supplies.length === 1 ? "item" : "items"}
             </span>
           </TabsTrigger>
         </TabsList>

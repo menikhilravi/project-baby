@@ -83,7 +83,7 @@ export default async function HospitalPage() {
       </div>
 
       <Tabs defaultValue="mom">
-        <TabsList className="grid grid-cols-3 w-full bg-card p-1.5 rounded-2xl !h-auto gap-1">
+        <TabsList className="w-full justify-start gap-7 border-b border-border rounded-none bg-transparent p-0 mb-6 h-auto">
           {(Object.keys(byOwner) as Owner[]).map((owner) => {
             const { done, total } = counts[owner];
             const complete = total > 0 && done === total;
@@ -92,21 +92,22 @@ export default async function HospitalPage() {
                 key={owner}
                 value={owner}
                 className={cn(
-                  "rounded-xl py-2.5 flex flex-col items-center gap-0.5 !h-auto transition-all",
-                  "data-active:!bg-muted data-active:!text-foreground data-active:!shadow-sm",
+                  "flex-none rounded-none bg-transparent border-0 border-b-2 border-transparent px-0 pb-2.5 -mb-px text-[15px] font-medium text-muted-foreground transition-colors",
+                  "hover:text-foreground data-active:text-foreground data-active:border-foreground data-active:bg-transparent data-active:shadow-none",
+                  "dark:data-active:bg-transparent dark:data-active:border-foreground",
                 )}
               >
-                <span className="flex items-center gap-1.5 text-sm font-medium">
+                <span className="flex items-center gap-1.5">
                   <span aria-hidden>{ownerCopy[owner].emoji}</span>
                   {ownerCopy[owner].label}
-                </span>
-                <span
-                  className={cn(
-                    "text-[10.5px] tabular-nums",
-                    complete ? "text-hospital" : "text-muted-foreground",
-                  )}
-                >
-                  {done}/{total}
+                  <span
+                    className={cn(
+                      "text-xs tabular-nums",
+                      complete ? "text-hospital" : "text-muted-foreground/70",
+                    )}
+                  >
+                    {done}/{total}
+                  </span>
                 </span>
               </TabsTrigger>
             );

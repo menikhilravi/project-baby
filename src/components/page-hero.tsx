@@ -13,10 +13,10 @@ type Props = {
 export function PageHero({ tool, icon: Icon, title, eyebrow, subtitle }: Props) {
   const c = toolColors[tool];
   return (
-    <header className="mb-7 md:mb-9 flex items-start gap-3.5">
+    <header className="mb-8 md:mb-11 flex items-start gap-3.5">
       <span
         className={cn(
-          "shrink-0 grid place-items-center h-11 w-11 rounded-2xl border border-border mt-0.5",
+          "shrink-0 grid place-items-center h-11 w-11 rounded-2xl border border-border mt-1",
           c.bgSoft,
           c.text,
         )}
@@ -27,18 +27,18 @@ export function PageHero({ tool, icon: Icon, title, eyebrow, subtitle }: Props) 
         {eyebrow ? (
           <p
             className={cn(
-              "text-[10px] uppercase tracking-[0.22em] font-semibold mb-1",
+              "text-[11px] uppercase tracking-[0.2em] font-semibold mb-1.5",
               c.text,
             )}
           >
             {eyebrow}
           </p>
         ) : null}
-        <h1 className="font-display text-[1.7rem] md:text-[2.1rem] font-bold tracking-[-0.03em] leading-[1.05]">
+        <h1 className="font-display text-[2rem] md:text-[2.6rem] font-bold tracking-[-0.035em] leading-[1.02]">
           {title}
         </h1>
         {subtitle ? (
-          <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
+          <p className="mt-2 text-[15px] text-muted-foreground leading-relaxed">
             {subtitle}
           </p>
         ) : null}
