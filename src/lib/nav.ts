@@ -9,6 +9,7 @@ import {
   Sun,
   Footprints,
   BarChart3,
+  Activity,
   type LucideIcon,
 } from "lucide-react";
 
@@ -24,6 +25,7 @@ export type ToolKey =
   | "notes"
   | "today"
   | "kicks"
+  | "contractions"
   | "reports";
 
 export type NavItem = {
@@ -36,6 +38,14 @@ export type NavItem = {
 };
 
 export const navItems: NavItem[] = [
+  {
+    href: "/contractions",
+    label: "Labor",
+    tagline: "Time contractions — the 5-1-1 rule.",
+    icon: Activity,
+    key: "contractions",
+    phases: ["prenatal"],
+  },
   {
     href: "/today",
     label: "Today",
@@ -232,6 +242,15 @@ export const toolColors: Record<
     ring: "ring-kicks",
     gradientFrom: "from-kicks-soft",
     gradientVia: "via-kicks-soft/60",
+  },
+  contractions: {
+    bg: "bg-contractions",
+    bgSoft: "bg-contractions-soft",
+    text: "text-contractions",
+    border: "border-contractions",
+    ring: "ring-contractions",
+    gradientFrom: "from-contractions-soft",
+    gradientVia: "via-contractions-soft/60",
   },
   reports: {
     bg: "bg-reports",
