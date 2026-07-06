@@ -137,14 +137,13 @@ export function visibleNavItems(
   return navItemsForPhase(phase).filter((item) => !hidden.has(item.key));
 }
 
-/** Sections users are allowed to hide via Settings. */
-export const HIDEABLE_KEYS: ToolKey[] = [
-  "rewards",
-  "nursery",
-  "hospital",
-  "names",
-  "notes",
-];
+/**
+ * Sections users are allowed to hide via Settings — every nav tool. Derived
+ * from navItems so new tools become hideable automatically. Hidden sections
+ * only drop out of the nav; they stay reachable by URL, and Settings itself
+ * lives in the user menu, so the nav can never lock the user out.
+ */
+export const HIDEABLE_KEYS: ToolKey[] = navItems.map((item) => item.key);
 
 /**
  * Static class strings per tool — Tailwind's JIT cannot scan dynamic

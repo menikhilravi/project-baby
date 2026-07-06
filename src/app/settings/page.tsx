@@ -2,6 +2,7 @@ import { Settings as SettingsIcon } from "lucide-react";
 import { redirect } from "next/navigation";
 import { PageHero } from "@/components/page-hero";
 import { createClient } from "@/lib/supabase/server";
+import { getPhase } from "@/lib/phase";
 import { SettingsForm } from "./_components/settings-form";
 import { HideSectionsForm } from "./_components/hide-sections-form";
 
@@ -17,6 +18,8 @@ export default async function SettingsPage() {
     .select("birth_date, phase_override, hidden_sections")
     .eq("id", user.id)
     .single();
+
+  const phase = await getPhase();
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-10 md:px-8 md:py-16">
@@ -40,6 +43,7 @@ export default async function SettingsPage() {
         </p>
         <HideSectionsForm
           initialHidden={profile?.hidden_sections ?? []}
+          phase={phase}
         />
       </div>
     </div>

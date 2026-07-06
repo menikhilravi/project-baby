@@ -2,21 +2,29 @@
 
 import { useState, useTransition } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import { navItems, HIDEABLE_KEYS, type ToolKey } from "@/lib/nav";
+import {
+  navItemsForPhase,
+  HIDEABLE_KEYS,
+  type Phase,
+  type ToolKey,
+} from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { updateHiddenSections } from "../actions";
 
 export function HideSectionsForm({
   initialHidden,
+  phase,
 }: {
   initialHidden: string[];
+  phase: Phase;
 }) {
   const [hidden, setHidden] = useState<Set<string>>(new Set(initialHidden));
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const choices = navItems.filter((it) =>
+  // Only offer sections that apply to the user's current phase.
+  const choices = navItemsForPhase(phase).filter((it) =>
     (HIDEABLE_KEYS as ToolKey[]).includes(it.key),
   );
 
