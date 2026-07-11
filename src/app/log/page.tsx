@@ -13,10 +13,11 @@ export default async function LogPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("couple_id")
+    .select("couple_id, birth_date")
     .eq("id", user.id)
     .single();
   const coupleId = profile?.couple_id ?? null;
+  const birthDate = profile?.birth_date ?? null;
 
   const membersQuery = coupleId
     ? supabase.from("profiles").select("id, role").eq("couple_id", coupleId)
@@ -50,6 +51,7 @@ export default async function LogPage() {
         initialEvents={(events ?? []) as BabyEventRow[]}
         currentUserId={user.id}
         coupleId={coupleId}
+        birthDate={birthDate}
         roleMap={roleMap}
       />
     </div>

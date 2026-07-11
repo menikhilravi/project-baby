@@ -1,19 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { Droplets, Moon, Trash2, Utensils } from "lucide-react";
+import { Droplets, Moon, Pill, Thermometer, Trash2, Utensils } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
-import { subtypeLabel } from "@/lib/baby-events";
+import { medLabel, subtypeLabel } from "@/lib/baby-events";
 import { removeEvent } from "../actions";
 import { QuickLogPanel } from "./quick-log-panel";
+import { HealthQuickLog } from "./health-quick-log";
 
 export type BabyEventRow = {
   id: number;
   user_id: string;
   couple_id: string | null;
-  kind: "feed" | "diaper" | "sleep";
+  kind: "feed" | "diaper" | "sleep" | "temp" | "med";
   subtype: string | null;
   amount: number | null;
   unit: string | null;
@@ -28,6 +29,7 @@ type Props = {
   initialEvents: BabyEventRow[];
   currentUserId: string;
   coupleId: string | null;
+  birthDate: string | null;
   roleMap: RoleMap;
 };
 
@@ -35,12 +37,15 @@ const KIND_META = {
   feed: { label: "Feed", icon: Utensils, accent: "text-amber-500" },
   diaper: { label: "Diaper", icon: Droplets, accent: "text-sky-500" },
   sleep: { label: "Sleep", icon: Moon, accent: "text-indigo-400" },
+  temp: { label: "Temp", icon: Thermometer, accent: "text-rose-500" },
+  med: { label: "Medicine", icon: Pill, accent: "text-violet-500" },
 } as const;
 
 export function Logger({
   initialEvents,
   currentUserId,
   coupleId,
+  birthDate,
   roleMap,
 }: Props) {
   const [events, setEvents] = useState<BabyEventRow[]>(initialEvents);
@@ -51,6 +56,32 @@ export function Logger({
       (e) => e.kind === "sleep" && e.ended_at === null,
     );
     return row ? { id: row.id, occurred_at: row.occurred_at } : null;
+  }, [initialEvents]);
+
+  const initialOpenNursing = useMemo(() => {
+    const row = initialEvents.find(
+      (e) =>
+        e.kind === "feed" &&
+        e.ended_at === null &&
+        (e.subtype === "left" || e.subtype === "right"),
+    );
+    return row
+      ? {
+          id: row.id,
+          side: row.subtype as "left" | "right",
+          occurred_at: row.occurred_at,
+        }
+      : null;
+  }, [initialEvents]);
+
+  const lastBreastSide = useMemo(() => {
+    const row = initialEvents.find(
+      (e) =>
+        e.kind === "feed" &&
+        e.ended_at !== null &&
+        (e.subtype === "left" || e.subtype === "right"),
+    );
+    return row ? (row.subtype as "left" | "right") : null;
   }, [initialEvents]);
 
   useEffect(() => {
@@ -116,8 +147,11 @@ export function Logger({
       <QuickLogPanel
         coupleId={coupleId}
         initialOpenSleep={initialOpenSleep}
+        initialOpenNursing={initialOpenNursing}
+        lastBreastSide={lastBreastSide}
         channelName="log_quick"
       />
+      <HealthQuickLog birthDate={birthDate} />
       <Timeline
         events={events}
         currentUserId={currentUserId}
@@ -187,30 +221,52 @@ function TimelineRow({
   onRemove: () => void;
 }) {
   const meta = KIND_META[row.kind];
-  const Icon = meta.icon;
+  const Icon = meta?.icon;
   const who = isMine ? "You" : role ? capitalize(role) : "Partner";
   const time = formatTime(row.occurred_at);
 
   let detail: string | null = null;
   if (row.kind === "sleep") {
-    if (row.ended_at) {
-      const dur = Math.max(
-        0,
-        Math.round(
-          (new Date(row.ended_at).getTime() -
-            new Date(row.occurred_at).getTime()) /
-            60_000,
-        ),
-      );
-      const h = Math.floor(dur / 60);
-      const m = dur % 60;
-      detail = `${h > 0 ? `${h}h ` : ""}${m}m`;
+    detail = row.ended_at ? durationLabel(row.occurred_at, row.ended_at) : "ongoing";
+  } else if (row.kind === "temp") {
+    detail =
+      row.amount != null
+        ? `${row.amount}°${(row.unit ?? "f").toUpperCase()}`
+        : null;
+  } else if (row.kind === "med") {
+    const dose = row.amount != null ? ` ${row.amount}${row.unit ?? ""}` : "";
+    detail = `${medLabel(row.subtype)}${dose}`;
+  } else if (
+    row.kind === "feed" &&
+    (row.subtype === "left" || row.subtype === "right")
+  ) {
+    // Nursing session: show the side + duration (instant taps have no gap).
+    if (row.ended_at === null) {
+      detail = `${row.subtype} · nursing`;
     } else {
-      detail = "ongoing";
+      const min =
+        (new Date(row.ended_at).getTime() -
+          new Date(row.occurred_at).getTime()) /
+        60_000;
+      detail =
+        min >= 1
+          ? `${row.subtype} · ${durationLabel(row.occurred_at, row.ended_at)}`
+          : row.subtype;
     }
   } else {
     detail = subtypeLabel(row.subtype, row.amount, row.unit);
   }
+
+  // Unknown kinds (e.g. stray contraction rows) are skipped rather than crashing.
+  if (!meta || !Icon) return null;
+
+  // For a med row the subtype IS the label, so don't repeat it in the title.
+  const title = row.kind === "med" ? medLabel(row.subtype) : meta.label;
+  const showDetail = row.kind === "med" ? row.amount != null : Boolean(detail);
+  const detailText =
+    row.kind === "med" && row.amount != null
+      ? `${row.amount}${row.unit ?? ""}`
+      : detail;
 
   return (
     <li className="group flex items-center gap-3 py-3">
@@ -224,10 +280,10 @@ function TimelineRow({
       </span>
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2">
-          <span className="text-[15px] font-medium">{meta.label}</span>
-          {detail ? (
+          <span className="text-[15px] font-medium">{title}</span>
+          {showDetail && detailText ? (
             <span className="text-xs text-muted-foreground tabular-nums">
-              {detail}
+              {detailText}
             </span>
           ) : null}
         </div>
@@ -276,6 +332,16 @@ function dayLabel(iso: string): string {
     month: "short",
     day: "numeric",
   });
+}
+
+function durationLabel(startIso: string, endIso: string): string {
+  const dur = Math.max(
+    0,
+    Math.round((new Date(endIso).getTime() - new Date(startIso).getTime()) / 60_000),
+  );
+  const h = Math.floor(dur / 60);
+  const m = dur % 60;
+  return `${h > 0 ? `${h}h ` : ""}${m}m`;
 }
 
 function formatTime(iso: string): string {

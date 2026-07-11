@@ -10,10 +10,21 @@ import {
   subtypeLabel,
   type EventDetail,
 } from "@/lib/baby-events";
-import { logEvent, toggleSleep } from "../actions";
+import {
+  logEvent,
+  startNursing,
+  stopNursing,
+  toggleSleep,
+} from "../actions";
 
 export type OpenSleep = {
   id: number;
+  occurred_at: string;
+} | null;
+
+export type OpenNursing = {
+  id: number;
+  side: "left" | "right";
   occurred_at: string;
 } | null;
 
@@ -34,16 +45,32 @@ const KIND_META = {
 export function QuickLogPanel({
   coupleId,
   initialOpenSleep,
+  initialOpenNursing = null,
+  lastBreastSide = null,
   channelName,
 }: {
   coupleId: string | null;
   initialOpenSleep: OpenSleep;
+  initialOpenNursing?: OpenNursing;
+  /** Side of the most recent nursing session — drives the "offer X next" hint. */
+  lastBreastSide?: "left" | "right" | null;
   /** Unique per mount so /log and /today don't collide on the same channel. */
   channelName: string;
 }) {
   const [openSleep, setOpenSleep] = useState<OpenSleep>(initialOpenSleep);
+  const [openNursing, setOpenNursing] =
+    useState<OpenNursing>(initialOpenNursing);
+  const [lastSide, setLastSide] = useState<"left" | "right" | null>(
+    lastBreastSide,
+  );
   const [expanded, setExpanded] = useState<"feed" | "diaper" | null>(null);
   const [pending, startTransition] = useTransition();
+
+  const nextSide: "left" | "right" | null = lastSide
+    ? lastSide === "left"
+      ? "right"
+      : "left"
+    : null;
 
   useEffect(() => {
     const supabase = createClient();
@@ -62,24 +89,44 @@ export function QuickLogPanel({
             const row = payload.new as {
               id: number;
               kind: string;
+              subtype: string | null;
               occurred_at: string;
               ended_at: string | null;
             };
             if (row.kind === "sleep" && row.ended_at === null) {
               setOpenSleep({ id: row.id, occurred_at: row.occurred_at });
             }
+            if (
+              row.kind === "feed" &&
+              row.ended_at === null &&
+              (row.subtype === "left" || row.subtype === "right")
+            ) {
+              setOpenNursing({
+                id: row.id,
+                side: row.subtype,
+                occurred_at: row.occurred_at,
+              });
+            }
           } else if (payload.eventType === "UPDATE") {
             const row = payload.new as {
               id: number;
               kind: string;
+              subtype: string | null;
               ended_at: string | null;
             };
             if (row.kind === "sleep" && row.ended_at !== null) {
               setOpenSleep((cur) => (cur && cur.id === row.id ? null : cur));
             }
+            if (row.kind === "feed" && row.ended_at !== null) {
+              setOpenNursing((cur) => (cur && cur.id === row.id ? null : cur));
+              if (row.subtype === "left" || row.subtype === "right") {
+                setLastSide(row.subtype);
+              }
+            }
           } else if (payload.eventType === "DELETE") {
             const row = payload.old as { id: number };
             setOpenSleep((cur) => (cur && cur.id === row.id ? null : cur));
+            setOpenNursing((cur) => (cur && cur.id === row.id ? null : cur));
           }
         },
       )
@@ -103,6 +150,37 @@ export function QuickLogPanel({
 
   const toggleExpanded = (kind: "feed" | "diaper") => {
     setExpanded((cur) => (cur === kind ? null : kind));
+  };
+
+  const nurse = (side: "left" | "right") => {
+    setExpanded(null);
+    // Optimistic: flip to the new open session immediately; realtime reconciles.
+    setOpenNursing({
+      id: -Date.now(),
+      side,
+      occurred_at: new Date().toISOString(),
+    });
+    startTransition(async () => {
+      try {
+        await startNursing(side);
+      } catch (err) {
+        console.error(err);
+        setOpenNursing(null);
+      }
+    });
+  };
+
+  const stopNurse = () => {
+    const wasSide = openNursing?.side ?? null;
+    setOpenNursing(null);
+    if (wasSide) setLastSide(wasSide);
+    startTransition(async () => {
+      try {
+        await stopNursing();
+      } catch (err) {
+        console.error(err);
+      }
+    });
   };
 
   const handleSleep = () => {
@@ -131,7 +209,8 @@ export function QuickLogPanel({
           kind="feed"
           onClick={() => toggleExpanded("feed")}
           disabled={pending}
-          active={expanded === "feed"}
+          active={expanded === "feed" || Boolean(openNursing)}
+          sublabel={openNursing ? `Nursing · ${openNursing.side}` : undefined}
         />
         <LogButton
           kind="diaper"
@@ -159,8 +238,20 @@ export function QuickLogPanel({
       {expanded === "feed" ? (
         <FeedPicker
           disabled={pending}
+          nextSide={nextSide}
+          onNurse={nurse}
           onPick={(detail) => log("feed", detail)}
           onSkip={() => log("feed")}
+        />
+      ) : null}
+
+      {openNursing ? (
+        <NursingBanner
+          startedAt={openNursing.occurred_at}
+          side={openNursing.side}
+          onStop={stopNurse}
+          onSwitch={() => nurse(openNursing.side === "left" ? "right" : "left")}
+          disabled={pending}
         />
       ) : null}
 
@@ -247,11 +338,15 @@ function DiaperPicker({
 
 function FeedPicker({
   onPick,
+  onNurse,
   onSkip,
+  nextSide,
   disabled,
 }: {
   onPick: (detail: EventDetail) => void;
+  onNurse: (side: "left" | "right") => void;
   onSkip: () => void;
+  nextSide: "left" | "right" | null;
   disabled?: boolean;
 }) {
   const [oz, setOz] = useState(4);
@@ -299,23 +394,47 @@ function FeedPicker({
 
   return (
     <PickerShell onSkip={onSkip} disabled={disabled}>
-      {FEED_SUBTYPES.map((s) =>
-        s === "bottle" ? (
-          <Chip
-            key={s}
-            label="bottle"
-            onClick={() => setBottle(true)}
-            disabled={disabled}
-          />
-        ) : (
+      {FEED_SUBTYPES.map((s) => {
+        if (s === "bottle") {
+          return (
+            <Chip
+              key={s}
+              label="bottle"
+              onClick={() => setBottle(true)}
+              disabled={disabled}
+            />
+          );
+        }
+        if (s === "left" || s === "right") {
+          // Tapping a side starts a timed nursing session (not an instant log).
+          return (
+            <Chip
+              key={s}
+              label={s}
+              onClick={() => onNurse(s)}
+              disabled={disabled}
+              active={nextSide === s}
+            />
+          );
+        }
+        return (
           <Chip
             key={s}
             label={subtypeLabel(s) ?? s}
             onClick={() => onPick({ subtype: s })}
             disabled={disabled}
           />
-        ),
-      )}
+        );
+      })}
+      {nextSide ? (
+        <p className="w-full text-[11px] text-muted-foreground">
+          Last on the {nextSide === "left" ? "right" : "left"} — offer the{" "}
+          <span className="font-medium capitalize text-foreground">
+            {nextSide}
+          </span>{" "}
+          next.
+        </p>
+      ) : null}
     </PickerShell>
   );
 }
@@ -364,6 +483,58 @@ function LogButton({
         </span>
       ) : null}
     </button>
+  );
+}
+
+function NursingBanner({
+  startedAt,
+  side,
+  onStop,
+  onSwitch,
+  disabled,
+}: {
+  startedAt: string;
+  side: "left" | "right";
+  onStop: () => void;
+  onSwitch: () => void;
+  disabled?: boolean;
+}) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const total = Math.max(0, Math.floor((now - new Date(startedAt).getTime()) / 1000));
+  const mm = Math.floor(total / 60);
+  const ss = total % 60;
+  return (
+    <div className="rounded-2xl border border-logger/30 bg-logger-soft/60 px-4 py-3 flex items-center gap-3">
+      <span className="grid place-items-center h-9 w-9 rounded-xl bg-logger text-white">
+        <Utensils className="h-4.5 w-4.5" />
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium capitalize">Nursing · {side}</p>
+        <p className="text-xs text-muted-foreground tabular-nums">
+          {mm}:{String(ss).padStart(2, "0")}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onSwitch}
+        disabled={disabled}
+        className="rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium capitalize hover:bg-muted disabled:opacity-50"
+      >
+        Switch to {side === "left" ? "right" : "left"}
+      </button>
+      <button
+        type="button"
+        onClick={onStop}
+        disabled={disabled}
+        className="rounded-full bg-logger px-4 py-1.5 text-xs font-semibold text-white hover:bg-logger/90 active:scale-[0.97] disabled:opacity-50"
+      >
+        Stop
+      </button>
+    </div>
   );
 }
 

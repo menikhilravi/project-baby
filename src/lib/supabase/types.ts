@@ -328,7 +328,7 @@ export interface Database {
           id: number;
           user_id: string;
           couple_id: string | null;
-          kind: "feed" | "diaper" | "sleep" | "kick" | "contraction";
+          kind: "feed" | "diaper" | "sleep" | "kick" | "contraction" | "temp" | "med";
           subtype: string | null;
           amount: number | null;
           unit: string | null;
@@ -341,7 +341,7 @@ export interface Database {
           id?: number;
           user_id: string;
           couple_id?: string | null;
-          kind: "feed" | "diaper" | "sleep" | "kick" | "contraction";
+          kind: "feed" | "diaper" | "sleep" | "kick" | "contraction" | "temp" | "med";
           subtype?: string | null;
           amount?: number | null;
           unit?: string | null;
@@ -351,7 +351,7 @@ export interface Database {
           created_at?: string;
         };
         Update: {
-          kind?: "feed" | "diaper" | "sleep" | "kick" | "contraction";
+          kind?: "feed" | "diaper" | "sleep" | "kick" | "contraction" | "temp" | "med";
           subtype?: string | null;
           amount?: number | null;
           unit?: string | null;
