@@ -1,23 +1,20 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Droplets, Moon, Utensils } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { KIND_META } from "@/lib/kind-meta";
 
-export type LastEventCell = {
+export type SummaryCell = {
   kind: "feed" | "diaper" | "sleep";
   occurred_at: string | null;
-  who: string | null;
   ongoing?: boolean;
+  /** Today's count (feed / diaper). Sleep leaves this null. */
+  count?: number | null;
 };
 
-const META = {
-  feed: { label: "Feed", icon: Utensils, accent: "text-amber-500" },
-  diaper: { label: "Diaper", icon: Droplets, accent: "text-sky-500" },
-  sleep: { label: "Sleep", icon: Moon, accent: "text-indigo-400" },
-} as const;
-
-export function LastEventsRow({ cells }: { cells: LastEventCell[] }) {
+export function ActivitySummaryGrid({ cells }: { cells: SummaryCell[] }) {
   return (
     <div className="grid grid-cols-3 gap-2">
       {cells.map((cell) => (
@@ -27,8 +24,8 @@ export function LastEventsRow({ cells }: { cells: LastEventCell[] }) {
   );
 }
 
-function Cell({ cell }: { cell: LastEventCell }) {
-  const meta = META[cell.kind];
+function Cell({ cell }: { cell: SummaryCell }) {
+  const meta = KIND_META[cell.kind];
   const Icon = meta.icon;
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -47,10 +44,19 @@ function Cell({ cell }: { cell: LastEventCell }) {
     subtle = true;
   }
 
+  const footer = cell.ongoing
+    ? "sleeping now"
+    : cell.count != null
+      ? `${cell.count} today`
+      : cell.occurred_at
+        ? "last"
+        : "none yet";
+
   return (
-    <div
+    <Link
+      href={`/log/${cell.kind}`}
       className={cn(
-        "rounded-2xl border bg-card px-3 py-3 flex flex-col gap-1.5",
+        "group rounded-2xl border bg-card px-3 py-3 flex flex-col gap-1.5 transition-colors hover:border-foreground/20",
         cell.ongoing && "bg-logger-soft/40 border-logger/30",
       )}
     >
@@ -59,6 +65,7 @@ function Cell({ cell }: { cell: LastEventCell }) {
         <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
           {meta.label}
         </span>
+        <ChevronRight className="ml-auto h-3.5 w-3.5 text-muted-foreground/30 transition-colors group-hover:text-muted-foreground" />
       </div>
       <p
         className={cn(
@@ -69,12 +76,8 @@ function Cell({ cell }: { cell: LastEventCell }) {
       >
         {value}
       </p>
-      {cell.who ? (
-        <p className="text-[10px] text-muted-foreground truncate">
-          {cell.ongoing ? "sleeping now" : cell.who}
-        </p>
-      ) : null}
-    </div>
+      <p className="text-[10px] text-muted-foreground truncate">{footer}</p>
+    </Link>
   );
 }
 

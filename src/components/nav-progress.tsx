@@ -4,7 +4,6 @@ import {
   createContext,
   useContext,
   useEffect,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -27,12 +26,15 @@ export function useNavProgress(): NavProgressValue | null {
 export function NavProgressProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const [seenPathname, setSeenPathname] = useState(pathname);
 
   // Once the URL actually changes the navigation is done — drop the pending
-  // state so the highlight settles on the real active route.
-  useEffect(() => {
+  // state so the highlight settles on the real active route. Done in render
+  // (not an effect) so it applies before paint.
+  if (pathname !== seenPathname) {
+    setSeenPathname(pathname);
     setPendingHref(null);
-  }, [pathname]);
+  }
 
   const start = (href: string) => {
     if (href !== pathname) setPendingHref(href);
@@ -54,13 +56,22 @@ export function NavProgressProvider({ children }: { children: ReactNode }) {
 function TopProgressBar({ active }: { active: boolean }) {
   const [width, setWidth] = useState(0);
   const [visible, setVisible] = useState(false);
-  const started = useRef(false);
+  const [wasActive, setWasActive] = useState(active);
+
+  // React to the active flip in render so the bar shows/snaps before paint;
+  // the timed ramp + fade-out live in the effect below.
+  if (active !== wasActive) {
+    setWasActive(active);
+    if (active) {
+      setVisible(true);
+      setWidth(8);
+    } else {
+      setWidth(100); // snap to full, then the effect fades it out
+    }
+  }
 
   useEffect(() => {
     if (active) {
-      started.current = true;
-      setVisible(true);
-      setWidth(8);
       const a = setTimeout(() => setWidth(55), 60);
       const b = setTimeout(() => setWidth(82), 350);
       return () => {
@@ -68,16 +79,16 @@ function TopProgressBar({ active }: { active: boolean }) {
         clearTimeout(b);
       };
     }
-    if (started.current) {
-      started.current = false;
-      setWidth(100);
+    // Only fade when the bar is actually showing (i.e. a nav just finished);
+    // avoids running the completion animation on first mount.
+    if (visible) {
       const done = setTimeout(() => {
         setVisible(false);
         setWidth(0);
       }, 260);
       return () => clearTimeout(done);
     }
-  }, [active]);
+  }, [active, visible]);
 
   return (
     <div

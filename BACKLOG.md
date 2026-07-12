@@ -111,3 +111,51 @@ only — no dosing advice.
 reads return empty and health/nursing **inserts fail the kind check**. Verified
 locally: `tsc`, `eslint`, and `next build` all clean; runtime not exercised
 (needs the migration + an authed session).
+
+---
+
+## Baby Mode — Tier 2 (product wins) + Tier 3 (bug fixes)
+
+Migrations `0026_profiles_baby.sql` (profiles.`baby_sex`, `birth_weight_g`) and
+`0027_baby_events_activities.sql` (kinds `pump`/`tummy`/`milestone`).
+
+### 🚧 BH-6 · Birth-weight recovery (T2)
+`BirthWeightCard` on /reports plots each weigh-in as a % of birth weight, with
+the 100% line and the day-14 marker, and a plain-language status (regained by
+day N / still below after day 14 / normal dip). Needs birth weight + birth date
+(both now in Settings). WHO percentiles don't surface this first-2-week concern.
+
+### 🚧 BH-7 · Newborn nap gap filled (T2)
+`wake-window.ts` now has newborn baselines (<4wk ≈ 50 min, 4–8wk ≈ 70) and the
+gate dropped from 8 weeks to 2, so the hardest weeks get a low-confidence window
+instead of a blank card.
+
+### 🚧 BH-8 · Bottle intake oz/day (T2)
+`baby-stats` sums feed `amount` (ml→oz) into `feedOz`; the Reports feeds card
+shows "X oz/day bottle" when there's bottle data.
+
+### 🚧 BH-9 · Pumping + tummy time (T2)
+Health quick-log gains **Pump** (oz + side) and **Tummy** (minute chips). New
+`kind='pump'`/`'tummy'`; both render in the timeline. `TummyTimeCard` on /today
+totals today's tummy minutes vs a gentle ~30-min goal (shown through ~6 months).
+
+### 🚧 BH-10 · Milestones (T2)
+`kind='milestone'` (label in notes). `MilestonesCard` on /reports adds/lists
+"firsts". Actions `addMilestone`/`removeMilestone` in `growth-actions`.
+
+### 🚧 BH-11 · Overnight sleep split (T3 bug)
+`baby-stats.dayBuckets` used to dump a whole overnight stretch on its start day.
+Now sleep **hours** split at local midnight across each day covered; session
+count + longest-stretch still land on the start day (so the "longest stretch"
+headline is preserved).
+
+### 🚧 BH-12 · Baby sex → profile (T3 bug)
+Was per-device `localStorage`; now `profiles.baby_sex`, couple/device-shared and
+editable in Settings and from the Growth card's Boy/Girl toggle (`setBabySex`).
+
+### ⚠️ Deploy step
+Apply `0026` and `0027` to Supabase before these work (they extend the `kind`
+check and add profile columns). Verified locally: `tsc`, `eslint` (changed
+files), and `next build` all clean; runtime not exercised (needs migrations +
+an authed session). Pre-existing lint errors in `name-deck.tsx` /
+`nav-progress.tsx` are untouched and unrelated.

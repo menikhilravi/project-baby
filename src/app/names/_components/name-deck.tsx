@@ -21,11 +21,14 @@ export function NameDeck({ pool: initialPool }: { pool: NameEntry[] }) {
   const [hint, setHint] = useState("");
   const [showHintInput, setShowHintInput] = useState(false);
 
-  // Always-current mirrors — safe to read inside callbacks
+  // Always-current mirrors — safe to read inside callbacks. Synced in an
+  // effect (not during render) since they're only read after commit.
   const poolRef = useRef(pool);
-  const indexRef = useRef(0);
-  poolRef.current = pool;
-  indexRef.current = index;
+  const indexRef = useRef(index);
+  useEffect(() => {
+    poolRef.current = pool;
+    indexRef.current = index;
+  });
 
   // Prevent concurrent generates
   const isGeneratingRef = useRef(false);

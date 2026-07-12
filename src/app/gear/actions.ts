@@ -185,7 +185,7 @@ export async function updateSupply(formData: FormData) {
 // ---------------------------------------------------------------------------
 
 export async function removeGearItem(formData: FormData) {
-  const { supabase, user } = await requireUser();
+  const { supabase } = await requireUser();
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("Missing id");
   const { error } = await supabase
@@ -214,7 +214,7 @@ export async function updateGearItemTarget(formData: FormData) {
 // ---------------------------------------------------------------------------
 
 export async function addWatcher(formData: FormData) {
-  const { supabase, user } = await requireUser();
+  const { supabase } = await requireUser();
   const itemId = String(formData.get("item_id") ?? "");
   const url = String(formData.get("url") ?? "").trim();
   if (!itemId) throw new Error("Missing item_id");
@@ -372,7 +372,7 @@ export async function reorderWatcher(formData: FormData) {
 // ---------------------------------------------------------------------------
 
 export async function refreshUserPrices() {
-  const { supabase, user } = await requireUser();
+  const { supabase } = await requireUser();
 
   const { data: items } = await supabase
     .from("gear_items")
@@ -503,7 +503,7 @@ async function recomputeTargetHit(
 }
 
 export async function acknowledgeTargetHit(formData: FormData) {
-  const { supabase, user } = await requireUser();
+  const { supabase } = await requireUser();
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("Missing id");
   const { error } = await supabase

@@ -4,7 +4,10 @@ import { PageHero } from "@/components/page-hero";
 import { createClient } from "@/lib/supabase/server";
 import { QuickLogPanel } from "@/app/log/_components/quick-log-panel";
 import { HealthQuickLog } from "@/app/log/_components/health-quick-log";
-import { LastEventsRow, type LastEventCell } from "./_components/last-events-row";
+import {
+  ActivitySummaryGrid,
+  type SummaryCell,
+} from "./_components/activity-summary-grid";
 import { LowSuppliesCard, type LowSupply } from "./_components/low-supplies-card";
 import { PinnedNotesCard, type PinnedNote } from "./_components/pinned-notes-card";
 import { KicksTodayCard } from "./_components/kicks-today-card";
@@ -15,6 +18,7 @@ import {
   type DiaperRow,
 } from "./_components/diaper-adequacy-card";
 import { MedsCard, type MedRow } from "./_components/meds-card";
+import { TummyTimeCard, type TummyRow } from "./_components/tummy-time-card";
 import { ageInDays } from "@/lib/newborn-health";
 
 export default async function TodayPage() {
@@ -52,9 +56,11 @@ export default async function TodayPage() {
     recentSleepsRes,
     latestTempRes,
     diapersTodayRes,
+    feedsTodayRes,
     medsRes,
     openNursingRes,
     lastBreastRes,
+    tummyTodayRes,
   ] = await Promise.all([
       supabase
         .from("baby_events")
@@ -123,6 +129,12 @@ export default async function TodayPage() {
         .order("occurred_at", { ascending: false }),
       supabase
         .from("baby_events")
+        .select("occurred_at")
+        .eq("kind", "feed")
+        .gte("occurred_at", thirtyHoursAgo)
+        .order("occurred_at", { ascending: false }),
+      supabase
+        .from("baby_events")
         .select("subtype, amount, unit, occurred_at")
         .eq("kind", "med")
         .gte("occurred_at", thirtyHoursAgo)
@@ -144,6 +156,12 @@ export default async function TodayPage() {
         .order("occurred_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
+      supabase
+        .from("baby_events")
+        .select("occurred_at, ended_at")
+        .eq("kind", "tummy")
+        .gte("occurred_at", thirtyHoursAgo)
+        .order("occurred_at", { ascending: false }),
     ]);
 
   const kickCount = kicksRes.count ?? 0;
@@ -180,46 +198,49 @@ export default async function TodayPage() {
   const lastBreastSide =
     (lastBreastRes.data?.subtype as "left" | "right" | undefined) ?? null;
 
+  const tummyRows: TummyRow[] = (tummyTodayRes.data ?? []).map((t) => ({
+    occurred_at: t.occurred_at,
+    ended_at: t.ended_at,
+  }));
+
   const ageDays = ageInDays(birthDate, new Date());
   // Diaper-output adequacy is a newborn signal — show it through ~12 weeks.
   const showDiaperCard = ageDays == null || ageDays < 84;
+  // Tummy time matters through the roll/sit window — show it through ~6 months.
+  const showTummyCard = ageDays == null || ageDays < 180;
 
-  // Build a roleMap for "you" vs partner labelling.
-  const membersQuery = coupleId
-    ? supabase.from("profiles").select("id, role").eq("couple_id", coupleId)
-    : supabase.from("profiles").select("id, role").eq("id", user.id);
-  const { data: members } = await membersQuery;
-  const roleMap = Object.fromEntries(
-    (members ?? []).map((m) => [m.id, m.role]),
-  );
+  const isLocalToday = (iso: string) => {
+    const d = new Date(iso);
+    const n = new Date();
+    return (
+      d.getFullYear() === n.getFullYear() &&
+      d.getMonth() === n.getMonth() &&
+      d.getDate() === n.getDate()
+    );
+  };
+  const feedsToday = (feedsTodayRes.data ?? []).filter((f) =>
+    isLocalToday(f.occurred_at),
+  ).length;
+  const diapersToday = (diapersTodayRes.data ?? []).filter((d) =>
+    isLocalToday(d.occurred_at),
+  ).length;
 
-  const last: LastEventCell[] = [
+  const last: SummaryCell[] = [
     {
       kind: "feed",
       occurred_at: lastFeedRes.data?.occurred_at ?? null,
-      who:
-        lastFeedRes.data?.user_id === user.id
-          ? "You"
-          : lastFeedRes.data
-            ? capitalize(roleMap[lastFeedRes.data.user_id] ?? "partner")
-            : null,
+      count: feedsToday,
     },
     {
       kind: "diaper",
       occurred_at: lastDiaperRes.data?.occurred_at ?? null,
-      who:
-        lastDiaperRes.data?.user_id === user.id
-          ? "You"
-          : lastDiaperRes.data
-            ? capitalize(roleMap[lastDiaperRes.data.user_id] ?? "partner")
-            : null,
+      count: diapersToday,
     },
     {
       kind: "sleep",
       occurred_at: openSleepRes.data
         ? openSleepRes.data.occurred_at
         : (lastSleepRes.data?.ended_at ?? lastSleepRes.data?.occurred_at ?? null),
-      who: openSleepRes.data ? "ongoing" : null,
       ongoing: Boolean(openSleepRes.data),
     },
   ];
@@ -270,11 +291,13 @@ export default async function TodayPage() {
 
         <FeverAlertCard reading={latestTemp} birthDate={birthDate} />
 
-        <LastEventsRow cells={last} />
+        <ActivitySummaryGrid cells={last} />
 
         {showDiaperCard ? (
           <DiaperAdequacyCard rows={diaperRows} birthDate={birthDate} />
         ) : null}
+
+        {showTummyCard ? <TummyTimeCard rows={tummyRows} /> : null}
 
         <MedsCard rows={medRows} />
 
@@ -297,10 +320,6 @@ export default async function TodayPage() {
       </div>
     </div>
   );
-}
-
-function capitalize(s: string): string {
-  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
 function formatToday(): string {

@@ -52,6 +52,8 @@ export interface Database {
           couple_id: string | null;
           role: "mom" | "dad" | null;
           birth_date: string | null;
+          baby_sex: "male" | "female" | null;
+          birth_weight_g: number | null;
           phase_override: "prenatal" | "postnatal" | null;
           hidden_sections: string[];
           created_at: string;
@@ -62,6 +64,8 @@ export interface Database {
           couple_id?: string | null;
           role?: "mom" | "dad" | null;
           birth_date?: string | null;
+          baby_sex?: "male" | "female" | null;
+          birth_weight_g?: number | null;
           phase_override?: "prenatal" | "postnatal" | null;
           hidden_sections?: string[];
           created_at?: string;
@@ -71,6 +75,8 @@ export interface Database {
           couple_id?: string | null;
           role?: "mom" | "dad" | null;
           birth_date?: string | null;
+          baby_sex?: "male" | "female" | null;
+          birth_weight_g?: number | null;
           phase_override?: "prenatal" | "postnatal" | null;
           hidden_sections?: string[];
         };
@@ -328,7 +334,7 @@ export interface Database {
           id: number;
           user_id: string;
           couple_id: string | null;
-          kind: "feed" | "diaper" | "sleep" | "kick" | "contraction" | "temp" | "med";
+          kind: "feed" | "diaper" | "sleep" | "kick" | "contraction" | "temp" | "med" | "pump" | "tummy" | "milestone";
           subtype: string | null;
           amount: number | null;
           unit: string | null;
@@ -341,7 +347,7 @@ export interface Database {
           id?: number;
           user_id: string;
           couple_id?: string | null;
-          kind: "feed" | "diaper" | "sleep" | "kick" | "contraction" | "temp" | "med";
+          kind: "feed" | "diaper" | "sleep" | "kick" | "contraction" | "temp" | "med" | "pump" | "tummy" | "milestone";
           subtype?: string | null;
           amount?: number | null;
           unit?: string | null;
@@ -351,7 +357,7 @@ export interface Database {
           created_at?: string;
         };
         Update: {
-          kind?: "feed" | "diaper" | "sleep" | "kick" | "contraction" | "temp" | "med";
+          kind?: "feed" | "diaper" | "sleep" | "kick" | "contraction" | "temp" | "med" | "pump" | "tummy" | "milestone";
           subtype?: string | null;
           amount?: number | null;
           unit?: string | null;

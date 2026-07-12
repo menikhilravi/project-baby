@@ -45,12 +45,50 @@ export async function addMeasurement(input: GrowthInput) {
   revalidatePath("/reports");
 }
 
+/** Persist the baby's sex on the profile (drives the WHO curve selection). */
+export async function setBabySex(sex: "male" | "female") {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+  const { error } = await supabase
+    .from("profiles")
+    .update({ baby_sex: sex })
+    .eq("id", user.id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/reports");
+}
+
 export async function removeMeasurement(id: number) {
   const { supabase } = await ctx();
   const { error } = await supabase
     .from("growth_measurements")
     .delete()
     .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/reports");
+}
+
+/** Record a "first" — stored as a baby_events milestone (label in notes). */
+export async function addMilestone(label: string, occurredOn: string) {
+  const { supabase, userId, coupleId } = await ctx();
+  const clean = label.trim();
+  if (!clean) throw new Error("Add a short description.");
+  const { error } = await supabase.from("baby_events").insert({
+    user_id: userId,
+    couple_id: coupleId,
+    kind: "milestone",
+    notes: clean,
+    occurred_at: new Date(`${occurredOn}T12:00:00`).toISOString(),
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/reports");
+}
+
+export async function removeMilestone(id: number) {
+  const { supabase } = await ctx();
+  const { error } = await supabase.from("baby_events").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/reports");
 }

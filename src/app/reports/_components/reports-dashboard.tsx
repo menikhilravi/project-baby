@@ -226,6 +226,9 @@ export function ReportsDashboard({ events }: { events: RawEvent[] }) {
             </span>
             <span className="text-xs text-muted-foreground">
               {stats.totalFeeds} total
+              {stats.totalFeedOz > 0
+                ? ` · ${stats.avgFeedOz.toFixed(1)} oz/day bottle`
+                : ""}
             </span>
           </div>
         </CardHeader>

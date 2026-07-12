@@ -4,7 +4,9 @@
  *
  * Approach: start from an age-appropriate wake window, then nudge toward the
  * baby's *observed* recent wake windows (awake gaps between sleeps). Anchored
- * to when the baby last woke. Gated under ~2 months, like Huckleberry.
+ * to when the baby last woke. Newborns tire fast (~40–60 min) and their rhythm
+ * is erratic, so under ~2 weeks we hold off; after that we show a low-confidence
+ * window that firms up as real gaps accumulate.
  */
 
 export type SleepInterval = { start: Date; end: Date | null };
@@ -24,10 +26,12 @@ export type NapPrediction =
   | { status: "no-data" };
 
 const WEEK_MS = 7 * 24 * 60 * 60_000;
-const MIN_AGE_WEEKS = 8;
+const MIN_AGE_WEEKS = 2;
 
 /** Baseline awake window (minutes) by age in weeks. */
 function baselineWakeWindowMin(ageWeeks: number): number {
+  if (ageWeeks < 4) return 50; // newborn
+  if (ageWeeks < 8) return 70; // 1–2 mo
   if (ageWeeks < 13) return 90; // 2–3 mo
   if (ageWeeks < 17) return 105; // 3–4 mo
   if (ageWeeks < 26) return 135; // 4–6 mo

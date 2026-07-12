@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import {
   CartesianGrid,
   Line,
@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { WHO_MAX_MONTH, type WhoSex } from "@/lib/who-growth";
 import { ordinal, valueToCentile, whoCurve } from "@/lib/growth-percentiles";
-import { addMeasurement, removeMeasurement } from "../growth-actions";
+import { addMeasurement, removeMeasurement, setBabySex } from "../growth-actions";
 
 export type GrowthRow = {
   id: number;
@@ -41,7 +41,6 @@ const METRICS: { key: Metric; label: string; unit: string }[] = [
 ];
 
 const MS_PER_MONTH = 30.4375 * 24 * 60 * 60 * 1000;
-const SEX_KEY = "baby-sex";
 
 const tooltipStyle = {
   background: "var(--popover)",
@@ -67,25 +66,26 @@ function ageInMonths(birthDate: string, measuredOn: string): number {
 export function GrowthCard({
   measurements,
   birthDate,
+  initialSex,
 }: {
   measurements: GrowthRow[];
   birthDate: string | null;
+  initialSex: WhoSex | null;
 }) {
   const [metric, setMetric] = useState<Metric>("weight");
   const [showForm, setShowForm] = useState(false);
-  const [sex, setSex] = useState<WhoSex>("male");
-
-  useEffect(() => {
-    const saved = window.localStorage.getItem(SEX_KEY);
-    if (saved === "male" || saved === "female") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSex(saved);
-    }
-  }, []);
+  const [sex, setSex] = useState<WhoSex>(initialSex ?? "male");
+  const [, startTransition] = useTransition();
 
   const setSexPersist = (s: WhoSex) => {
     setSex(s);
-    window.localStorage.setItem(SEX_KEY, s);
+    startTransition(async () => {
+      try {
+        await setBabySex(s);
+      } catch (err) {
+        console.error(err);
+      }
+    });
   };
 
   const meta = METRICS.find((m) => m.key === metric)!;

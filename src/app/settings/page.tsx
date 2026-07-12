@@ -15,7 +15,7 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("birth_date, phase_override, hidden_sections")
+    .select("birth_date, phase_override, hidden_sections, baby_sex, birth_weight_g")
     .eq("id", user.id)
     .single();
 
@@ -34,6 +34,12 @@ export default async function SettingsPage() {
       <SettingsForm
         initialBirthDate={profile?.birth_date ?? ""}
         initialOverride={profile?.phase_override ?? ""}
+        initialSex={profile?.baby_sex ?? ""}
+        initialBirthWeightKg={
+          profile?.birth_weight_g != null
+            ? String(profile.birth_weight_g / 1000)
+            : ""
+        }
       />
 
       <div className="mt-10">

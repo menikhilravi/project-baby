@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Minus, Pill, Plus, Thermometer } from "lucide-react";
+import { Milk, Minus, Pill, Plus, Thermometer, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MED_SUBTYPES, MED_LABELS, type MedSubtype } from "@/lib/baby-events";
 import { classifyTemp, feverAlert } from "@/lib/newborn-health";
-import { logMed, logTemp } from "../actions";
+import { logMed, logPump, logTemp, logTummy } from "../actions";
+
+const TUMMY_MINUTES = [3, 5, 10, 15] as const;
+const PUMP_SIDES = ["left", "right", "both"] as const;
 
 /**
  * Compact temperature + medicine logging, sharing the visual language of the
@@ -18,18 +21,31 @@ export function HealthQuickLog({
 }: {
   birthDate: string | null;
 }) {
-  const [expanded, setExpanded] = useState<"temp" | "med" | null>(null);
+  const [expanded, setExpanded] = useState<
+    "temp" | "med" | "pump" | "tummy" | null
+  >(null);
   const [pending, startTransition] = useTransition();
+  const toggle = (k: "temp" | "med" | "pump" | "tummy") =>
+    setExpanded((c) => (c === k ? null : k));
+  const run = (fn: () => Promise<void>) =>
+    startTransition(async () => {
+      try {
+        await fn();
+        setExpanded(null);
+      } catch (err) {
+        console.error(err);
+      }
+    });
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <HealthButton
           label="Temp"
           icon={Thermometer}
           accent="text-rose-500"
           active={expanded === "temp"}
-          onClick={() => setExpanded((c) => (c === "temp" ? null : "temp"))}
+          onClick={() => toggle("temp")}
           disabled={pending}
         />
         <HealthButton
@@ -37,7 +53,23 @@ export function HealthQuickLog({
           icon={Pill}
           accent="text-violet-500"
           active={expanded === "med"}
-          onClick={() => setExpanded((c) => (c === "med" ? null : "med"))}
+          onClick={() => toggle("med")}
+          disabled={pending}
+        />
+        <HealthButton
+          label="Pump"
+          icon={Milk}
+          accent="text-sky-500"
+          active={expanded === "pump"}
+          onClick={() => toggle("pump")}
+          disabled={pending}
+        />
+        <HealthButton
+          label="Tummy"
+          icon={Timer}
+          accent="text-emerald-500"
+          active={expanded === "tummy"}
+          onClick={() => toggle("tummy")}
           disabled={pending}
         />
       </div>
@@ -62,20 +94,29 @@ export function HealthQuickLog({
       {expanded === "med" ? (
         <MedPicker
           disabled={pending}
-          onLog={(subtype) => {
-            startTransition(async () => {
-              try {
-                await logMed(
-                  subtype === "vitamin_d"
-                    ? { subtype, amount: 400, unit: "iu" }
-                    : { subtype },
-                );
-                setExpanded(null);
-              } catch (err) {
-                console.error(err);
-              }
-            });
-          }}
+          onLog={(subtype) =>
+            run(() =>
+              logMed(
+                subtype === "vitamin_d"
+                  ? { subtype, amount: 400, unit: "iu" }
+                  : { subtype },
+              ),
+            )
+          }
+        />
+      ) : null}
+
+      {expanded === "pump" ? (
+        <PumpPicker
+          disabled={pending}
+          onLog={(amount, unit, side) => run(() => logPump(amount, unit, side))}
+        />
+      ) : null}
+
+      {expanded === "tummy" ? (
+        <TummyPicker
+          disabled={pending}
+          onLog={(min) => run(() => logTummy(min))}
         />
       ) : null}
     </div>
@@ -253,6 +294,99 @@ function MedPicker({
       <p className="text-[11px] text-muted-foreground">
         Records what was given and when — not dosing advice. Follow your
         pediatrician&apos;s instructions.
+      </p>
+    </div>
+  );
+}
+
+function PumpPicker({
+  onLog,
+  disabled,
+}: {
+  onLog: (amount: number, unit: "oz" | "ml", side: "left" | "right" | "both") => void;
+  disabled?: boolean;
+}) {
+  const [oz, setOz] = useState(3);
+  const [side, setSide] = useState<"left" | "right" | "both">("both");
+  return (
+    <div className="rounded-2xl border border-border bg-card px-3 py-3 space-y-3">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setOz((v) => Math.max(0.5, +(v - 0.5).toFixed(1)))}
+          disabled={disabled}
+          className="grid h-9 w-9 place-items-center rounded-full border border-border bg-card hover:bg-muted disabled:opacity-50"
+          aria-label="Less"
+        >
+          <Minus className="h-4 w-4" />
+        </button>
+        <span className="min-w-16 text-center text-lg font-bold tabular-nums">
+          {oz} oz
+        </span>
+        <button
+          type="button"
+          onClick={() => setOz((v) => +(v + 0.5).toFixed(1))}
+          disabled={disabled}
+          className="grid h-9 w-9 place-items-center rounded-full border border-border bg-card hover:bg-muted disabled:opacity-50"
+          aria-label="More"
+        >
+          <Plus className="h-4 w-4" />
+        </button>
+        <div className="ml-auto flex rounded-full border border-border p-0.5">
+          {PUMP_SIDES.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setSide(s)}
+              className={cn(
+                "rounded-full px-3 py-1 text-xs font-semibold capitalize transition-colors",
+                side === s
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground",
+              )}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={() => onLog(oz, "oz", side)}
+        disabled={disabled}
+        className="w-full rounded-full bg-foreground py-2 text-sm font-semibold text-background hover:opacity-90 active:scale-[0.99] disabled:opacity-50"
+      >
+        Log pump
+      </button>
+    </div>
+  );
+}
+
+function TummyPicker({
+  onLog,
+  disabled,
+}: {
+  onLog: (minutes: number) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="rounded-2xl border border-border bg-card px-3 py-3 space-y-2">
+      <div className="flex flex-wrap gap-2">
+        {TUMMY_MINUTES.map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => onLog(m)}
+            disabled={disabled}
+            className="rounded-full border border-border bg-card px-3.5 py-1.5 text-sm font-medium transition-all hover:bg-muted active:scale-[0.97] disabled:opacity-50"
+          >
+            {m} min
+          </button>
+        ))}
+      </div>
+      <p className="text-[11px] text-muted-foreground">
+        Supervised tummy time builds neck &amp; shoulder strength — a few
+        minutes several times a day.
       </p>
     </div>
   );

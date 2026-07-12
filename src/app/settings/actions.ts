@@ -12,16 +12,25 @@ export async function updatePhase(formData: FormData) {
 
   const birthRaw = String(formData.get("birth_date") ?? "").trim();
   const overrideRaw = String(formData.get("phase_override") ?? "").trim();
+  const sexRaw = String(formData.get("baby_sex") ?? "").trim();
+  const weightRaw = String(formData.get("birth_weight_g") ?? "").trim();
 
   const birth_date = birthRaw === "" ? null : birthRaw;
   const phase_override =
     overrideRaw === "prenatal" || overrideRaw === "postnatal"
       ? overrideRaw
       : null;
+  const baby_sex =
+    sexRaw === "male" || sexRaw === "female" ? sexRaw : null;
+  const parsedWeight = weightRaw === "" ? null : Number(weightRaw);
+  const birth_weight_g =
+    parsedWeight != null && Number.isFinite(parsedWeight) && parsedWeight > 0
+      ? parsedWeight
+      : null;
 
   const { data, error } = await supabase
     .from("profiles")
-    .update({ birth_date, phase_override })
+    .update({ birth_date, phase_override, baby_sex, birth_weight_g })
     .eq("id", user.id)
     .select("id");
   if (error) throw new Error(error.message);

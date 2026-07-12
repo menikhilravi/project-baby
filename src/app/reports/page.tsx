@@ -5,6 +5,11 @@ import { createClient } from "@/lib/supabase/server";
 import type { RawEvent } from "@/lib/baby-stats";
 import { ReportsDashboard } from "./_components/reports-dashboard";
 import { GrowthCard, type GrowthRow } from "./_components/growth-card";
+import { BirthWeightCard } from "./_components/birth-weight-card";
+import {
+  MilestonesCard,
+  type MilestoneRow,
+} from "./_components/milestones-card";
 
 export default async function ReportsPage() {
   const supabase = await createClient();
@@ -15,11 +20,13 @@ export default async function ReportsPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("couple_id, birth_date")
+    .select("couple_id, birth_date, baby_sex, birth_weight_g")
     .eq("id", user.id)
     .single();
   const coupleId = profile?.couple_id ?? null;
   const birthDate = profile?.birth_date ?? null;
+  const babySex = profile?.baby_sex ?? null;
+  const birthWeightG = profile?.birth_weight_g ?? null;
 
   // 30-day window + ~1 day of buffer so the client can bucket by local-day
   // boundaries (rows are UTC; offset can be up to ±14h from server time).
@@ -42,12 +49,19 @@ export default async function ReportsPage() {
   if (coupleId) growthQuery.eq("couple_id", coupleId);
   else growthQuery.eq("user_id", user.id);
 
-  const [{ data }, { data: growthData }] = await Promise.all([
-    query,
-    growthQuery,
-  ]);
+  const milestoneQuery = supabase
+    .from("baby_events")
+    .select("id, notes, occurred_at")
+    .eq("kind", "milestone")
+    .order("occurred_at", { ascending: false });
+  if (coupleId) milestoneQuery.eq("couple_id", coupleId);
+  else milestoneQuery.eq("user_id", user.id);
+
+  const [{ data }, { data: growthData }, { data: milestoneData }] =
+    await Promise.all([query, growthQuery, milestoneQuery]);
   const events = (data ?? []) as RawEvent[];
   const measurements = (growthData ?? []) as GrowthRow[];
+  const milestones = (milestoneData ?? []) as MilestoneRow[];
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-10 md:px-8 md:py-16">
@@ -59,8 +73,18 @@ export default async function ReportsPage() {
         subtitle="Sleep, feeds, and diapers over time — see what's actually happening."
       />
       <ReportsDashboard events={events} />
-      <div className="mt-6">
-        <GrowthCard measurements={measurements} birthDate={birthDate} />
+      <div className="mt-6 space-y-6">
+        <BirthWeightCard
+          birthWeightG={birthWeightG}
+          birthDate={birthDate}
+          measurements={measurements}
+        />
+        <GrowthCard
+          measurements={measurements}
+          birthDate={birthDate}
+          initialSex={babySex}
+        />
+        <MilestonesCard milestones={milestones} />
       </div>
     </div>
   );

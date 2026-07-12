@@ -4,7 +4,6 @@ import {
   BriefcaseMedical,
   CreditCard,
   Baby,
-  Moon,
   BookOpen,
   Sun,
   Footprints,
@@ -52,14 +51,6 @@ export const navItems: NavItem[] = [
     tagline: "At-a-glance: feeds, diapers, sleep, supplies.",
     icon: Sun,
     key: "today",
-    phases: ["postnatal"],
-  },
-  {
-    href: "/log",
-    label: "Night Shift",
-    tagline: "Tap to log feeds, diapers, sleep.",
-    icon: Moon,
-    key: "logger",
     phases: ["postnatal"],
   },
   {

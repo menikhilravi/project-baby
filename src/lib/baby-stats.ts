@@ -24,6 +24,8 @@ export type DayBucket = {
   sleepSessions: number;
   longestSleepMin: number;
   feeds: number;
+  /** Bottle intake for the day, in oz (ml converted). */
+  feedOz: number;
   diapers: number;
   pee: number;
   poop: number;
@@ -38,8 +40,37 @@ export type RangeStats = {
   avgDiapers: number;
   totalFeeds: number;
   totalDiapers: number;
+  totalFeedOz: number;
+  avgFeedOz: number;
   longestSleepMin: number;
 };
+
+const ML_PER_OZ = 29.5735;
+
+/** A feed's volume in oz, if it recorded one (bottle). Null otherwise. */
+function feedOz(amount: number | null, unit: string | null): number | null {
+  if (amount == null) return null;
+  return unit === "ml" ? amount / ML_PER_OZ : amount;
+}
+
+/**
+ * Split a sleep interval into [localDayKey, minutes] segments at local
+ * midnight, so an overnight stretch credits each day it actually covers
+ * instead of dumping all of it on the day it began.
+ */
+function splitSleepByDay(start: Date, end: Date): Array<[string, number]> {
+  const segs: Array<[string, number]> = [];
+  let cur = new Date(start);
+  while (cur < end) {
+    const nextMidnight = new Date(cur);
+    nextMidnight.setHours(24, 0, 0, 0);
+    const segEnd = end < nextMidnight ? end : nextMidnight;
+    const min = (segEnd.getTime() - cur.getTime()) / 60_000;
+    if (min > 0) segs.push([localDayKey(cur), min]);
+    cur = segEnd;
+  }
+  return segs;
+}
 
 function localDayKey(d: Date): string {
   const y = d.getFullYear();
@@ -69,6 +100,7 @@ export function dayBuckets(
       sleepSessions: 0,
       longestSleepMin: 0,
       feeds: 0,
+      feedOz: 0,
       diapers: 0,
       pee: 0,
       poop: 0,
@@ -81,24 +113,37 @@ export function dayBuckets(
 
   for (const e of events) {
     const start = new Date(e.occurred_at);
-    const b = byDate.get(localDayKey(start));
-    if (!b) continue;
     if (e.kind === "feed") {
+      const b = byDate.get(localDayKey(start));
+      if (!b) continue;
       b.feeds += 1;
+      const oz = feedOz(e.amount, e.unit);
+      if (oz != null) b.feedOz += oz;
     } else if (e.kind === "diaper") {
+      const b = byDate.get(localDayKey(start));
+      if (!b) continue;
       b.diapers += 1;
       if (e.subtype === "pee") b.pee += 1;
       else if (e.subtype === "poop") b.poop += 1;
       else if (e.subtype === "both") b.both += 1;
       else b.untyped += 1;
     } else if (e.kind === "sleep" && e.ended_at) {
-      const min = Math.max(
-        0,
-        (new Date(e.ended_at).getTime() - start.getTime()) / 60_000,
-      );
-      b.sleepHours += min / 60;
-      b.sleepSessions += 1;
-      b.longestSleepMin = Math.max(b.longestSleepMin, min);
+      const end = new Date(e.ended_at);
+      const fullMin = Math.max(0, (end.getTime() - start.getTime()) / 60_000);
+      // Session count + longest-stretch land on the day the sleep began; the
+      // hours themselves are split across each local day the sleep covers.
+      const startBucket = byDate.get(localDayKey(start));
+      if (startBucket) {
+        startBucket.sleepSessions += 1;
+        startBucket.longestSleepMin = Math.max(
+          startBucket.longestSleepMin,
+          fullMin,
+        );
+      }
+      for (const [key, min] of splitSleepByDay(start, end)) {
+        const b = byDate.get(key);
+        if (b) b.sleepHours += min / 60;
+      }
     }
   }
 
@@ -111,6 +156,7 @@ export function rangeStats(buckets: DayBucket[]): RangeStats {
   const totalSleep = buckets.reduce((s, b) => s + b.sleepHours, 0);
   const totalFeeds = buckets.reduce((s, b) => s + b.feeds, 0);
   const totalDiapers = buckets.reduce((s, b) => s + b.diapers, 0);
+  const totalFeedOz = buckets.reduce((s, b) => s + b.feedOz, 0);
   const longestSleepMin = buckets.reduce(
     (m, b) => Math.max(m, b.longestSleepMin),
     0,
@@ -122,6 +168,8 @@ export function rangeStats(buckets: DayBucket[]): RangeStats {
     avgDiapers: totalDiapers / days,
     totalFeeds,
     totalDiapers,
+    totalFeedOz,
+    avgFeedOz: totalFeedOz / days,
     longestSleepMin,
   };
 }
