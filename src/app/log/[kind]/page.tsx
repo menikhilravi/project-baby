@@ -6,6 +6,7 @@ import { dayBuckets, formatDuration, rangeStats } from "@/lib/baby-stats";
 import type { RawEvent } from "@/lib/baby-stats";
 import { medLabel } from "@/lib/baby-events";
 import { ActivityDetail } from "../_components/activity-detail";
+import { ActivityMetrics } from "../_components/activity-metrics";
 import type { BabyEventRow, RoleMap } from "../_components/timeline";
 
 const HIGH_FREQUENCY: EventKind[] = ["feed", "diaper", "sleep", "tummy", "pump"];
@@ -28,10 +29,11 @@ export default async function ActivityDetailPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("couple_id")
+    .select("couple_id, birth_date")
     .eq("id", user.id)
     .single();
   const coupleId = profile?.couple_id ?? null;
+  const birthDate = profile?.birth_date ?? null;
 
   const membersQuery = coupleId
     ? supabase.from("profiles").select("id, role").eq("couple_id", coupleId)
@@ -55,7 +57,10 @@ export default async function ActivityDetailPage({
     .limit(200);
 
   const rows = (events ?? []) as BabyEventRow[];
-  const metrics = computeMetrics(kind, rows);
+  // Feed & diaper get the rich client metrics (charts + prediction/adequacy);
+  // everything else keeps the compact server-rendered stat strip.
+  const richKind = kind === "feed" || kind === "diaper";
+  const metrics = richKind ? [] : computeMetrics(kind, rows);
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-10 md:px-8 md:py-16">
@@ -66,6 +71,10 @@ export default async function ActivityDetailPage({
         title={`${meta.label}.`}
         subtitle="The full trace — add a missed entry, edit a time, or delete."
       />
+
+      {richKind ? (
+        <ActivityMetrics kind={kind} rows={rows} birthDate={birthDate} />
+      ) : null}
 
       {metrics.length > 0 ? (
         <div className="mb-6 grid grid-cols-3 gap-2">

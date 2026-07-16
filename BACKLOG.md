@@ -52,7 +52,22 @@ Post-launch improvements. New items get appended; tags: `📋 Captured` → `�
 
 ## More _(open — user will append)_
 
-- _(awaiting next batch from you)_
+### 🚧 BH-13 · Feed/diaper care reminders + richer metrics
+**What:** Opt-in push nudges for feeds (adaptive interval from recent feeds) and
+diapers (once-a-day if output is below the age target), couple-wide, quiet hours
+6am–10pm. Plus richer feed/diaper metrics on the `/log/feed` · `/log/diaper`
+detail pages (next-feed prediction, adequacy, 7-day charts) and Reports sublines.
+**Built on:** existing push pipeline (`push.ts`, `push_subscriptions`, `sw.js`),
+new `src/lib/care-schedule.ts` (shared by cron + UI), `newborn-health.ts` targets.
+**Schema:** `0028_care_reminders.sql` — `profiles.{feed_reminders,diaper_reminders,
+feed_interval_min}` + `care_reminder_state` (de-dup: once per gap / once per day).
+**Scheduler:** Supabase **pg_cron + pg_net** (not GitHub Actions) hitting
+`/api/cron/care-reminder` every ~20m — setup SQL is in the migration footer.
+**⚠️ Deploy:** apply `0028`; enable `pg_cron`/`pg_net` + `alter database … set
+app.cron_secret`; schedule the job; ensure `VAPID` keys + `CRON_SECRET` are set.
+Metrics are verifiable locally; reminder runtime needs the migration + pg_cron +
+an authed subscribed device.
+**Effort:** ★★ (mostly plumbing that already existed)
 
 ---
 

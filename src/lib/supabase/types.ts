@@ -56,6 +56,9 @@ export interface Database {
           birth_weight_g: number | null;
           phase_override: "prenatal" | "postnatal" | null;
           hidden_sections: string[];
+          feed_reminders: boolean;
+          diaper_reminders: boolean;
+          feed_interval_min: number | null;
           created_at: string;
         };
         Insert: {
@@ -68,6 +71,9 @@ export interface Database {
           birth_weight_g?: number | null;
           phase_override?: "prenatal" | "postnatal" | null;
           hidden_sections?: string[];
+          feed_reminders?: boolean;
+          diaper_reminders?: boolean;
+          feed_interval_min?: number | null;
           created_at?: string;
         };
         Update: {
@@ -79,6 +85,28 @@ export interface Database {
           birth_weight_g?: number | null;
           phase_override?: "prenatal" | "postnatal" | null;
           hidden_sections?: string[];
+          feed_reminders?: boolean;
+          diaper_reminders?: boolean;
+          feed_interval_min?: number | null;
+        };
+        Relationships: [];
+      };
+      care_reminder_state: {
+        Row: {
+          couple_key: string;
+          kind: "feed" | "diaper";
+          last_sent_at: string | null;
+          last_ref: string | null;
+        };
+        Insert: {
+          couple_key: string;
+          kind: "feed" | "diaper";
+          last_sent_at?: string | null;
+          last_ref?: string | null;
+        };
+        Update: {
+          last_sent_at?: string | null;
+          last_ref?: string | null;
         };
         Relationships: [];
       };

@@ -26,27 +26,17 @@ import {
   rangeStats,
 } from "@/lib/baby-stats";
 import { buildInsights } from "@/lib/insights";
+import {
+  DIAPER_COLORS,
+  FEED_COLOR,
+  SLEEP_COLOR,
+  chartTooltipStyle as tooltipStyle,
+  hourTick,
+} from "@/lib/chart-theme";
+import { medianFeedIntervalMin } from "@/lib/care-schedule";
 import { WeeklySummaryCard } from "./weekly-summary-card";
 
 const RANGES = [7, 14, 30] as const;
-
-const DIAPER_COLORS = {
-  pee: "oklch(0.82 0.13 95)",
-  poop: "oklch(0.52 0.08 60)",
-  both: "oklch(0.64 0.11 45)",
-  untyped: "var(--muted-foreground)",
-} as const;
-
-const SLEEP_COLOR = "var(--reports)";
-const FEED_COLOR = "oklch(0.76 0.15 70)";
-
-const tooltipStyle = {
-  background: "var(--popover)",
-  border: "1px solid var(--border)",
-  borderRadius: 12,
-  fontSize: 12,
-  color: "var(--popover-foreground)",
-};
 
 export function ReportsDashboard({ events }: { events: RawEvent[] }) {
   const [days, setDays] = useState<number>(7);
@@ -57,6 +47,18 @@ export function ReportsDashboard({ events }: { events: RawEvent[] }) {
     () => feedHourHistogram(events, days),
     [events, days],
   );
+  const feedIntervalMin = useMemo(
+    () => medianFeedIntervalMin(events.filter((e) => e.kind === "feed")),
+    [events],
+  );
+  const diaperAvg = useMemo(() => {
+    const d = buckets.length || 1;
+    // Untyped + both count toward wet (matches newborn-health tallying); both +
+    // poop count toward dirty.
+    const wet = buckets.reduce((s, b) => s + b.pee + b.both + b.untyped, 0) / d;
+    const dirty = buckets.reduce((s, b) => s + b.poop + b.both, 0) / d;
+    return { wet, dirty };
+  }, [buckets]);
   const insights = useMemo(() => buildInsights(events), [events]);
 
   const hasData =
@@ -153,7 +155,8 @@ export function ReportsDashboard({ events }: { events: RawEvent[] }) {
               </span>
             </span>
             <span className="text-xs text-muted-foreground">
-              {stats.totalDiapers} total
+              {stats.totalDiapers} total · ~{diaperAvg.wet.toFixed(1)} wet /{" "}
+              {diaperAvg.dirty.toFixed(1)} dirty a day
             </span>
           </div>
         </CardHeader>
@@ -226,6 +229,9 @@ export function ReportsDashboard({ events }: { events: RawEvent[] }) {
             </span>
             <span className="text-xs text-muted-foreground">
               {stats.totalFeeds} total
+              {feedIntervalMin != null
+                ? ` · ~${formatDuration(feedIntervalMin)} between`
+                : ""}
               {stats.totalFeedOz > 0
                 ? ` · ${stats.avgFeedOz.toFixed(1)} oz/day bottle`
                 : ""}
@@ -342,10 +348,4 @@ function Legend({ items }: { items: [string, string][] }) {
       ))}
     </div>
   );
-}
-
-function hourTick(h: number): string {
-  if (h === 0) return "12a";
-  if (h === 12) return "12p";
-  return h < 12 ? `${h}a` : `${h - 12}p`;
 }

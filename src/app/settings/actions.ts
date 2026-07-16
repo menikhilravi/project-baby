@@ -43,6 +43,41 @@ export async function updatePhase(formData: FormData) {
   revalidatePath("/", "layout");
 }
 
+export async function setCareReminderPrefs(prefs: {
+  feed: boolean;
+  diaper: boolean;
+  feedIntervalMin?: number | null;
+}) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const interval =
+    prefs.feedIntervalMin != null &&
+    Number.isFinite(prefs.feedIntervalMin) &&
+    prefs.feedIntervalMin > 0
+      ? Math.round(prefs.feedIntervalMin)
+      : null;
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({
+      feed_reminders: prefs.feed,
+      diaper_reminders: prefs.diaper,
+      feed_interval_min: interval,
+    })
+    .eq("id", user.id)
+    .select("id");
+  if (error) throw new Error(error.message);
+  if (!data || data.length === 0) {
+    throw new Error("Profile row not updated — check migration 0028 ran.");
+  }
+
+  revalidatePath("/settings");
+}
+
 export async function updateHiddenSections(hidden: string[]) {
   const supabase = await createClient();
   const {

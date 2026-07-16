@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getPhase } from "@/lib/phase";
 import { SettingsForm } from "./_components/settings-form";
 import { HideSectionsForm } from "./_components/hide-sections-form";
+import { CareReminders } from "./_components/care-reminders";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -15,7 +16,9 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("birth_date, phase_override, hidden_sections, baby_sex, birth_weight_g")
+    .select(
+      "birth_date, phase_override, hidden_sections, baby_sex, birth_weight_g, feed_reminders, diaper_reminders, feed_interval_min",
+    )
     .eq("id", user.id)
     .single();
 
@@ -41,6 +44,19 @@ export default async function SettingsPage() {
             : ""
         }
       />
+
+      <div className="mt-10">
+        <h2 className="text-sm font-medium mb-1">Care reminders</h2>
+        <p className="text-xs text-muted-foreground mb-3">
+          Opt into gentle feed &amp; diaper nudges. Turn them on, then subscribe
+          each device you want notified.
+        </p>
+        <CareReminders
+          initialFeed={profile?.feed_reminders ?? false}
+          initialDiaper={profile?.diaper_reminders ?? false}
+          initialIntervalMin={profile?.feed_interval_min ?? null}
+        />
+      </div>
 
       <div className="mt-10">
         <h2 className="text-sm font-medium mb-1">Visible sections</h2>
