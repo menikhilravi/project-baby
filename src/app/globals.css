@@ -63,6 +63,12 @@
   --color-contractions-soft: var(--contractions-soft);
   --color-reports: var(--reports);
   --color-reports-soft: var(--reports-soft);
+  --color-checkups: var(--checkups);
+  --color-checkups-soft: var(--checkups-soft);
+  --color-mood: var(--mood);
+  --color-mood-soft: var(--mood-soft);
+  --color-handoff: var(--handoff);
+  --color-handoff-soft: var(--handoff-soft);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -128,6 +134,12 @@
   --contractions-soft: oklch(0.95 0.045 25);
   --reports: oklch(0.55 0.10 195);
   --reports-soft: oklch(0.95 0.035 195);
+  --checkups: oklch(0.55 0.10 175);
+  --checkups-soft: oklch(0.95 0.035 175);
+  --mood: oklch(0.60 0.13 320);
+  --mood-soft: oklch(0.95 0.035 320);
+  --handoff: oklch(0.56 0.12 130);
+  --handoff-soft: oklch(0.95 0.035 130);
 }
 
 .dark {
@@ -186,6 +198,12 @@
   --contractions-soft: oklch(0.24 0.09 25);
   --reports: oklch(0.76 0.12 195);
   --reports-soft: oklch(0.22 0.06 195);
+  --checkups: oklch(0.72 0.13 175);
+  --checkups-soft: oklch(0.22 0.06 175);
+  --mood: oklch(0.74 0.14 320);
+  --mood-soft: oklch(0.22 0.06 320);
+  --handoff: oklch(0.74 0.14 130);
+  --handoff-soft: oklch(0.22 0.06 130);
 }
 
 @layer base {

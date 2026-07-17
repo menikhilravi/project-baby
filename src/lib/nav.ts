@@ -9,6 +9,9 @@ import {
   Footprints,
   BarChart3,
   Activity,
+  Syringe,
+  HeartPulse,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 
@@ -25,7 +28,10 @@ export type ToolKey =
   | "today"
   | "kicks"
   | "contractions"
-  | "reports";
+  | "reports"
+  | "checkups"
+  | "mood"
+  | "handoff";
 
 export type NavItem = {
   href: string;
@@ -105,6 +111,30 @@ export const navItems: NavItem[] = [
     tagline: "Sleep, feed & diaper patterns at a glance.",
     icon: BarChart3,
     key: "reports",
+    phases: ["postnatal"],
+  },
+  {
+    href: "/checkups",
+    label: "Checkups",
+    tagline: "Well-baby visits & vaccine schedule.",
+    icon: Syringe,
+    key: "checkups",
+    phases: ["postnatal"],
+  },
+  {
+    href: "/mood",
+    label: "Mood",
+    tagline: "A gentle weekly check-in for you.",
+    icon: HeartPulse,
+    key: "mood",
+    phases: ["postnatal"],
+  },
+  {
+    href: "/handoff",
+    label: "Handoff",
+    tagline: "Sitter-ready snapshot & contacts.",
+    icon: Users,
+    key: "handoff",
     phases: ["postnatal"],
   },
   {
@@ -250,5 +280,32 @@ export const toolColors: Record<
     ring: "ring-reports",
     gradientFrom: "from-reports-soft",
     gradientVia: "via-reports-soft/60",
+  },
+  checkups: {
+    bg: "bg-checkups",
+    bgSoft: "bg-checkups-soft",
+    text: "text-checkups",
+    border: "border-checkups",
+    ring: "ring-checkups",
+    gradientFrom: "from-checkups-soft",
+    gradientVia: "via-checkups-soft/60",
+  },
+  mood: {
+    bg: "bg-mood",
+    bgSoft: "bg-mood-soft",
+    text: "text-mood",
+    border: "border-mood",
+    ring: "ring-mood",
+    gradientFrom: "from-mood-soft",
+    gradientVia: "via-mood-soft/60",
+  },
+  handoff: {
+    bg: "bg-handoff",
+    bgSoft: "bg-handoff-soft",
+    text: "text-handoff",
+    border: "border-handoff",
+    ring: "ring-handoff",
+    gradientFrom: "from-handoff-soft",
+    gradientVia: "via-handoff-soft/60",
   },
 };

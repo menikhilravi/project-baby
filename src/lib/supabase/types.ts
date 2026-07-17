@@ -59,6 +59,10 @@ export interface Database {
           feed_reminders: boolean;
           diaper_reminders: boolean;
           feed_interval_min: number | null;
+          care_instructions: string | null;
+          pediatrician_name: string | null;
+          pediatrician_phone: string | null;
+          emergency_contacts: { label: string; phone: string }[];
           created_at: string;
         };
         Insert: {
@@ -74,6 +78,10 @@ export interface Database {
           feed_reminders?: boolean;
           diaper_reminders?: boolean;
           feed_interval_min?: number | null;
+          care_instructions?: string | null;
+          pediatrician_name?: string | null;
+          pediatrician_phone?: string | null;
+          emergency_contacts?: { label: string; phone: string }[];
           created_at?: string;
         };
         Update: {
@@ -88,6 +96,10 @@ export interface Database {
           feed_reminders?: boolean;
           diaper_reminders?: boolean;
           feed_interval_min?: number | null;
+          care_instructions?: string | null;
+          pediatrician_name?: string | null;
+          pediatrician_phone?: string | null;
+          emergency_contacts?: { label: string; phone: string }[];
         };
         Relationships: [];
       };
@@ -420,6 +432,97 @@ export interface Database {
           weight_g?: number | null;
           height_cm?: number | null;
           head_cm?: number | null;
+        };
+        Relationships: [];
+      };
+      appointments: {
+        Row: {
+          id: number;
+          user_id: string;
+          couple_id: string | null;
+          slug: string | null;
+          title: string;
+          scheduled_for: string;
+          location: string | null;
+          notes: string | null;
+          completed_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          user_id: string;
+          couple_id?: string | null;
+          slug?: string | null;
+          title: string;
+          scheduled_for: string;
+          location?: string | null;
+          notes?: string | null;
+          completed_at?: string | null;
+        };
+        Update: {
+          slug?: string | null;
+          title?: string;
+          scheduled_for?: string;
+          location?: string | null;
+          notes?: string | null;
+          completed_at?: string | null;
+        };
+        Relationships: [];
+      };
+      mood_checkins: {
+        Row: {
+          id: number;
+          user_id: string;
+          taken_on: string;
+          score: number;
+          answers: number[];
+          self_harm: number;
+          note: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          user_id: string;
+          taken_on?: string;
+          score: number;
+          answers: number[];
+          self_harm?: number;
+          note?: string | null;
+        };
+        Update: {
+          taken_on?: string;
+          score?: number;
+          answers?: number[];
+          self_harm?: number;
+          note?: string | null;
+        };
+        Relationships: [];
+      };
+      vaccine_doses: {
+        Row: {
+          id: number;
+          user_id: string;
+          couple_id: string | null;
+          vaccine: string;
+          dose: string;
+          given_on: string;
+          notes: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          user_id: string;
+          couple_id?: string | null;
+          vaccine: string;
+          dose: string;
+          given_on?: string;
+          notes?: string | null;
+        };
+        Update: {
+          vaccine?: string;
+          dose?: string;
+          given_on?: string;
+          notes?: string | null;
         };
         Relationships: [];
       };
