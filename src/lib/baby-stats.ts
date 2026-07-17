@@ -5,7 +5,7 @@
  */
 
 export type RawEvent = {
-  kind: "feed" | "diaper" | "sleep";
+  kind: "feed" | "diaper" | "sleep" | "med";
   subtype: string | null;
   amount: number | null;
   unit: string | null;
@@ -31,6 +31,8 @@ export type DayBucket = {
   poop: number;
   both: number;
   untyped: number;
+  /** Vitamin D doses recorded that day (typically 0 or 1). */
+  vitaminD: number;
 };
 
 export type RangeStats = {
@@ -106,6 +108,7 @@ export function dayBuckets(
       poop: 0,
       both: 0,
       untyped: 0,
+      vitaminD: 0,
     };
     byDate.set(bucket.date, bucket);
     buckets.push(bucket);
@@ -127,6 +130,9 @@ export function dayBuckets(
       else if (e.subtype === "poop") b.poop += 1;
       else if (e.subtype === "both") b.both += 1;
       else b.untyped += 1;
+    } else if (e.kind === "med" && e.subtype === "vitamin_d") {
+      const b = byDate.get(localDayKey(start));
+      if (b) b.vitaminD += 1;
     } else if (e.kind === "sleep" && e.ended_at) {
       const end = new Date(e.ended_at);
       const fullMin = Math.max(0, (end.getTime() - start.getTime()) / 60_000);
@@ -172,6 +178,26 @@ export function rangeStats(buckets: DayBucket[]): RangeStats {
     avgFeedOz: totalFeedOz / days,
     longestSleepMin,
   };
+}
+
+/**
+ * Vitamin D adherence over a set of buckets: how many days had a dose, and the
+ * current run of consecutive dosed days counting back from the most recent.
+ * Today is given grace — if it hasn't been logged yet it doesn't break a streak.
+ */
+export function vitaminDAdherence(buckets: DayBucket[]): {
+  daysGiven: number;
+  days: number;
+  streak: number;
+} {
+  const daysGiven = buckets.filter((b) => b.vitaminD > 0).length;
+  let streak = 0;
+  for (let i = buckets.length - 1; i >= 0; i--) {
+    if (buckets[i].vitaminD > 0) streak += 1;
+    else if (i === buckets.length - 1) continue; // today not logged yet
+    else break;
+  }
+  return { daysGiven, days: buckets.length, streak };
 }
 
 /** Count of feeds started in each local hour (0–23) over the last `days`. */

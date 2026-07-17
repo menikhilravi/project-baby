@@ -7,6 +7,8 @@
 
 export const SLEEP_COLOR = "var(--reports)";
 export const FEED_COLOR = "oklch(0.76 0.15 70)";
+/** Violet, matching how meds/Vitamin D are tinted across the app. */
+export const VITAMIN_D_COLOR = "oklch(0.62 0.2 293)";
 
 export const DIAPER_COLORS = {
   pee: "oklch(0.82 0.13 95)",

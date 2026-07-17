@@ -10,7 +10,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Droplets, Moon, Sparkles, Utensils } from "lucide-react";
+import { Droplets, Moon, Pill, Sparkles, Utensils } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -24,12 +24,14 @@ import {
   feedHourHistogram,
   formatDuration,
   rangeStats,
+  vitaminDAdherence,
 } from "@/lib/baby-stats";
 import { buildInsights } from "@/lib/insights";
 import {
   DIAPER_COLORS,
   FEED_COLOR,
   SLEEP_COLOR,
+  VITAMIN_D_COLOR,
   chartTooltipStyle as tooltipStyle,
   hourTick,
 } from "@/lib/chart-theme";
@@ -59,6 +61,7 @@ export function ReportsDashboard({ events }: { events: RawEvent[] }) {
     const dirty = buckets.reduce((s, b) => s + b.poop + b.both, 0) / d;
     return { wet, dirty };
   }, [buckets]);
+  const vitaminD = useMemo(() => vitaminDAdherence(buckets), [buckets]);
   const insights = useMemo(() => buildInsights(events), [events]);
 
   const hasData =
@@ -299,6 +302,57 @@ export function ReportsDashboard({ events }: { events: RawEvent[] }) {
           </ResponsiveContainer>
         </CardContent>
       </Card>
+
+      {/* Vitamin D — daily adherence. Only shown once it's actually tracked. */}
+      {vitaminD.daysGiven > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-[12px] uppercase tracking-[0.14em] font-semibold text-muted-foreground">
+              <Pill className="h-3.5 w-3.5 text-violet-500" /> Vitamin D
+            </CardTitle>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="font-display nums text-3xl font-bold tracking-tight">
+                {vitaminD.daysGiven}
+                <span className="text-lg text-muted-foreground font-semibold">
+                  /{vitaminD.days} days
+                </span>
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {vitaminD.streak > 1
+                  ? `${vitaminD.streak}-day streak · 400 IU daily`
+                  : "400 IU daily"}
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={140}>
+              <BarChart data={buckets} margin={{ left: -20, right: 4, top: 4 }}>
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                  interval={tickInterval}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis hide domain={[0, 1]} />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  cursor={{ fill: "var(--muted)", opacity: 0.4 }}
+                  formatter={(v) => [
+                    Number(v) > 0 ? "Given" : "Missed",
+                    "Vitamin D",
+                  ]}
+                />
+                <Bar
+                  dataKey="vitaminD"
+                  fill={VITAMIN_D_COLOR}
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {/* Insights */}
       {insights.length > 0 ? (
