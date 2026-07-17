@@ -23,9 +23,10 @@ import { ageInDays } from "@/lib/newborn-health";
 
 export default async function TodayPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: claims } = await supabase.auth.getClaims();
+  const user = claims?.claims
+    ? { id: claims.claims.sub, email: claims.claims.email ?? null }
+    : null;
   if (!user) redirect("/login");
 
   const { data: profile } = await supabase

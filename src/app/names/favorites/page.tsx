@@ -12,9 +12,8 @@ type SwipeRow = { name: string; rank: number | null };
 
 export default async function FavoritesPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: claims } = await supabase.auth.getClaims();
+  const user = claims?.claims ? { id: claims.claims.sub } : null;
 
   const [{ data: liked }, { data: generated }, { data: myProfile }] =
     await Promise.all([

@@ -7,7 +7,7 @@ import { BottomNav } from "@/components/bottom-nav";
 import { UserMenu } from "@/components/user-menu";
 import { NavProgressProvider } from "@/components/nav-progress";
 import { createClient } from "@/lib/supabase/server";
-import { getPhase } from "@/lib/phase";
+import { derivePhase, type Phase } from "@/lib/phase";
 
 const geistSans = Geist({
   variable: "--font-sans",
@@ -40,24 +40,29 @@ export const viewport: Viewport = {
 async function getUserContext(): Promise<{
   email: string | null;
   hiddenSections: string[];
+  phase: Phase;
 }> {
   if (
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
     !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   ) {
-    return { email: null, hiddenSections: [] };
+    return { email: null, hiddenSections: [], phase: "prenatal" };
   }
   const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return { email: null, hiddenSections: [] };
+  const { data: claims } = await supabase.auth.getClaims();
+  const user = claims?.claims;
+  if (!user) return { email: null, hiddenSections: [], phase: "prenatal" };
+  // Single profile read covers both the nav (hidden_sections) and the
+  // prenatal/postnatal phase, avoiding a second auth + profile round-trip.
   const { data: profile } = await supabase
     .from("profiles")
-    .select("hidden_sections")
-    .eq("id", auth.user.id)
+    .select("hidden_sections, birth_date, phase_override")
+    .eq("id", user.sub)
     .maybeSingle();
   return {
-    email: auth.user.email ?? null,
+    email: user.email ?? null,
     hiddenSections: profile?.hidden_sections ?? [],
+    phase: derivePhase(profile),
   };
 }
 
@@ -66,9 +71,8 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { email, hiddenSections } = await getUserContext();
+  const { email, hiddenSections, phase } = await getUserContext();
   const authed = Boolean(email);
-  const phase = authed ? await getPhase() : "prenatal";
 
   return (
     <html
