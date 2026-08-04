@@ -7,21 +7,35 @@ import {
   feedDueStatus,
   medianFeedIntervalMin,
 } from "@/lib/care-schedule";
+import {
+  DEFAULT_GRACE_MIN,
+  dueSlots,
+  matchDoses,
+  scheduleMinutes,
+  scheduleName,
+  toHhMm,
+  type MedScheduleRow,
+} from "@/lib/med-schedule";
 
 /**
- * Cron-fired endpoint: opt-in feed & diaper reminders, couple-wide.
+ * Cron-fired endpoint: opt-in feed, diaper & medicine reminders, couple-wide.
  *
  *   Feed   — nudge once when the gap since the last feed passes the couple's
  *            adaptive interval (median of recent gaps, or a newborn default).
  *   Diaper — nudge once per local day, after mid-afternoon, if the day's
  *            wet/dirty output is still below the age-appropriate target.
+ *   Med    — nudge once per scheduled dose time (med_schedules, migration
+ *            0032) that has come due and hasn't been logged. These ignore
+ *            quiet hours: the parent chose the time, so a 10pm dose still
+ *            gets its reminder.
  *
  * De-dup lives in `care_reminder_state` so a run every ~20m never double-sends:
  * a feed reminder re-arms when a newer feed is logged; a diaper reminder fires
- * at most once per local date.
+ * at most once per local date; a med reminder at most once per slot per date.
  *
  * Auth: `Authorization: Bearer ${CRON_SECRET}`. Scheduled via Supabase pg_cron
- * (see migration 0028). Idempotent and safe to re-trigger.
+ * (see migration 0028) or the care-reminder GitHub Actions workflow.
+ * Idempotent and safe to re-trigger.
  */
 export const dynamic = "force-dynamic";
 
@@ -103,22 +117,40 @@ export async function GET(req: NextRequest) {
     (stateRows ?? []).map((r) => [`${r.couple_key}|${r.kind}`, r.last_ref]),
   );
 
+  // Active dose schedules, bucketed onto the same couple/solo key as `groups`.
+  // Absent (null) until migration 0032 is applied — meds just stay quiet.
+  const { data: scheduleRows } = await supabase
+    .from("med_schedules")
+    .select("id, user_id, couple_id, subtype, label, times, amount, unit, active")
+    .eq("active", true);
+  const schedulesByKey = new Map<string, MedScheduleRow[]>();
+  for (const s of scheduleRows ?? []) {
+    const key = s.couple_id ?? `user:${s.user_id}`;
+    const list = schedulesByKey.get(key) ?? [];
+    list.push(s as MedScheduleRow);
+    schedulesByKey.set(key, list);
+  }
+
+  const medGraceMin = Number(process.env.CARE_MED_GRACE_MIN ?? DEFAULT_GRACE_MIN);
+
   let feedSent = 0;
   let diaperSent = 0;
+  let medSent = 0;
   let skippedQuiet = 0;
   let pruned = 0;
 
   for (const g of groups) {
-    if (!g.feedOptIn && !g.diaperOptIn) continue;
+    const schedules = schedulesByKey.get(g.coupleKey) ?? [];
+    if (!g.feedOptIn && !g.diaperOptIn && schedules.length === 0) continue;
 
     const localHour = g.tz ? currentHourInTz(g.tz) : now.getHours();
-    if (localHour !== null && (localHour < quietStart || localHour >= quietEnd)) {
-      skippedQuiet++;
-      continue;
-    }
+    // Quiet hours gate feed & diaper only; scheduled doses opt out by design.
+    const quiet =
+      localHour !== null && (localHour < quietStart || localHour >= quietEnd);
+    if (quiet) skippedQuiet++;
 
     // --- Feed ---
-    if (g.feedOptIn) {
+    if (g.feedOptIn && !quiet) {
       const feeds = await fetchEvents(supabase, g, "feed", 48);
       const last = feeds[0];
       if (last) {
@@ -146,7 +178,7 @@ export async function GET(req: NextRequest) {
     }
 
     // --- Diaper ---
-    if (g.diaperOptIn && localHour !== null && localHour >= diaperHour) {
+    if (g.diaperOptIn && !quiet && localHour !== null && localHour >= diaperHour) {
       const localDate = g.tz ? localDateInTz(g.tz, now) : localDateOf(now);
       const alreadyToday = stateRef.get(`${g.coupleKey}|diaper`) === localDate;
       if (!alreadyToday) {
@@ -173,12 +205,64 @@ export async function GET(req: NextRequest) {
         }
       }
     }
+
+    // --- Scheduled medicine ---
+    if (schedules.length > 0) {
+      const localDate = g.tz ? localDateInTz(g.tz, now) : localDateOf(now);
+      const nowMin = localMinutesInTz(g.tz, now);
+      // One read covers every schedule in this group.
+      const meds = await fetchEvents(supabase, g, "med", 36);
+      const todaysMeds = meds.filter(
+        (m) =>
+          (g.tz
+            ? localDateInTz(g.tz, new Date(m.occurred_at))
+            : localDateOf(new Date(m.occurred_at))) === localDate,
+      );
+
+      for (const sched of schedules) {
+        const slots = scheduleMinutes(sched.times);
+        if (slots.length === 0) continue;
+
+        const doseMins = todaysMeds
+          .filter((m) => m.subtype === sched.subtype)
+          .map((m) => localMinutesInTz(g.tz, new Date(m.occurred_at)));
+        const due = dueSlots(
+          matchDoses(slots, doseMins),
+          nowMin,
+          medGraceMin,
+        );
+        // Only the earliest outstanding slot nudges — one push, not a pile.
+        const slot = due[0];
+        if (!slot) continue;
+
+        const stateKey = `${g.coupleKey}|med:${sched.id}`;
+        const ref = `${localDate}T${toHhMm(slot.slotMin)}`;
+        if (stateRef.get(stateKey) === ref) continue;
+
+        const name = scheduleName(sched);
+        const dose =
+          sched.amount != null ? ` ${sched.amount}${sched.unit ?? ""}` : "";
+        const p = await pushToGroup(supabase, g, {
+          title: `${name} due`,
+          body: `Scheduled for ${formatSlotLabel(slot.slotMin)}${dose}. Tap to log it.`,
+          url: "/log/med",
+          tag: `care-med-${sched.id}`,
+        });
+        pruned += p.pruned;
+        if (p.sent > 0) {
+          medSent++;
+          stateRef.set(stateKey, ref);
+          await upsertState(supabase, g.coupleKey, `med:${sched.id}`, ref, now);
+        }
+      }
+    }
   }
 
   return Response.json({
     groups: groups.length,
     feed_sent: feedSent,
     diaper_sent: diaperSent,
+    med_sent: medSent,
     skipped_quiet: skippedQuiet,
     pruned,
     quiet_window: `${quietStart}-${quietEnd}`,
@@ -231,7 +315,7 @@ type EventRow = { occurred_at: string; subtype: string | null };
 async function fetchEvents(
   supabase: ReturnType<typeof createServiceClient>,
   g: Group,
-  kind: "feed" | "diaper",
+  kind: "feed" | "diaper" | "med",
   hours: number,
 ): Promise<EventRow[]> {
   const since = new Date(Date.now() - hours * 60 * 60_000).toISOString();
@@ -283,7 +367,8 @@ async function pushToGroup(
 async function upsertState(
   supabase: ReturnType<typeof createServiceClient>,
   coupleKey: string,
-  kind: "feed" | "diaper",
+  /** 'feed' | 'diaper' | 'med:<schedule_id>' — see migration 0032. */
+  kind: string,
   lastRef: string,
   now: Date,
 ) {
@@ -331,6 +416,36 @@ function localDateInTz(tz: string, d: Date): string {
   } catch {
     return localDateOf(d);
   }
+}
+
+/**
+ * Minutes past local midnight in `tz`, for matching a wall-clock dose schedule.
+ * Falls back to the server's own clock when the tz is missing or unrecognized —
+ * same "rather send than silently stop" bias as the kick reminder.
+ */
+function localMinutesInTz(tz: string | null, d: Date): number {
+  const serverMin = d.getHours() * 60 + d.getMinutes();
+  if (!tz) return serverMin;
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(d);
+    const h = Number(parts.find((p) => p.type === "hour")?.value);
+    const m = Number(parts.find((p) => p.type === "minute")?.value);
+    if (!Number.isFinite(h) || !Number.isFinite(m)) return serverMin;
+    return (h % 24) * 60 + m;
+  } catch {
+    return serverMin;
+  }
+}
+
+/** "9:00 AM" for a minute-of-day, in the app's default (server) locale. */
+function formatSlotLabel(minutes: number): string {
+  const d = new Date(2000, 0, 1, Math.floor(minutes / 60), minutes % 60);
+  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
 
 // Current hour (0-23) in the given IANA timezone, or null if unrecognized.

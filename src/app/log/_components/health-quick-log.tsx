@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Milk, Minus, Pill, Plus, Thermometer, Timer } from "lucide-react";
+import { Clock, Milk, Minus, Pill, Plus, Thermometer, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MED_SUBTYPES, MED_LABELS, type MedSubtype } from "@/lib/baby-events";
+import { defaultMedUnit } from "@/lib/med-schedule";
 import { classifyTemp, feverAlert } from "@/lib/newborn-health";
 import { logMed, logPump, logTemp, logTummy } from "../actions";
+import { EventEditor } from "./event-editor";
 
 const TUMMY_MINUTES = [3, 5, 10, 15] as const;
 const PUMP_SIDES = ["left", "right", "both"] as const;
@@ -24,6 +26,8 @@ export function HealthQuickLog({
   const [expanded, setExpanded] = useState<
     "temp" | "med" | "pump" | "tummy" | null
   >(null);
+  /** Which med the back-dating editor is open for, if any. */
+  const [backdating, setBackdating] = useState<MedSubtype | null>(null);
   const [pending, startTransition] = useTransition();
   const toggle = (k: "temp" | "med" | "pump" | "tummy") =>
     setExpanded((c) => (c === k ? null : k));
@@ -103,6 +107,22 @@ export function HealthQuickLog({
               ),
             )
           }
+          onBackdate={setBackdating}
+        />
+      ) : null}
+
+      {backdating ? (
+        <EventEditor
+          kind="med"
+          defaults={{
+            subtype: backdating,
+            amount: backdating === "vitamin_d" ? 400 : null,
+            unit: defaultMedUnit(backdating) || null,
+          }}
+          onClose={() => {
+            setBackdating(null);
+            setExpanded(null);
+          }}
         />
       ) : null}
 
@@ -260,21 +280,54 @@ function TempPicker({
   );
 }
 
+/**
+ * Two modes over one set of chips: "Now" logs on tap (the 3am case), "Earlier"
+ * hands the chip to the full editor so a dose given hours or days ago can be
+ * entered with its real time and dose.
+ */
 function MedPicker({
   onLog,
+  onBackdate,
   disabled,
 }: {
   onLog: (subtype: MedSubtype) => void;
+  onBackdate: (subtype: MedSubtype) => void;
   disabled?: boolean;
 }) {
+  const [earlier, setEarlier] = useState(false);
+
   return (
-    <div className="rounded-2xl border border-border bg-card px-3 py-3 space-y-2">
+    <div className="rounded-2xl border border-border bg-card px-3 py-3 space-y-2.5">
+      <div className="flex rounded-full border border-border p-0.5 self-start w-fit">
+        {(
+          [
+            { key: false, label: "Now" },
+            { key: true, label: "Earlier…" },
+          ] as const
+        ).map((m) => (
+          <button
+            key={String(m.key)}
+            type="button"
+            onClick={() => setEarlier(m.key)}
+            className={cn(
+              "flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors",
+              earlier === m.key
+                ? "bg-foreground text-background"
+                : "text-muted-foreground",
+            )}
+          >
+            {m.key ? <Clock className="h-3 w-3" /> : null}
+            {m.label}
+          </button>
+        ))}
+      </div>
+
       <div className="flex flex-wrap gap-2">
         {MED_SUBTYPES.map((s) => (
           <button
             key={s}
             type="button"
-            onClick={() => onLog(s)}
+            onClick={() => (earlier ? onBackdate(s) : onLog(s))}
             disabled={disabled}
             className={cn(
               "rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all",
@@ -292,8 +345,9 @@ function MedPicker({
         ))}
       </div>
       <p className="text-[11px] text-muted-foreground">
-        Records what was given and when — not dosing advice. Follow your
-        pediatrician&apos;s instructions.
+        {earlier
+          ? "Pick a medicine, then set the date, time and dose it was given."
+          : "Records what was given and when — not dosing advice. Follow your pediatrician's instructions."}
       </p>
     </div>
   );

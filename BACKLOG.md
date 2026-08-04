@@ -120,6 +120,49 @@ probiotic/other, optional dose). Medicine button in the health quick-log;
 last-24h "what was given, when" list so partners don't double-dose. Logging
 only — no dosing advice.
 
+### 🚧 BH-14 · Medicine: edit / back-date / scheduled reminders
+**What:** Closes the three gaps left by BH-5 — a logged dose was write-only
+from /today, back-dating meant knowing that `/log/med` existed, and there was
+no way to be reminded to give a dose.
+**Editing & back-dating:** every row in `MedsCard` now opens the shared
+`EventEditor` (retime, redose, delete — the editor grew an in-dialog Delete
+used by /log/[kind] too). A 7-day Vitamin-D strip is the catch-up affordance:
+a missed day shows a dashed dot, tapping it opens the editor pre-filled to
+that date. The medicine quick-log gained a **Now / Earlier…** toggle so gas
+drops given hours ago get their real time. Med doses can be recorded in `ml`.
+**Reminders:** new `med_schedules` (couple-scoped: subtype + local "HH:MM"
+times + optional dose), managed in Settings → Care reminders. The existing
+`/api/cron/care-reminder` job now also nudges per scheduled slot; a slot that
+has already been logged goes quiet on its own. Scheduled doses **bypass quiet
+hours** — the parent picked the time.
+**Shared logic:** `src/lib/med-schedule.ts` (`matchDoses` / `dueSlots` /
+`nextSlot`) is used by both the cron and the card, so what the card calls
+"given" is exactly what suppresses the push. Doses match slots by nearest
+pairing within a 2h tolerance; a missed slot nudges for 2h, then stops at
+local midnight.
+**Schema:** `0032_med_schedules.sql` — new table + RLS, widens
+`care_reminder_state.kind` to `med:<schedule_id>`, and a delete trigger that
+prunes orphaned state rows.
+**⚠️ Deploy:** apply `0032`; see the notification checklist below.
+
+### ⚠️ Push notifications — the setup that was never finished
+Reminders (kick, feed, diaper, medicine) could never have been delivered: the
+**VAPID keys were absent everywhere in-repo**, so `sendPush()` threw on the
+first subscriber of every cron run. Fixed here:
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_CONTACT` added
+  to `.env.local` (freshly generated) and documented in `.env.example`.
+  **Reconcile with Vercel first** — a subscription is bound to the public key
+  it was created under, and two devices are already subscribed.
+- `sendPush()` now reports a missing-VAPID config as a per-send failure rather
+  than 500-ing the whole cron run.
+- `care-reminder` had **no live schedule at all** (Vercel Hobby cron is daily;
+  the pg_cron setup in 0028 is a manual step). Added
+  `.github/workflows/care-reminder-cron.yml`, every 20m, mirroring the
+  kick-reminder workflow. Needs `APP_URL` + `CRON_SECRET` repo secrets.
+  Note the kick-reminder workflow's own schedule is still commented out.
+- Test-push copy and the service worker's fallback URL are no longer
+  kick-specific.
+
 ### ⚠️ Deploy step (required before these work end-to-end)
 `0025_baby_events_health.sql` must be applied to Supabase (it extends the
 `kind`/`subtype`/`unit` checks and **backfills feed `ended_at`**). Until then,

@@ -6,6 +6,8 @@ import { getPhase } from "@/lib/phase";
 import { SettingsForm } from "./_components/settings-form";
 import { HideSectionsForm } from "./_components/hide-sections-form";
 import { CareReminders } from "./_components/care-reminders";
+import { MedReminders } from "./_components/med-reminders";
+import type { MedScheduleRow } from "@/lib/med-schedule";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -15,13 +17,20 @@ export default async function SettingsPage() {
     : null;
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select(
-      "birth_date, phase_override, hidden_sections, baby_sex, birth_weight_g, feed_reminders, diaper_reminders, feed_interval_min",
-    )
-    .eq("id", user.id)
-    .single();
+  const [{ data: profile }, { data: medSchedules }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select(
+        "birth_date, phase_override, hidden_sections, baby_sex, birth_weight_g, feed_reminders, diaper_reminders, feed_interval_min",
+      )
+      .eq("id", user.id)
+      .single(),
+    // Empty until migration 0032 is applied — the card just shows no rows.
+    supabase
+      .from("med_schedules")
+      .select("id, subtype, label, times, amount, unit, active")
+      .order("id", { ascending: true }),
+  ]);
 
   const phase = await getPhase();
 
@@ -49,14 +58,19 @@ export default async function SettingsPage() {
       <div className="mt-10">
         <h2 className="text-sm font-medium mb-1">Care reminders</h2>
         <p className="text-xs text-muted-foreground mb-3">
-          Opt into gentle feed &amp; diaper nudges. Turn them on, then subscribe
-          each device you want notified.
+          Opt into gentle feed, diaper &amp; medicine nudges. Turn them on, then
+          subscribe each device you want notified.
         </p>
         <CareReminders
           initialFeed={profile?.feed_reminders ?? false}
           initialDiaper={profile?.diaper_reminders ?? false}
           initialIntervalMin={profile?.feed_interval_min ?? null}
         />
+        <div className="mt-3">
+          <MedReminders
+            initialSchedules={(medSchedules ?? []) as MedScheduleRow[]}
+          />
+        </div>
       </div>
 
       <div className="mt-10">

@@ -19,32 +19,54 @@ import {
   subtypeLabel,
 } from "@/lib/baby-events";
 import { KIND_META, type EventKind } from "@/lib/kind-meta";
-import { createEventAt, updateEvent } from "../actions";
+import { defaultMedUnit, MED_UNITS } from "@/lib/med-schedule";
+import { createEventAt, removeEvent, updateEvent } from "../actions";
 import type { BabyEventRow } from "./timeline";
 
 const PUMP_SIDES = ["left", "right", "both"] as const;
+
+/** Seed values for a fresh entry — e.g. "Vitamin D, 400 IU, last Tuesday". */
+export type EventDefaults = {
+  occurred_at?: string;
+  subtype?: string | null;
+  amount?: number | null;
+  unit?: string | null;
+};
 
 type Props = {
   kind: EventKind;
   /** Present → edit mode; absent → create mode. */
   row?: BabyEventRow | null;
+  /** Create mode only: pre-fill the form (back-dating, known dose). */
+  defaults?: EventDefaults;
   /** Called when the dialog should close (backdrop, cancel, or save). */
   onClose: () => void;
-  onSaved: (row: BabyEventRow) => void;
+  onSaved?: (row: BabyEventRow) => void;
+  /** Provide to offer Delete inside the editor (edit mode only). */
+  onDeleted?: (id: number) => void;
 };
 
 /**
  * Mounted only while open (parent conditionally renders it), so the form seeds
- * cleanly from `row` — or from "now" for a fresh entry — via useState
- * initializers, no reset effect required.
+ * cleanly from `row` — or from `defaults` / "now" for a fresh entry — via
+ * useState initializers, no reset effect required.
  */
-export function EventEditor({ kind, row, onClose, onSaved }: Props) {
+export function EventEditor({
+  kind,
+  row,
+  defaults,
+  onClose,
+  onSaved,
+  onDeleted,
+}: Props) {
   const meta = KIND_META[kind];
   const isEdit = Boolean(row);
   const durationKind = kind === "sleep" || kind === "tummy";
 
   const [when, setWhen] = useState(() =>
-    toLocalInput(row?.occurred_at ?? new Date().toISOString()),
+    toLocalInput(
+      row?.occurred_at ?? defaults?.occurred_at ?? new Date().toISOString(),
+    ),
   );
   const [ended, setEnded] = useState(() =>
     toLocalInput(
@@ -52,14 +74,18 @@ export function EventEditor({ kind, row, onClose, onSaved }: Props) {
     ),
   );
   const [subtype, setSubtype] = useState<string | null>(
-    () => row?.subtype ?? defaultSubtype(kind),
+    () => row?.subtype ?? defaults?.subtype ?? defaultSubtype(kind),
   );
-  const [amount, setAmount] = useState(() =>
-    row?.amount != null ? String(row.amount) : "",
+  const [amount, setAmount] = useState(() => {
+    const seed = row?.amount ?? defaults?.amount;
+    return seed != null ? String(seed) : "";
+  });
+  const [unit, setUnit] = useState(
+    () => row?.unit ?? defaults?.unit ?? defaultUnit(kind, subtype),
   );
-  const [unit, setUnit] = useState(() => row?.unit ?? defaultUnit(kind));
   const [notes, setNotes] = useState(() => row?.notes ?? "");
   const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const nursing = kind === "feed" && (subtype === "left" || subtype === "right");
@@ -123,12 +149,35 @@ export function EventEditor({ kind, row, onClose, onSaved }: Props) {
               ended_at: endedIso,
               ...detail,
             });
-        if (saved) onSaved(saved as BabyEventRow);
+        if (saved) onSaved?.(saved as BabyEventRow);
         onClose();
       } catch (e) {
         setError(friendlyError(e, kind));
       }
     });
+  };
+
+  const destroy = () => {
+    if (!row) return;
+    setError(null);
+    startTransition(async () => {
+      try {
+        await removeEvent(row.id);
+        onDeleted?.(row.id);
+        onClose();
+      } catch (e) {
+        setError(friendlyError(e, kind));
+      }
+    });
+  };
+
+  /**
+   * Picking a different medicine swaps in that med's usual unit — but only
+   * while the dose field is untouched, so it never overwrites a typed dose.
+   */
+  const pickSubtype = (value: string | null) => {
+    setSubtype(value);
+    if (kind === "med" && amount.trim() === "") setUnit(defaultMedUnit(value));
   };
 
   return (
@@ -202,7 +251,7 @@ export function EventEditor({ kind, row, onClose, onSaved }: Props) {
                 value: s,
                 label: MED_LABELS[s],
               }))}
-              onChange={setSubtype}
+              onChange={pickSubtype}
             />
           ) : null}
 
@@ -247,8 +296,23 @@ export function EventEditor({ kind, row, onClose, onSaved }: Props) {
           {error ? <p className="text-xs text-destructive">{error}</p> : null}
         </div>
 
-        <div className="flex justify-end gap-2 pt-1">
-          <Button variant="ghost" onClick={onClose} disabled={pending}>
+        <div className="flex items-center gap-2 pt-1">
+          {isEdit && onDeleted ? (
+            <Button
+              variant="ghost"
+              onClick={() => (confirmDelete ? destroy() : setConfirmDelete(true))}
+              disabled={pending}
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+            >
+              {confirmDelete ? "Tap to confirm" : "Delete"}
+            </Button>
+          ) : null}
+          <Button
+            variant="ghost"
+            onClick={onClose}
+            disabled={pending}
+            className="ml-auto"
+          >
             Cancel
           </Button>
           <Button onClick={submit} disabled={pending} className="rounded-xl">
@@ -329,7 +393,7 @@ function UnitToggle({
     kind === "temp"
       ? ["f", "c"]
       : kind === "med"
-        ? ["iu", "mg"]
+        ? [...MED_UNITS]
         : ["oz", "ml"];
   return (
     <div className="flex gap-1">
@@ -374,9 +438,10 @@ function defaultSubtype(kind: EventKind): string | null {
   return null;
 }
 
-function defaultUnit(kind: EventKind): string {
+function defaultUnit(kind: EventKind, subtype: string | null): string {
   if (kind === "temp") return "f";
   if (kind === "pump" || kind === "feed") return "oz";
+  if (kind === "med") return defaultMedUnit(subtype);
   return "";
 }
 

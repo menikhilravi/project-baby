@@ -17,7 +17,7 @@ self.addEventListener("push", (event) => {
     tag: payload.tag || "baby2026",
     renotify: true,
     requireInteraction: false,
-    data: { url: payload.url || "/kicks" },
+    data: { url: payload.url || "/today" },
   };
   event.waitUntil(
     self.registration.showNotification(payload.title || "Baby 2026", options),

@@ -2,6 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import {
+  isMedSubtype,
+  MED_UNITS,
+  normalizeTimes,
+  type MedScheduleRow,
+} from "@/lib/med-schedule";
 
 export async function updatePhase(formData: FormData) {
   const supabase = await createClient();
@@ -76,6 +82,106 @@ export async function setCareReminderPrefs(prefs: {
   }
 
   revalidatePath("/settings");
+}
+
+export type MedScheduleInput = {
+  /** Omit to create; supply to update in place. */
+  id?: number;
+  subtype: string;
+  label?: string | null;
+  /** Local 24h "HH:MM" times — normalized and de-duped before saving. */
+  times: string[];
+  amount?: number | null;
+  unit?: string | null;
+  active?: boolean;
+};
+
+/**
+ * Create or update a scheduled medicine. Couple-scoped: a schedule added by
+ * either parent reminds both. Times are stored as local wall-clock strings —
+ * see `0032_med_schedules.sql` for why.
+ */
+export async function saveMedSchedule(
+  input: MedScheduleInput,
+): Promise<MedScheduleRow> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  if (!isMedSubtype(input.subtype)) throw new Error("Unknown medicine.");
+  const times = normalizeTimes(input.times);
+  if (times.length === 0) throw new Error("Add at least one time.");
+
+  const amount =
+    input.amount != null && Number.isFinite(input.amount) && input.amount > 0
+      ? input.amount
+      : null;
+  const unit =
+    amount != null && input.unit && (MED_UNITS as readonly string[]).includes(input.unit)
+      ? input.unit
+      : null;
+  const label = input.label?.trim() ? input.label.trim().slice(0, 40) : null;
+
+  const fields = {
+    subtype: input.subtype,
+    label,
+    times,
+    amount,
+    unit,
+    active: input.active ?? true,
+  };
+  const select = "id, subtype, label, times, amount, unit, active";
+
+  const query = input.id
+    ? supabase.from("med_schedules").update(fields).eq("id", input.id)
+    : supabase.from("med_schedules").insert({
+        ...fields,
+        user_id: user.id,
+        couple_id: await coupleIdOf(supabase, user.id),
+      });
+
+  const { data, error } = await query.select(select).single();
+  if (error) throw new Error(scheduleError(error.message));
+
+  revalidatePath("/settings");
+  revalidatePath("/today");
+  return data as MedScheduleRow;
+}
+
+export async function deleteMedSchedule(id: number) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { error } = await supabase.from("med_schedules").delete().eq("id", id);
+  if (error) throw new Error(scheduleError(error.message));
+
+  revalidatePath("/settings");
+  revalidatePath("/today");
+}
+
+async function coupleIdOf(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+): Promise<string | null> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("couple_id")
+    .eq("id", userId)
+    .single();
+  return data?.couple_id ?? null;
+}
+
+/** The one failure worth naming: the migration isn't applied yet. */
+function scheduleError(message: string): string {
+  if (/med_schedules/i.test(message) && /exist|schema cache/i.test(message)) {
+    return "Medicine schedules need migration 0032 applied to Supabase.";
+  }
+  return message;
 }
 
 export async function updateHiddenSections(hidden: string[]) {

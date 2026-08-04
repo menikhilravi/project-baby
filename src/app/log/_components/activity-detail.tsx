@@ -74,9 +74,13 @@ export function ActivityDetail({
     };
   }, [coupleId, kind]);
 
+  /** State-only drop — for deletions the server already carried out. */
+  const dropLocal = (id: number) =>
+    setEvents((prev) => prev.filter((e) => e.id !== id));
+
   const handleRemove = (id: number) => {
     const snapshot = events;
-    setEvents((prev) => prev.filter((e) => e.id !== id));
+    dropLocal(id);
     startTransition(async () => {
       try {
         await removeEvent(id);
@@ -122,6 +126,7 @@ export function ActivityDetail({
           row={editing}
           onClose={() => setEditing(null)}
           onSaved={upsert}
+          onDeleted={dropLocal}
         />
       ) : null}
     </div>

@@ -84,10 +84,10 @@ export async function sendTestPush(): Promise<TestPushResult> {
     const result = await sendPush(
       { endpoint: s.endpoint, p256dh: s.p256dh, auth: s.auth },
       {
-        title: "Kick reminder test",
-        body: "Reminders are working. We'll nudge you every couple of hours.",
-        url: "/kicks",
-        tag: "kick-test",
+        title: "Reminders are working",
+        body: "This device will get kick, feed, diaper and medicine nudges.",
+        url: "/today",
+        tag: "push-test",
       },
     );
     if (result.ok) {

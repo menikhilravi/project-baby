@@ -1,0 +1,42 @@
+name: care reminder cron
+
+# Drives /api/cron/care-reminder — feed, diaper AND scheduled medicine nudges.
+# Vercel Hobby cron only runs once a day, and the pg_cron setup in migration
+# 0028 is a manual per-project step, so GitHub Actions is the schedule that
+# actually ships. The route does all the work and is idempotent; this workflow
+# only provides timing + auth.
+#
+# Every 20 minutes matches the de-dup design: a medicine slot has a 2h grace
+# window, so a dose scheduled at 9:00 is nudged by ~9:20 at the latest.
+# GitHub's scheduler is best-effort and can lag under load — fine for nudges,
+# not for anything time-critical.
+#
+# Required repo secrets: APP_URL (e.g. https://your-app.vercel.app), CRON_SECRET
+# (must equal the deployment's CRON_SECRET env var).
+
+on:
+  schedule:
+    - cron: "*/20 * * * *"
+  workflow_dispatch: {} # manual trigger from the Actions tab
+
+concurrency:
+  group: care-reminder
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit care reminder endpoint
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "Missing APP_URL or CRON_SECRET repo secret" >&2
+            exit 1
+          fi
+          response=$(curl --silent --show-error --fail-with-body \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$APP_URL/api/cron/care-reminder")
+          echo "Response: $response"

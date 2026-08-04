@@ -106,19 +106,56 @@ export interface Database {
       care_reminder_state: {
         Row: {
           couple_key: string;
-          kind: "feed" | "diaper";
+          /** 'feed' | 'diaper' | 'med:<schedule_id>' (0032). */
+          kind: string;
           last_sent_at: string | null;
           last_ref: string | null;
         };
         Insert: {
           couple_key: string;
-          kind: "feed" | "diaper";
+          kind: string;
           last_sent_at?: string | null;
           last_ref?: string | null;
         };
         Update: {
           last_sent_at?: string | null;
           last_ref?: string | null;
+        };
+        Relationships: [];
+      };
+      med_schedules: {
+        Row: {
+          id: number;
+          user_id: string;
+          couple_id: string | null;
+          subtype: string;
+          label: string | null;
+          /** Local 24h "HH:MM" times. */
+          times: string[];
+          amount: number | null;
+          unit: string | null;
+          active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          user_id: string;
+          couple_id?: string | null;
+          subtype: string;
+          label?: string | null;
+          times?: string[];
+          amount?: number | null;
+          unit?: string | null;
+          active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          subtype?: string;
+          label?: string | null;
+          times?: string[];
+          amount?: number | null;
+          unit?: string | null;
+          active?: boolean;
         };
         Relationships: [];
       };

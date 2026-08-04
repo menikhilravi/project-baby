@@ -20,6 +20,7 @@ import {
 import { MedsCard, type MedRow } from "./_components/meds-card";
 import { TummyTimeCard, type TummyRow } from "./_components/tummy-time-card";
 import { ageInDays } from "@/lib/newborn-health";
+import type { MedScheduleRow } from "@/lib/med-schedule";
 
 export default async function TodayPage() {
   const supabase = await createClient();
@@ -45,6 +46,9 @@ export default async function TodayPage() {
   // 30h covers "today" for any timezone the viewer might be in.
   // eslint-disable-next-line react-hooks/purity -- server component reading wall-clock time
   const thirtyHoursAgo = new Date(Date.now() - 30 * 60 * 60_000).toISOString();
+  // Meds reach back further: the Vitamin D card shows a 7-day catch-up strip.
+  // eslint-disable-next-line react-hooks/purity -- server component reading wall-clock time
+  const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60_000).toISOString();
 
   const [
     openSleepRes,
@@ -62,6 +66,7 @@ export default async function TodayPage() {
     openNursingRes,
     lastBreastRes,
     tummyTodayRes,
+    medSchedulesRes,
   ] = await Promise.all([
       supabase
         .from("baby_events")
@@ -136,9 +141,11 @@ export default async function TodayPage() {
         .order("occurred_at", { ascending: false }),
       supabase
         .from("baby_events")
-        .select("subtype, amount, unit, occurred_at")
+        .select(
+          "id, user_id, couple_id, kind, subtype, amount, unit, occurred_at, ended_at, notes",
+        )
         .eq("kind", "med")
-        .gte("occurred_at", thirtyHoursAgo)
+        .gte("occurred_at", eightDaysAgo)
         .order("occurred_at", { ascending: false }),
       supabase
         .from("baby_events")
@@ -163,6 +170,11 @@ export default async function TodayPage() {
         .eq("kind", "tummy")
         .gte("occurred_at", thirtyHoursAgo)
         .order("occurred_at", { ascending: false }),
+      supabase
+        .from("med_schedules")
+        .select("id, subtype, label, times, amount, unit, active")
+        .eq("active", true)
+        .order("id", { ascending: true }),
     ]);
 
   const kickCount = kicksRes.count ?? 0;
@@ -183,12 +195,10 @@ export default async function TodayPage() {
     subtype: d.subtype,
     occurred_at: d.occurred_at,
   }));
-  const medRows: MedRow[] = (medsRes.data ?? []).map((m) => ({
-    subtype: m.subtype,
-    amount: m.amount,
-    unit: m.unit,
-    occurred_at: m.occurred_at,
-  }));
+  const medRows = (medsRes.data ?? []) as MedRow[];
+  // Null when migration 0032 hasn't been applied yet — the card degrades to
+  // the un-scheduled view rather than failing the page.
+  const medSchedules = (medSchedulesRes.data ?? []) as MedScheduleRow[];
   const openNursing = openNursingRes.data
     ? {
         id: openNursingRes.data.id,
@@ -300,7 +310,7 @@ export default async function TodayPage() {
 
         {showTummyCard ? <TummyTimeCard rows={tummyRows} /> : null}
 
-        <MedsCard rows={medRows} />
+        <MedsCard rows={medRows} schedules={medSchedules} />
 
         <NextNapCard birthDate={birthDate} sleeps={recentSleeps} />
 

@@ -49,8 +49,10 @@ export async function sendPush(
   target: PushTarget,
   payload: PushPayload,
 ): Promise<SendResult> {
-  ensureVapid();
   try {
+    // Inside the try so an unconfigured deployment reports a clear per-send
+    // failure instead of 500-ing the whole cron run on the first subscriber.
+    ensureVapid();
     await webpush.sendNotification(
       {
         endpoint: target.endpoint,
