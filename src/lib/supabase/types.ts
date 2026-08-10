@@ -150,6 +150,7 @@ export interface Database {
           created_at?: string;
         };
         Update: {
+          couple_id?: string | null;
           subtype?: string;
           label?: string | null;
           times?: string[];
