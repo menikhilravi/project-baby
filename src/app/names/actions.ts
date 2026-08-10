@@ -252,18 +252,7 @@ export async function createCouple(): Promise<void> {
       .update({ couple_id: couple.id })
       .eq("id", user.id);
 
-    await Promise.all([
-      supabase
-        .from("gear_items")
-        .update({ couple_id: couple.id })
-        .eq("user_id", user.id)
-        .is("couple_id", null),
-      supabase
-        .from("hospital_checklist")
-        .update({ couple_id: couple.id })
-        .eq("user_id", user.id)
-        .is("couple_id", null),
-    ]);
+    await adoptSoloRows(supabase, user.id, couple.id);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Something went wrong";
     // re-throw Next.js redirect signals untouched
@@ -271,6 +260,29 @@ export async function createCouple(): Promise<void> {
     redirect(`/names/couple?error=${encodeURIComponent(msg)}`);
   }
   redirect("/names/couple");
+}
+
+/**
+ * Hand the user's pre-couple rows over to the new couple, so data created
+ * solo doesn't stay invisible to the partner. Medicine schedules matter most
+ * here: the reminder cron keys them by couple, so one left at `couple_id
+ * null` would stop nudging entirely once the owner joins a couple.
+ */
+async function adoptSoloRows(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  coupleId: string,
+) {
+  const tables = ["gear_items", "hospital_checklist", "med_schedules"] as const;
+  await Promise.all(
+    tables.map((table) =>
+      supabase
+        .from(table)
+        .update({ couple_id: coupleId })
+        .eq("user_id", userId)
+        .is("couple_id", null),
+    ),
+  );
 }
 
 export async function joinCouple(formData: FormData): Promise<void> {
@@ -295,18 +307,7 @@ export async function joinCouple(formData: FormData): Promise<void> {
 
     if (error) throw new Error(error.message);
 
-    await Promise.all([
-      supabase
-        .from("gear_items")
-        .update({ couple_id: couple.id })
-        .eq("user_id", user.id)
-        .is("couple_id", null),
-      supabase
-        .from("hospital_checklist")
-        .update({ couple_id: couple.id })
-        .eq("user_id", user.id)
-        .is("couple_id", null),
-    ]);
+    await adoptSoloRows(supabase, user.id, couple.id);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Something went wrong";
     if (msg === "NEXT_REDIRECT") throw e;

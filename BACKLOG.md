@@ -69,6 +69,44 @@ Metrics are verifiable locally; reminder runtime needs the migration + pg_cron +
 an authed subscribed device.
 **Effort:** ★★ (mostly plumbing that already existed)
 
+### 🚧 BH-15 · Pediatrician visit summary
+**What:** `/checkups/summary` — pick a **last visit** and **next visit** date and
+get everything in between as the numbers a pediatrician actually asks for.
+Reached from a card at the top of `/checkups`.
+**Sections:** growth (weight gain **g/day** vs the published average for the
+age, WHO percentiles, per-measurement table) · feeding (per day, median and
+longest gap, night feeds 10pm–6am, nursing session length, side split, bottle
+oz/day, first-half vs second-half trend) · diapers (wet/dirty per day vs the
+age target, days under target) · sleep (h/day split night 7pm–7am vs naps,
+longest stretch, typical best stretch) · temperature (every reading, fever
+flagged) · medicine (Vitamin-D adherence %, other doses with last-given) ·
+tummy time & pumping · milestones · immunizations (given since the last visit,
+due at the next one) · **questions for the doctor**.
+**Questions list:** the one thing the app can't compute. Add them as they come
+up, tick them off in the exam room. New `visit_questions` table.
+**Shared logic:** `src/lib/visit-summary.ts` — window-based aggregation (vs
+`baby-stats`, which is anchored to "the last N days"), all in the viewer's
+local timezone; the server fetches ±1 day of buffer and the client buckets.
+Reuses `newborn-health` (diaper targets, temp classification),
+`growth-percentiles` and `baby-events` labels so the report never disagrees
+with the cards it summarises.
+**Range defaults:** most recent completed appointment → next upcoming one,
+falling back to the AAP schedule from the birth date, then a 30-day look-back.
+Both dates live in the URL (`?from=&to=`).
+**Print:** a print stylesheet in `globals.css` drops the fixed app chrome and
+flips the forced-dark palette to ink-on-paper — the page is meant to be handed
+over or filed. Day-bar strips are plain CSS (not recharts) so they survive
+`window.print()` and stay legible at 60+ bars.
+**Schema:** `0033_visit_questions.sql` — new couple-scoped table + RLS.
+**⚠️ Deploy:** apply `0033`. Until then the page still renders — the questions
+query returns empty rather than throwing — but adding a question errors.
+**Verified:** `tsc`, `eslint` and `next build` clean; the aggregation module
+was exercised against 60 days of synthetic data (30+ assertions on every
+metric, plus empty / future-window / single-day / no-birth-date edge cases).
+The rendered report itself was **not** exercised — that needs the migration
+and an authed session.
+**Effort:** ★★
+
 ---
 
 ## Pairings worth noting
@@ -146,20 +184,28 @@ prunes orphaned state rows.
 **⚠️ Deploy:** apply `0032`; see the notification checklist below.
 
 ### ⚠️ Push notifications — the setup that was never finished
-Reminders (kick, feed, diaper, medicine) could never have been delivered: the
-**VAPID keys were absent everywhere in-repo**, so `sendPush()` threw on the
-first subscriber of every cron run. Fixed here:
-- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_CONTACT` added
-  to `.env.local` (freshly generated) and documented in `.env.example`.
-  **Reconcile with Vercel first** — a subscription is bound to the public key
-  it was created under, and two devices are already subscribed.
+**The real blocker was the scheduler, not the keys.** `care-reminder` had no
+live trigger anywhere: Vercel Hobby cron is once-a-day, and the pg_cron setup
+in 0028's footer can't be completed on hosted Supabase — the `postgres` role
+isn't a superuser, so `alter database postgres set app.cron_secret` is denied
+and `pg_cron`/`pg_net` must be enabled from Dashboard → Database → Extensions.
+So the route was never called. Fixed here:
+- Added `.github/workflows/care-reminder-cron.yml` — every 20m, an
+  authenticated `curl` from a GitHub runner, mirroring the kick-reminder
+  workflow. **Touches no database privileges**, which is the whole point.
+  Needs `APP_URL` + `CRON_SECRET` repo secrets. Note the kick-reminder
+  workflow's own schedule is still commented out, and GitHub disables
+  scheduled workflows after 60 days of repo inactivity.
+- VAPID keys were missing from `.env.local`, which broke **local** sends
+  (`sendPush()` threw before reaching the network). A generated pair is now
+  there and the three vars are documented in `.env.example`. Production is
+  separate: `.env*` is gitignored, so Vercel reads its own Project Settings
+  env vars, and `NEXT_PUBLIC_VAPID_PUBLIC_KEY` is inlined at **build** time —
+  changing it needs a redeploy. Two devices are already subscribed, which
+  implies the deployment already holds a pair; copy that one down rather than
+  pushing a new one up, or both devices must re-subscribe.
 - `sendPush()` now reports a missing-VAPID config as a per-send failure rather
   than 500-ing the whole cron run.
-- `care-reminder` had **no live schedule at all** (Vercel Hobby cron is daily;
-  the pg_cron setup in 0028 is a manual step). Added
-  `.github/workflows/care-reminder-cron.yml`, every 20m, mirroring the
-  kick-reminder workflow. Needs `APP_URL` + `CRON_SECRET` repo secrets.
-  Note the kick-reminder workflow's own schedule is still commented out.
 - Test-push copy and the service worker's fallback URL are no longer
   kick-specific.
 

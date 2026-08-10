@@ -1,4 +1,5 @@
-import { Syringe } from "lucide-react";
+import { ClipboardList, ChevronRight, Syringe } from "lucide-react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageHero } from "@/components/page-hero";
 import { createClient } from "@/lib/supabase/server";
@@ -84,6 +85,22 @@ export default async function CheckupsPage() {
         title="Visits & vaccines, on track."
         subtitle="The AAP well-baby schedule and CDC vaccines — tick them off as you go."
       />
+      <Link
+        href="/checkups/summary"
+        className="mb-6 flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3.5 transition-colors hover:bg-muted"
+      >
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-checkups-soft text-checkups ring-1 ring-border">
+          <ClipboardList className="h-4.5 w-4.5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-semibold">Visit summary</span>
+          <span className="block text-xs text-muted-foreground">
+            Everything since the last checkup, ready for the next one.
+          </span>
+        </span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+      </Link>
+
       <CheckupsBoard visits={visits} hasBirthDate={Boolean(birthDate)} />
     </div>
   );

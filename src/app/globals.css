@@ -351,3 +351,62 @@
     animation: none;
   }
 }
+
+/* ----------------------------------------------------------------------------
+   Print — the pediatrician visit summary (/checkups/summary) is meant to be
+   handed over or filed, so printing has to produce ink on paper rather than a
+   screenshot of a dark app. Two jobs: drop the fixed app chrome, and flip the
+   forced-dark palette to light. Any page can print; only that one is designed
+   for it.
+---------------------------------------------------------------------------- */
+
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  /* Side nav, bottom nav, the mobile action row and the progress bar are all
+     fixed-position siblings of <main> in the root layout. */
+  body > *:not(main) {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+    min-height: 0 !important;
+  }
+
+  html.dark,
+  :root {
+    color-scheme: light;
+    --background: #ffffff;
+    --foreground: #111114;
+    --card: #ffffff;
+    --card-foreground: #111114;
+    --popover: #ffffff;
+    --popover-foreground: #111114;
+    --muted: #f4f4f5;
+    --muted-foreground: #4b4b55;
+    --border: #c9c9d1;
+    --input: #c9c9d1;
+    --destructive: #b3261e;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #111114 !important;
+  }
+
+  /* Keep the day-bar strips and status tints — they carry meaning here. */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Sections should never straddle a page break mid-table. */
+  table,
+  dl {
+    break-inside: avoid;
+  }
+}

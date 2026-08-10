@@ -506,6 +506,28 @@ export interface Database {
         };
         Relationships: [];
       };
+      visit_questions: {
+        Row: {
+          id: number;
+          user_id: string;
+          couple_id: string | null;
+          question: string;
+          asked_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          user_id: string;
+          couple_id?: string | null;
+          question: string;
+          asked_at?: string | null;
+        };
+        Update: {
+          question?: string;
+          asked_at?: string | null;
+        };
+        Relationships: [];
+      };
       mood_checkins: {
         Row: {
           id: number;

@@ -74,7 +74,8 @@ function splitSleepByDay(start: Date, end: Date): Array<[string, number]> {
   return segs;
 }
 
-function localDayKey(d: Date): string {
+/** Local-time YYYY-MM-DD for a Date — the bucketing key everywhere. */
+export function localDayKey(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");

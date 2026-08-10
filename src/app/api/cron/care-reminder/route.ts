@@ -140,7 +140,7 @@ export async function GET(req: NextRequest) {
   let pruned = 0;
 
   for (const g of groups) {
-    const schedules = schedulesByKey.get(g.coupleKey) ?? [];
+    const schedules = schedulesForGroup(schedulesByKey, g);
     if (!g.feedOptIn && !g.diaperOptIn && schedules.length === 0) continue;
 
     const localHour = g.tz ? currentHourInTz(g.tz) : now.getHours();
@@ -308,6 +308,31 @@ function buildGroups(
     }
   }
   return [...byKey.values()];
+}
+
+/**
+ * Every schedule this group should be nudged about — the couple's own, plus
+ * any still keyed to an individual member. That second case is a schedule
+ * created before the partners linked up: its `couple_id` is null, so keying
+ * on the group's couple id alone would silently drop it. Reminders are
+ * couple-wide by design, so once linked, either partner's schedule nudges
+ * both phones.
+ */
+function schedulesForGroup(
+  byKey: Map<string, MedScheduleRow[]>,
+  g: Group,
+): MedScheduleRow[] {
+  const keys = [g.coupleKey, ...g.userIds.map((id) => `user:${id}`)];
+  const seen = new Set<number>();
+  const out: MedScheduleRow[] = [];
+  for (const key of keys) {
+    for (const s of byKey.get(key) ?? []) {
+      if (seen.has(s.id)) continue;
+      seen.add(s.id);
+      out.push(s);
+    }
+  }
+  return out;
 }
 
 type EventRow = { occurred_at: string; subtype: string | null };
