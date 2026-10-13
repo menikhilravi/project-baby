@@ -1,12 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Sheet } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -181,26 +176,21 @@ export function EventEditor({
   };
 
   return (
-    <Dialog
+    <Sheet
       open
       onOpenChange={(o) => {
         if (!o) onClose();
       }}
+      title={`${isEdit ? "Edit" : "Add"} ${meta.label.toLowerCase()}`}
+      description={isEdit ? undefined : "Back-date it if you missed it — any past time works."}
     >
-      <DialogContent className="rounded-3xl">
-        <DialogHeader>
-          <DialogTitle className="font-display text-xl">
-            {isEdit ? "Edit" : "Add"} {meta.label.toLowerCase()}
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-3">
+        <div className="space-y-4">
           <Field label={showEnded ? "Started" : "When"}>
             <Input
               type="datetime-local"
               value={when}
               onChange={(e) => setWhen(e.target.value)}
-              className="rounded-xl"
+             
             />
           </Field>
 
@@ -210,7 +200,7 @@ export function EventEditor({
                 type="datetime-local"
                 value={ended}
                 onChange={(e) => setEnded(e.target.value)}
-                className="rounded-xl"
+               
               />
               {kind === "sleep" ? (
                 <p className="text-[11px] text-muted-foreground">
@@ -274,7 +264,7 @@ export function EventEditor({
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder={kind === "temp" ? "98.6" : "4"}
-                  className="max-w-28 rounded-xl"
+                  className="max-w-28"
                 />
                 <UnitToggle kind={kind} value={unit} onChange={setUnit} />
               </div>
@@ -288,7 +278,7 @@ export function EventEditor({
                 maxLength={80}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="First smile"
-                className="rounded-xl"
+               
               />
             </Field>
           ) : null}
@@ -296,7 +286,7 @@ export function EventEditor({
           {error ? <p className="text-xs text-destructive">{error}</p> : null}
         </div>
 
-        <div className="flex items-center gap-2 pt-1">
+        <div className="flex items-center gap-2 pt-5 pb-2">
           {isEdit && onDeleted ? (
             <Button
               variant="ghost"
@@ -315,12 +305,11 @@ export function EventEditor({
           >
             Cancel
           </Button>
-          <Button onClick={submit} disabled={pending} className="rounded-xl">
+          <Button variant="squish" size="lg" onClick={submit} disabled={pending}>
             {pending ? "Saving…" : isEdit ? "Save" : "Add"}
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+    </Sheet>
   );
 }
 
@@ -333,7 +322,7 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+      <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
         {label}
       </Label>
       {children}
@@ -365,9 +354,9 @@ function ChipField({
               type="button"
               onClick={() => onChange(allowNone && active ? null : o.value)}
               className={cn(
-                "rounded-full border px-3.5 py-1.5 text-sm font-medium capitalize transition-all active:scale-[0.97]",
+                "h-10 rounded-full border px-4 text-sm font-semibold capitalize transition-all active:scale-[0.97]",
                 active
-                  ? "bg-logger-soft border-logger text-logger ring-1 ring-logger/30"
+                  ? "border-transparent bg-accent-baby-soft text-accent-baby-strong ring-2 ring-accent-baby/40"
                   : "bg-card border-border text-foreground hover:bg-muted",
               )}
             >
@@ -403,9 +392,9 @@ function UnitToggle({
           type="button"
           onClick={() => onChange(u)}
           className={cn(
-            "rounded-lg border px-2.5 py-1 text-xs font-medium uppercase transition-all",
+            "h-10 rounded-xl border px-3 text-xs font-bold uppercase transition-all",
             value === u
-              ? "bg-logger-soft border-logger text-logger"
+              ? "border-transparent bg-accent-baby-soft text-accent-baby-strong ring-2 ring-accent-baby/40"
               : "bg-card border-border text-muted-foreground hover:bg-muted",
           )}
         >

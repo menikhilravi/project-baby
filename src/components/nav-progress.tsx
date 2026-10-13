@@ -94,10 +94,10 @@ function TopProgressBar({ active }: { active: boolean }) {
     <div
       aria-hidden
       style={{ viewTransitionName: "top-progress" }}
-      className="fixed inset-x-0 top-0 z-[60] h-0.5 pointer-events-none"
+      className="fixed inset-x-0 top-0 z-[60] h-[3px] pointer-events-none"
     >
       <div
-        className="h-full rounded-r-full bg-gradient-to-r from-names via-rewards to-hospital shadow-[0_0_10px] shadow-rewards/40 transition-[width,opacity] duration-200 ease-out"
+        className="h-full rounded-r-full bg-gradient-to-r from-accent-baby via-kind-feed to-accent-baby shadow-[0_0_10px] shadow-accent-baby/50 transition-[width,opacity] duration-200 ease-out"
         style={{ width: `${width}%`, opacity: visible ? 1 : 0 }}
       />
     </div>

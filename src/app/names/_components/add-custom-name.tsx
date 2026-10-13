@@ -79,7 +79,7 @@ export function AddCustomName() {
             "w-full flex items-center justify-center gap-2 rounded-xl py-2 text-sm font-medium transition-all",
             done
               ? "bg-hospital-soft text-hospital"
-              : "bg-names text-white hover:bg-names/90 active:scale-[0.98]",
+              : "bg-names text-on-accent hover:bg-names/90 active:scale-[0.98]",
           )}
         >
           {pending ? (

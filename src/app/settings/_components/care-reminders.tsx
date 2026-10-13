@@ -207,7 +207,7 @@ export function CareReminders({
       {/* Type toggles */}
       <div className="space-y-2">
         <ToggleRow
-          icon={<Utensils className="h-4 w-4 text-amber-500" />}
+          icon={<Utensils className="h-4 w-4 text-kind-feed" />}
           label="Feed reminders"
           hint="Adapts to your baby's recent feeding rhythm."
           on={feed}
@@ -233,7 +233,7 @@ export function CareReminders({
           </div>
         ) : null}
         <ToggleRow
-          icon={<Droplets className="h-4 w-4 text-sky-500" />}
+          icon={<Droplets className="h-4 w-4 text-kind-diaper" />}
           label="Diaper reminders"
           hint="A once-a-day check if output is below target."
           on={diaper}
@@ -279,7 +279,7 @@ export function CareReminders({
                 size="sm"
                 onClick={handleSubscribe}
                 disabled={busy}
-                className="h-8 text-xs bg-logger hover:bg-logger/90 text-white"
+                className="h-8 text-xs bg-logger hover:bg-logger/90 text-on-accent"
               >
                 {busy ? "Subscribing…" : "Subscribe this device"}
               </Button>

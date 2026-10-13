@@ -42,12 +42,12 @@ export function NextNapCard({
   const range = `${fmt(p.windowStart)} – ${fmt(p.windowEnd)}`;
 
   return (
-    <div className="rounded-2xl border border-reports/30 bg-reports-soft/50 px-4 py-3 flex items-center gap-3">
-      <span className="grid place-items-center h-9 w-9 rounded-xl bg-reports text-white shrink-0">
+    <div className="rounded-card bg-kind-sleep-soft px-5 py-4 flex items-center gap-3 shadow-soft">
+      <span className="grid place-items-center h-10 w-10 rounded-2xl bg-kind-sleep text-on-accent shrink-0">
         <Moon className="h-4.5 w-4.5" />
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium">
+        <p className="text-sm font-bold">
           {p.overdue ? "Nap window now" : "Next nap window"}
         </p>
         <p className="text-xs text-muted-foreground tabular-nums">

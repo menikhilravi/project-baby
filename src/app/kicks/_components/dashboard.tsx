@@ -468,7 +468,7 @@ function HeatCell({ count, intensity }: { count: number; intensity: number }) {
         "h-7 rounded-md grid place-items-center text-[10px] font-semibold",
         band,
         count === 0 ? "text-muted-foreground/40" : "text-foreground",
-        intensity >= 0.75 && "text-white",
+        intensity >= 0.75 && "text-on-accent",
       )}
       title={count === 0 ? "0 kicks" : `${count} ${count === 1 ? "kick" : "kicks"}`}
     >

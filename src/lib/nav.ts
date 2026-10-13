@@ -159,6 +159,15 @@ export function visibleNavItems(
 }
 
 /**
+ * Primary slots in the mobile bottom bar, per phase; everything else lives in
+ * the "More" sheet. Postnatal reserves the centre for the quick-log FAB.
+ */
+export const BOTTOM_PRIMARY: Record<Phase, { left: ToolKey[]; right: ToolKey[] }> = {
+  postnatal: { left: ["today", "reports"], right: ["checkups"] },
+  prenatal: { left: ["kicks", "contractions"], right: ["names"] },
+};
+
+/**
  * Sections users are allowed to hide via Settings — every nav tool. Derived
  * from navItems so new tools become hideable automatically. Hidden sections
  * only drop out of the nav; they stay reachable by URL, and Settings itself

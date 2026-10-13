@@ -28,56 +28,71 @@ export async function logEvent(
   // ended_at = occurred_at. That keeps `ended_at IS NULL` reserved for a
   // nursing session that's still in progress (see startNursing).
   const nowIso = new Date().toISOString();
-  const { error } = await supabase.from("baby_events").insert({
-    user_id: userId,
-    couple_id: coupleId,
-    kind,
-    subtype: detail?.subtype ?? null,
-    amount: detail?.amount ?? null,
-    unit: detail?.unit ?? null,
-    occurred_at: nowIso,
-    ended_at: kind === "feed" ? nowIso : null,
-  });
+  const { data, error } = await supabase
+    .from("baby_events")
+    .insert({
+      user_id: userId,
+      couple_id: coupleId,
+      kind,
+      subtype: detail?.subtype ?? null,
+      amount: detail?.amount ?? null,
+      unit: detail?.unit ?? null,
+      occurred_at: nowIso,
+      ended_at: kind === "feed" ? nowIso : null,
+    })
+    .select("id")
+    .single();
   if (error) throw new Error(error.message);
   revalidatePath("/log");
   revalidatePath("/today");
+  return { id: data.id };
 }
 
 /** Log a temperature reading (°F or °C). Powers the fever alert on /today. */
 export async function logTemp(amount: number, unit: "f" | "c") {
   const { supabase, userId, coupleId } = await ctx();
   const nowIso = new Date().toISOString();
-  const { error } = await supabase.from("baby_events").insert({
-    user_id: userId,
-    couple_id: coupleId,
-    kind: "temp",
-    amount,
-    unit,
-    occurred_at: nowIso,
-    ended_at: nowIso,
-  });
+  const { data, error } = await supabase
+    .from("baby_events")
+    .insert({
+      user_id: userId,
+      couple_id: coupleId,
+      kind: "temp",
+      amount,
+      unit,
+      occurred_at: nowIso,
+      ended_at: nowIso,
+    })
+    .select("id")
+    .single();
   if (error) throw new Error(error.message);
   revalidatePath("/log");
   revalidatePath("/today");
+  return { id: data.id };
 }
 
 /** Log a dose given. `amount`/`unit` optional (e.g. Vitamin D 400 iu). */
 export async function logMed(detail: EventDetail) {
   const { supabase, userId, coupleId } = await ctx();
   const nowIso = new Date().toISOString();
-  const { error } = await supabase.from("baby_events").insert({
-    user_id: userId,
-    couple_id: coupleId,
-    kind: "med",
-    subtype: detail.subtype ?? "other",
-    amount: detail.amount ?? null,
-    unit: detail.unit ?? null,
-    occurred_at: nowIso,
-    ended_at: nowIso,
-  });
+  const { data, error } = await supabase
+    .from("baby_events")
+    .insert({
+      user_id: userId,
+      couple_id: coupleId,
+      kind: "med",
+      subtype: detail.subtype ?? "other",
+      amount: detail.amount ?? null,
+      unit: detail.unit ?? null,
+      occurred_at: nowIso,
+      ended_at: nowIso,
+    })
+    .select("id")
+    .single();
   if (error) throw new Error(error.message);
   revalidatePath("/log");
   revalidatePath("/today");
+  return { id: data.id };
 }
 
 /** Log expressed milk from a pumping session (amount + side). */
@@ -88,19 +103,24 @@ export async function logPump(
 ) {
   const { supabase, userId, coupleId } = await ctx();
   const nowIso = new Date().toISOString();
-  const { error } = await supabase.from("baby_events").insert({
-    user_id: userId,
-    couple_id: coupleId,
-    kind: "pump",
-    subtype: side,
-    amount,
-    unit,
-    occurred_at: nowIso,
-    ended_at: nowIso,
-  });
+  const { data, error } = await supabase
+    .from("baby_events")
+    .insert({
+      user_id: userId,
+      couple_id: coupleId,
+      kind: "pump",
+      subtype: side,
+      amount,
+      unit,
+      occurred_at: nowIso,
+      ended_at: nowIso,
+    })
+    .select("id")
+    .single();
   if (error) throw new Error(error.message);
   revalidatePath("/log");
   revalidatePath("/today");
+  return { id: data.id };
 }
 
 /** Log a tummy-time session of `minutes` (stored as occurred_at → ended_at). */
@@ -108,16 +128,21 @@ export async function logTummy(minutes: number) {
   const { supabase, userId, coupleId } = await ctx();
   const start = new Date();
   const end = new Date(start.getTime() + minutes * 60_000);
-  const { error } = await supabase.from("baby_events").insert({
-    user_id: userId,
-    couple_id: coupleId,
-    kind: "tummy",
-    occurred_at: start.toISOString(),
-    ended_at: end.toISOString(),
-  });
+  const { data, error } = await supabase
+    .from("baby_events")
+    .insert({
+      user_id: userId,
+      couple_id: coupleId,
+      kind: "tummy",
+      occurred_at: start.toISOString(),
+      ended_at: end.toISOString(),
+    })
+    .select("id")
+    .single();
   if (error) throw new Error(error.message);
   revalidatePath("/log");
   revalidatePath("/today");
+  return { id: data.id };
 }
 
 /**
@@ -127,17 +152,22 @@ export async function logTummy(minutes: number) {
  */
 export async function startNursing(side: "left" | "right") {
   const { supabase, userId, coupleId } = await ctx();
-  await stopNursing();
-  const { error } = await supabase.from("baby_events").insert({
-    user_id: userId,
-    couple_id: coupleId,
-    kind: "feed",
-    subtype: side,
-    ended_at: null,
-  });
+  const closed = await stopNursing();
+  const { data, error } = await supabase
+    .from("baby_events")
+    .insert({
+      user_id: userId,
+      couple_id: coupleId,
+      kind: "feed",
+      subtype: side,
+      ended_at: null,
+    })
+    .select("id")
+    .single();
   if (error) throw new Error(error.message);
   revalidatePath("/log");
   revalidatePath("/today");
+  return { id: data.id, closedId: closed?.id ?? null };
 }
 
 /** Close the open nursing session, if any. No-op when nothing is running. */
@@ -152,7 +182,7 @@ export async function stopNursing() {
   if (coupleId) openQuery.eq("couple_id", coupleId);
   else openQuery.eq("user_id", userId);
   const { data: open } = await openQuery.maybeSingle();
-  if (!open) return;
+  if (!open) return null;
   const { error } = await supabase
     .from("baby_events")
     .update({ ended_at: new Date().toISOString() })
@@ -160,9 +190,13 @@ export async function stopNursing() {
   if (error) throw new Error(error.message);
   revalidatePath("/log");
   revalidatePath("/today");
+  return { id: open.id };
 }
 
-export async function toggleSleep() {
+export async function toggleSleep(): Promise<{
+  action: "started" | "stopped";
+  id: number;
+}> {
   const { supabase, userId, coupleId } = await ctx();
   const openQuery = supabase
     .from("baby_events")
@@ -174,20 +208,26 @@ export async function toggleSleep() {
   else openQuery.eq("user_id", userId);
   const { data: open } = await openQuery.maybeSingle();
 
+  let result: { action: "started" | "stopped"; id: number };
   if (open) {
     const { error } = await supabase
       .from("baby_events")
       .update({ ended_at: new Date().toISOString() })
       .eq("id", open.id);
     if (error) throw new Error(error.message);
+    result = { action: "stopped", id: open.id };
   } else {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("baby_events")
-      .insert({ user_id: userId, couple_id: coupleId, kind: "sleep" });
+      .insert({ user_id: userId, couple_id: coupleId, kind: "sleep" })
+      .select("id")
+      .single();
     if (error) throw new Error(error.message);
+    result = { action: "started", id: data.id };
   }
   revalidatePath("/log");
   revalidatePath("/today");
+  return result;
 }
 
 export async function removeEvent(id: number) {

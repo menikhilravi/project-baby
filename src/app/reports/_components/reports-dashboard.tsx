@@ -1,23 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-  Bar,
-  BarChart,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { Droplets, Moon, Pill, Sparkles, Utensils } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useMemo, useState, type ReactNode } from "react";
+import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Droplets, Moon, Pill, Sparkles, Utensils, type LucideIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   type RawEvent,
   dayBuckets,
@@ -27,26 +13,31 @@ import {
   vitaminDAdherence,
 } from "@/lib/baby-stats";
 import { buildInsights } from "@/lib/insights";
-import {
-  DIAPER_COLORS,
-  FEED_COLOR,
-  SLEEP_COLOR,
-  VITAMIN_D_COLOR,
-  chartTooltipStyle as tooltipStyle,
-  hourTick,
-} from "@/lib/chart-theme";
+import { BAR_RADIUS, BAR_RADIUS_TOP, DIAPER_COLORS, axisTick, chartCursor, hourTick } from "@/lib/chart-theme";
 import { medianFeedIntervalMin } from "@/lib/care-schedule";
+import { KIND_META, type EventKind } from "@/lib/kind-meta";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { AnimatedNumber } from "@/components/ui/animated-number";
+import { ChartGradients, ChartTooltip, Legend, useChartAnimation } from "@/components/charts/chart-kit";
+import { EmptyState } from "@/components/mascot/empty-state";
+import { BabyMascot } from "@/components/mascot/baby-mascot";
+import { StaggerList } from "@/components/motion/stagger";
 import { WeeklySummaryCard } from "./weekly-summary-card";
 
-const RANGES = [7, 14, 30] as const;
+const RANGES = [
+  { value: "7", label: "7 days" },
+  { value: "14", label: "14 days" },
+  { value: "30", label: "30 days" },
+] as const;
 
 export function ReportsDashboard({ events }: { events: RawEvent[] }) {
-  const [days, setDays] = useState<number>(7);
+  const [range, setRange] = useState<"7" | "14" | "30">("7");
+  const days = Number(range);
 
   const buckets = useMemo(() => dayBuckets(events, days), [events, days]);
   const stats = useMemo(() => rangeStats(buckets), [buckets]);
   const feedHours = useMemo(
-    () => feedHourHistogram(events, days),
+    () => feedHourHistogram(events, days).map((count, hour) => ({ hour, count })),
     [events, days],
   );
   const feedIntervalMin = useMemo(
@@ -64,342 +55,241 @@ export function ReportsDashboard({ events }: { events: RawEvent[] }) {
   const vitaminD = useMemo(() => vitaminDAdherence(buckets), [buckets]);
   const insights = useMemo(() => buildInsights(events), [events]);
 
-  const hasData =
-    stats.totalFeeds > 0 ||
-    stats.totalDiapers > 0 ||
-    buckets.some((b) => b.sleepSessions > 0);
-
+  const hasData = stats.totalFeeds > 0 || stats.totalDiapers > 0 || buckets.some((b) => b.sleepSessions > 0);
   const tickInterval = days > 14 ? 4 : days > 7 ? 1 : 0;
 
   if (!hasData) {
     return (
-      <div className="rounded-2xl border border-dashed border-border px-6 py-12 text-center">
-        <p className="text-sm text-muted-foreground">
-          No data yet — log a few feeds, diapers, and sleeps and your patterns
-          will show up here.
-        </p>
-      </div>
+      <EmptyState
+        title="No patterns yet"
+        body="Log a few feeds, diapers and sleeps and your baby's rhythms will show up here."
+      />
     );
   }
 
   return (
-    <div className="space-y-6">
-      <Tabs
-        value={days}
-        onValueChange={(v) => setDays(v as number)}
-        className="items-center"
-      >
-        <TabsList>
-          {RANGES.map((r) => (
-            <TabsTrigger key={r} value={r}>
-              {r} days
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+    <div className="space-y-5">
+      <SegmentedControl label="Range" value={range} onChange={setRange} options={RANGES} />
 
-      <WeeklySummaryCard events={events} />
+      <StaggerList className="space-y-5" gap={0.06}>
+        <WeeklySummaryCard events={events} />
 
-      {/* Sleep */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-[12px] uppercase tracking-[0.14em] font-semibold text-muted-foreground">
-            <Moon className="h-3.5 w-3.5 text-indigo-400" /> Sleep per day
-          </CardTitle>
-          <div className="flex items-baseline gap-2 mt-1">
-            <span className="font-display nums text-3xl font-bold tracking-tight">
-              {stats.avgSleepHours.toFixed(1)}
-              <span className="text-lg text-muted-foreground font-semibold">h</span>
-            </span>
-            <span className="text-xs text-muted-foreground">
-              avg/day · longest {formatDuration(stats.longestSleepMin)}
-            </span>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={180}>
+        <MetricCard
+          kind="sleep"
+          icon={Moon}
+          title="Sleep per day"
+          value={<AnimatedNumber value={stats.avgSleepHours} decimals={1} />}
+          unit="h"
+          sub={`avg a day · longest stretch ${formatDuration(stats.longestSleepMin)}`}
+        >
+          {(anim) => (
             <BarChart data={buckets} margin={{ left: -20, right: 4, top: 4 }}>
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                interval={tickInterval}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                tickLine={false}
-                axisLine={false}
-                width={36}
-                unit="h"
-              />
-              <Tooltip
-                contentStyle={tooltipStyle}
-                cursor={{ fill: "var(--muted)", opacity: 0.4 }}
-                formatter={(v) => [`${Number(v).toFixed(1)}h`, "Sleep"]}
-              />
-              <Bar dataKey="sleepHours" fill={SLEEP_COLOR} radius={[4, 4, 0, 0]} />
+              <ChartGradients />
+              <XAxis dataKey="label" tick={axisTick} interval={tickInterval} tickLine={false} axisLine={false} />
+              <YAxis tick={axisTick} tickLine={false} axisLine={false} width={36} unit="h" />
+              <Tooltip cursor={chartCursor} content={<ChartTooltip format={(v) => `${Number(v).toFixed(1)}h`} />} />
+              <Bar dataKey="sleepHours" name="Sleep" fill="url(#g-sleep)" radius={BAR_RADIUS} maxBarSize={26} {...anim} />
             </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+          )}
+        </MetricCard>
 
-      {/* Diapers */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-[12px] uppercase tracking-[0.14em] font-semibold text-muted-foreground">
-            <Droplets className="h-3.5 w-3.5 text-sky-500" /> Diapers per day
-          </CardTitle>
-          <div className="flex items-baseline gap-2 mt-1">
-            <span className="font-display nums text-3xl font-bold tracking-tight">
-              {stats.avgDiapers.toFixed(1)}
-              <span className="text-lg text-muted-foreground font-semibold">
-                /day
-              </span>
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {stats.totalDiapers} total · ~{diaperAvg.wet.toFixed(1)} wet /{" "}
-              {diaperAvg.dirty.toFixed(1)} dirty a day
-            </span>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={180}>
+        <MetricCard
+          kind="diaper"
+          icon={Droplets}
+          title="Diapers per day"
+          value={<AnimatedNumber value={stats.avgDiapers} decimals={1} />}
+          unit="/day"
+          sub={`${stats.totalDiapers} total · ~${diaperAvg.wet.toFixed(1)} wet / ${diaperAvg.dirty.toFixed(1)} dirty a day`}
+          footer={
+            <Legend
+              items={[
+                ["Pee", DIAPER_COLORS.pee],
+                ["Poop", DIAPER_COLORS.poop],
+                ["Both", DIAPER_COLORS.both],
+                ["Untyped", DIAPER_COLORS.untyped],
+              ]}
+            />
+          }
+        >
+          {(anim) => (
             <BarChart data={buckets} margin={{ left: -20, right: 4, top: 4 }}>
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                interval={tickInterval}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                tickLine={false}
-                axisLine={false}
-                width={36}
-                allowDecimals={false}
-              />
-              <Tooltip
-                contentStyle={tooltipStyle}
-                cursor={{ fill: "var(--muted)", opacity: 0.4 }}
-              />
-              <Bar dataKey="pee" stackId="d" fill={DIAPER_COLORS.pee} name="Pee" />
-              <Bar
-                dataKey="poop"
-                stackId="d"
-                fill={DIAPER_COLORS.poop}
-                name="Poop"
-              />
-              <Bar
-                dataKey="both"
-                stackId="d"
-                fill={DIAPER_COLORS.both}
-                name="Both"
-              />
+              <XAxis dataKey="label" tick={axisTick} interval={tickInterval} tickLine={false} axisLine={false} />
+              <YAxis tick={axisTick} tickLine={false} axisLine={false} width={36} allowDecimals={false} />
+              <Tooltip cursor={chartCursor} content={<ChartTooltip />} />
+              <Bar dataKey="pee" stackId="d" fill={DIAPER_COLORS.pee} name="Pee" maxBarSize={26} {...anim} />
+              <Bar dataKey="poop" stackId="d" fill={DIAPER_COLORS.poop} name="Poop" maxBarSize={26} {...anim} />
+              <Bar dataKey="both" stackId="d" fill={DIAPER_COLORS.both} name="Both" maxBarSize={26} {...anim} />
               <Bar
                 dataKey="untyped"
                 stackId="d"
                 fill={DIAPER_COLORS.untyped}
                 name="Untyped"
-                radius={[4, 4, 0, 0]}
+                radius={BAR_RADIUS_TOP}
+                maxBarSize={26}
+                {...anim}
               />
             </BarChart>
-          </ResponsiveContainer>
-          <Legend
-            items={[
-              ["Pee", DIAPER_COLORS.pee],
-              ["Poop", DIAPER_COLORS.poop],
-              ["Both", DIAPER_COLORS.both],
-              ["Untyped", DIAPER_COLORS.untyped],
-            ]}
-          />
-        </CardContent>
-      </Card>
+          )}
+        </MetricCard>
 
-      {/* Feeds */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-[12px] uppercase tracking-[0.14em] font-semibold text-muted-foreground">
-            <Utensils className="h-3.5 w-3.5 text-amber-500" /> Feeds per day
-          </CardTitle>
-          <div className="flex items-baseline gap-2 mt-1">
-            <span className="font-display nums text-3xl font-bold tracking-tight">
-              {stats.avgFeeds.toFixed(1)}
-              <span className="text-lg text-muted-foreground font-semibold">
-                /day
-              </span>
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {stats.totalFeeds} total
-              {feedIntervalMin != null
-                ? ` · ~${formatDuration(feedIntervalMin)} between`
-                : ""}
-              {stats.totalFeedOz > 0
-                ? ` · ${stats.avgFeedOz.toFixed(1)} oz/day bottle`
-                : ""}
-            </span>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={180}>
+        <MetricCard
+          kind="feed"
+          icon={Utensils}
+          title="Feeds per day"
+          value={<AnimatedNumber value={stats.avgFeeds} decimals={1} />}
+          unit="/day"
+          sub={[
+            `${stats.totalFeeds} total`,
+            feedIntervalMin != null ? `~${formatDuration(feedIntervalMin)} between` : null,
+            stats.totalFeedOz > 0 ? `${stats.avgFeedOz.toFixed(1)} oz/day bottle` : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+          footer={<FeedClock data={feedHours} />}
+        >
+          {(anim) => (
             <BarChart data={buckets} margin={{ left: -20, right: 4, top: 4 }}>
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                interval={tickInterval}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                tickLine={false}
-                axisLine={false}
-                width={36}
-                allowDecimals={false}
-              />
-              <Tooltip
-                contentStyle={tooltipStyle}
-                cursor={{ fill: "var(--muted)", opacity: 0.4 }}
-                formatter={(v) => [v, "Feeds"]}
-              />
-              <Bar dataKey="feeds" fill={FEED_COLOR} radius={[4, 4, 0, 0]} />
+              <ChartGradients />
+              <XAxis dataKey="label" tick={axisTick} interval={tickInterval} tickLine={false} axisLine={false} />
+              <YAxis tick={axisTick} tickLine={false} axisLine={false} width={36} allowDecimals={false} />
+              <Tooltip cursor={chartCursor} content={<ChartTooltip />} />
+              <Bar dataKey="feeds" name="Feeds" fill="url(#g-feed)" radius={BAR_RADIUS} maxBarSize={26} {...anim} />
             </BarChart>
-          </ResponsiveContainer>
+          )}
+        </MetricCard>
 
-          <p className="mt-4 mb-1 text-xs font-medium text-muted-foreground">
-            Time of day
-          </p>
-          <ResponsiveContainer width="100%" height={90}>
-            <BarChart
-              data={feedHours.map((count, hour) => ({ hour, count }))}
-              margin={{ left: -20, right: 4, top: 4 }}
-            >
-              <XAxis
-                dataKey="hour"
-                tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
-                ticks={[0, 6, 12, 18]}
-                tickFormatter={hourTick}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis hide />
-              <Tooltip
-                contentStyle={tooltipStyle}
-                cursor={{ fill: "var(--muted)", opacity: 0.4 }}
-                formatter={(v) => [v, "Feeds"]}
-                labelFormatter={(h) => hourTick(Number(h))}
-              />
-              <Bar dataKey="count" radius={[3, 3, 0, 0]}>
-                {feedHours.map((_, hour) => (
-                  <Cell
-                    key={hour}
-                    fill={hour >= 7 && hour < 19 ? FEED_COLOR : "var(--logger)"}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      {/* Vitamin D — daily adherence. Only shown once it's actually tracked. */}
-      {vitaminD.daysGiven > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-[12px] uppercase tracking-[0.14em] font-semibold text-muted-foreground">
-              <Pill className="h-3.5 w-3.5 text-violet-500" /> Vitamin D
-            </CardTitle>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className="font-display nums text-3xl font-bold tracking-tight">
-                {vitaminD.daysGiven}
-                <span className="text-lg text-muted-foreground font-semibold">
-                  /{vitaminD.days} days
-                </span>
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {vitaminD.streak > 1
-                  ? `${vitaminD.streak}-day streak · 400 IU daily`
-                  : "400 IU daily"}
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={140}>
+        {vitaminD.daysGiven > 0 ? (
+          <MetricCard
+            kind="med"
+            icon={Pill}
+            title="Vitamin D"
+            value={<AnimatedNumber value={vitaminD.daysGiven} />}
+            unit={`/${vitaminD.days} days`}
+            sub={vitaminD.streak > 1 ? `${vitaminD.streak}-day streak · 400 IU daily` : "400 IU daily"}
+            height={110}
+          >
+            {(anim) => (
               <BarChart data={buckets} margin={{ left: -20, right: 4, top: 4 }}>
-                <XAxis
-                  dataKey="label"
-                  tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                  interval={tickInterval}
-                  tickLine={false}
-                  axisLine={false}
-                />
+                <ChartGradients />
+                <XAxis dataKey="label" tick={axisTick} interval={tickInterval} tickLine={false} axisLine={false} />
                 <YAxis hide domain={[0, 1]} />
                 <Tooltip
-                  contentStyle={tooltipStyle}
-                  cursor={{ fill: "var(--muted)", opacity: 0.4 }}
-                  formatter={(v) => [
-                    Number(v) > 0 ? "Given" : "Missed",
-                    "Vitamin D",
-                  ]}
+                  cursor={chartCursor}
+                  content={<ChartTooltip format={(v) => (Number(v) > 0 ? "Given" : "Missed")} />}
                 />
-                <Bar
-                  dataKey="vitaminD"
-                  fill={VITAMIN_D_COLOR}
-                  radius={[4, 4, 0, 0]}
-                />
+                <Bar dataKey="vitaminD" name="Vitamin D" fill="url(#g-med)" radius={BAR_RADIUS} maxBarSize={26} {...anim} />
               </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      ) : null}
+            )}
+          </MetricCard>
+        ) : null}
 
-      {/* Insights */}
-      {insights.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-reports" /> Insights
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {insights.map((ins) => (
-              <div
-                key={ins.id}
-                className="flex items-start gap-2 text-sm text-foreground/90"
-              >
-                <span
-                  className={
-                    ins.tone === "good"
-                      ? "mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-hospital"
-                      : "mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-reports"
-                  }
-                />
-                {ins.text}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      ) : null}
+        {insights.length > 0 ? (
+          <section className="relative overflow-hidden rounded-card bg-accent-baby-soft p-5 shadow-soft">
+            <div className="mb-3 flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-accent-baby-strong" />
+              <h3 className="font-display text-lg font-semibold">What we noticed</h3>
+            </div>
+            <ul className="space-y-2.5 pr-16">
+              {insights.map((ins) => (
+                <li key={ins.id} className="flex items-start gap-2.5 text-sm">
+                  <span
+                    className={cn(
+                      "mt-1.5 h-2 w-2 shrink-0 rounded-full",
+                      ins.tone === "good" ? "bg-kind-tummy" : "bg-accent-baby-strong",
+                    )}
+                  />
+                  {ins.text}
+                </li>
+              ))}
+            </ul>
+            <BabyMascot mood="happy" size={72} className="absolute -bottom-2 right-2" />
+          </section>
+        ) : null}
+      </StaggerList>
     </div>
   );
 }
 
-function Legend({ items }: { items: [string, string][] }) {
+type Anim = ReturnType<typeof useChartAnimation>["anim"];
+
+function MetricCard({
+  kind,
+  icon: Icon,
+  title,
+  value,
+  unit,
+  sub,
+  footer,
+  height = 170,
+  children,
+}: {
+  kind: EventKind;
+  icon: LucideIcon;
+  title: string;
+  value: ReactNode;
+  unit: string;
+  sub: string;
+  footer?: ReactNode;
+  height?: number;
+  children: (anim: Anim) => React.ReactElement;
+}) {
+  const tone = KIND_META[kind].tone;
+  const { ref, inView, anim } = useChartAnimation();
   return (
-    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
-      {items.map(([label, color]) => (
-        <span
-          key={label}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground"
-        >
-          <span
-            className="h-2.5 w-2.5 rounded-sm"
-            style={{ background: color }}
-          />
-          {label}
+    <section className="rounded-card border border-border/60 bg-card p-5 shadow-soft">
+      <div className="mb-4 flex items-start gap-3">
+        <span className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-2xl", tone.bgSoft, tone.strong)}>
+          <Icon className="h-5 w-5" />
         </span>
-      ))}
+        <div className="min-w-0">
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{title}</p>
+          <p className="font-display text-3xl font-semibold leading-tight">
+            {value}
+            <span className="ml-0.5 text-base text-muted-foreground">{unit}</span>
+          </p>
+          <p className="text-xs text-muted-foreground">{sub}</p>
+        </div>
+      </div>
+      <div ref={ref} style={{ height }}>
+        {inView ? (
+          <ResponsiveContainer width="100%" height="100%">
+            {children(anim)}
+          </ResponsiveContainer>
+        ) : null}
+      </div>
+      {footer}
+    </section>
+  );
+}
+
+/** Feeds by hour of day; night hours tinted with the sleep colour. */
+function FeedClock({ data }: { data: { hour: number; count: number }[] }) {
+  const { ref, inView, anim } = useChartAnimation();
+  return (
+    <div className="mt-4">
+      <p className="mb-1 px-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">Time of day</p>
+      <div ref={ref} className="h-[90px]">
+        {inView ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ left: -20, right: 4, top: 4 }}>
+              <XAxis dataKey="hour" tick={axisTick} ticks={[0, 6, 12, 18]} tickFormatter={hourTick} tickLine={false} axisLine={false} />
+              <YAxis hide />
+              <Tooltip cursor={chartCursor} content={<ChartTooltip />} labelFormatter={(h) => hourTick(Number(h))} />
+              <Bar dataKey="count" name="Feeds" radius={BAR_RADIUS} {...anim}>
+                {data.map((d) => (
+                  <Cell key={d.hour} fill={d.hour >= 7 && d.hour < 19 ? "var(--kind-feed)" : "var(--kind-sleep)"} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        ) : null}
+      </div>
+      <Legend
+        items={[
+          ["Day (7a–7p)", "var(--kind-feed)"],
+          ["Night", "var(--kind-sleep)"],
+        ]}
+      />
     </div>
   );
 }

@@ -4,7 +4,8 @@ import { PageHero } from "@/components/page-hero";
 import { createClient } from "@/lib/supabase/server";
 import type { RawEvent } from "@/lib/baby-stats";
 import { ReportsDashboard } from "./_components/reports-dashboard";
-import { GrowthCard, type GrowthRow } from "./_components/growth-card";
+import { GrowthCard } from "./_components/growth-card";
+import type { GrowthRow } from "./_components/growth-shared";
 import { BirthWeightCard } from "./_components/birth-weight-card";
 import {
   MilestonesCard,
@@ -65,26 +66,19 @@ export default async function ReportsPage() {
   const milestones = (milestoneData ?? []) as MilestoneRow[];
 
   return (
-    <div className="mx-auto max-w-2xl px-5 py-10 md:px-8 md:py-16">
+    <div className="mx-auto max-w-2xl px-4 pt-6 pb-10 md:px-8 md:py-12">
       <PageHero
         tool="reports"
         icon={BarChart3}
         eyebrow="Reports"
         title="Patterns, not guesswork."
-        subtitle="Sleep, feeds, and diapers over time — see what's actually happening."
+        subtitle="Sleep, feeds and diapers over time, plus how your little one is growing."
+        mascot="happy"
       />
-      <ReportsDashboard events={events} />
-      <div className="mt-6 space-y-6">
-        <BirthWeightCard
-          birthWeightG={birthWeightG}
-          birthDate={birthDate}
-          measurements={measurements}
-        />
-        <GrowthCard
-          measurements={measurements}
-          birthDate={birthDate}
-          initialSex={babySex}
-        />
+      <div className="space-y-5">
+        <GrowthCard measurements={measurements} birthDate={birthDate} initialSex={babySex} />
+        <BirthWeightCard birthWeightG={birthWeightG} birthDate={birthDate} measurements={measurements} />
+        <ReportsDashboard events={events} />
         <MilestonesCard milestones={milestones} />
       </div>
     </div>

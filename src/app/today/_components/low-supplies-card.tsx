@@ -17,7 +17,7 @@ export function LowSuppliesCard({ supplies }: { supplies: LowSupply[] }) {
     <Link
       href="/gear"
       className={cn(
-        "block rounded-2xl border border-destructive/30 bg-destructive/5 p-4 transition-all",
+        "block rounded-card border border-destructive/30 bg-destructive/5 p-5 shadow-soft transition-all active:scale-[0.99]",
         "hover:bg-destructive/10 hover:border-destructive/50",
       )}
     >

@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { setCoupleBabyName, setCoupleBabySex } from "@/lib/baby-identity";
+import { isAccent } from "@/lib/theme";
 import {
   isMedSubtype,
   MED_UNITS,
@@ -20,6 +22,7 @@ export async function updatePhase(formData: FormData) {
   const overrideRaw = String(formData.get("phase_override") ?? "").trim();
   const sexRaw = String(formData.get("baby_sex") ?? "").trim();
   const weightRaw = String(formData.get("birth_weight_g") ?? "").trim();
+  const nameRaw = formData.get("baby_name");
 
   const birth_date = birthRaw === "" ? null : birthRaw;
   const phase_override =
@@ -45,7 +48,26 @@ export async function updatePhase(formData: FormData) {
       "Profile row not updated — check that migration 0010 ran and that the profiles RLS update policy is active.",
     );
   }
+  // Sex and name describe the shared baby, so they go to both partners.
+  await setCoupleBabySex(supabase, user.id, baby_sex);
+  if (nameRaw !== null) await setCoupleBabyName(supabase, String(nameRaw));
 
+  revalidatePath("/", "layout");
+}
+
+/** Per-user accent override; null = follow the baby's sex. */
+export async function setBabyAccent(accent: string | null) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+  const value = isAccent(accent) ? accent : null;
+  const { error } = await supabase
+    .from("profiles")
+    .update({ baby_accent: value })
+    .eq("id", user.id);
+  if (error) throw new Error(error.message);
   revalidatePath("/", "layout");
 }
 

@@ -38,17 +38,17 @@ export function DiaperAdequacyCard({
   return (
     <div
       className={cn(
-        "rounded-2xl border bg-card p-4",
-        g.status === "good" ? "border-hospital/40 bg-hospital-soft/40" : "border-border",
+        "rounded-card border border-border/60 bg-card p-5 shadow-soft",
+        g.status === "good" ? "border-kind-tummy/40 bg-kind-tummy-soft/60" : "border-border",
       )}
     >
       <div className="flex items-center gap-2 mb-3">
-        <Droplets className="h-4 w-4 text-sky-500" />
-        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground flex-1">
+        <Droplets className="h-4 w-4 text-kind-diaper" />
+        <p className="text-xs uppercase tracking-wider font-bold text-muted-foreground flex-1">
           Diapers today
         </p>
         {g.status === "good" ? (
-          <span className="flex items-center gap-1 text-[11px] font-medium text-hospital">
+          <span className="flex items-center gap-1 text-[11px] font-medium text-kind-tummy-strong">
             <Check className="h-3.5 w-3.5" /> On track
           </span>
         ) : null}
@@ -74,16 +74,16 @@ function Stat({
   met: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-background/40 px-3 py-2.5">
-      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+    <div className="rounded-2xl bg-muted/70 px-3.5 py-3">
+      <p className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
         {label}
       </p>
-      <p className="font-display nums text-2xl font-bold leading-tight tabular-nums">
+      <p className="font-display nums text-3xl font-semibold leading-tight tabular-nums">
         {value}
         <span
           className={cn(
             "text-sm font-normal",
-            met ? "text-hospital" : "text-muted-foreground",
+            met ? "text-kind-tummy-strong" : "text-muted-foreground",
           )}
         >
           {" "}

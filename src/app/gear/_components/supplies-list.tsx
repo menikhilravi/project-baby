@@ -301,7 +301,7 @@ function EditCard({
           size="sm"
           onClick={submit}
           disabled={pending}
-          className="bg-gear hover:bg-gear/90 text-white"
+          className="bg-gear hover:bg-gear/90 text-on-accent"
         >
           Save
         </Button>
@@ -399,7 +399,7 @@ function AddSupplyForm({ onDone }: { onDone: () => void }) {
           type="submit"
           size="sm"
           disabled={pending || !name.trim()}
-          className="bg-gear hover:bg-gear/90 text-white"
+          className="bg-gear hover:bg-gear/90 text-on-accent"
         >
           Add
         </Button>

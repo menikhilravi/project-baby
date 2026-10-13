@@ -223,7 +223,7 @@ export function NameDeck({ pool: initialPool }: { pool: NameEntry[] }) {
                 <Button
                   onClick={() => handleGenerate(hint || undefined)}
                   disabled={generating}
-                  className="rounded-full bg-names hover:bg-names/90 text-white px-5 gap-2"
+                  className="rounded-full bg-names hover:bg-names/90 text-on-accent px-5 gap-2"
                 >
                   {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                   {generating ? "Generating…" : "Try again"}
@@ -266,19 +266,19 @@ export function NameDeck({ pool: initialPool }: { pool: NameEntry[] }) {
           <div
             ref={likeRef}
             style={{ opacity: 0 }}
-            className="absolute inset-0 bg-green-500/15 rounded-3xl flex items-start justify-start p-6 z-10 pointer-events-none"
+            className="absolute inset-0 bg-kind-tummy/20 rounded-3xl flex items-start justify-start p-6 z-10 pointer-events-none"
           >
-            <div className="rounded-xl border-[3px] border-green-500 px-3 py-1 -rotate-12">
-              <span className="text-green-500 font-black text-xl tracking-widest">LIKE</span>
+            <div className="rounded-xl border-[3px] border-kind-tummy-strong px-3 py-1 -rotate-12">
+              <span className="text-kind-tummy-strong font-black text-xl tracking-widest">LIKE</span>
             </div>
           </div>
           <div
             ref={passRef}
             style={{ opacity: 0 }}
-            className="absolute inset-0 bg-red-500/15 rounded-3xl flex items-start justify-end p-6 z-10 pointer-events-none"
+            className="absolute inset-0 bg-kind-temp/20 rounded-3xl flex items-start justify-end p-6 z-10 pointer-events-none"
           >
-            <div className="rounded-xl border-[3px] border-red-500 px-3 py-1 rotate-12">
-              <span className="text-red-500 font-black text-xl tracking-widest">NOPE</span>
+            <div className="rounded-xl border-[3px] border-kind-temp-strong px-3 py-1 rotate-12">
+              <span className="text-kind-temp-strong font-black text-xl tracking-widest">NOPE</span>
             </div>
           </div>
 
@@ -313,7 +313,7 @@ export function NameDeck({ pool: initialPool }: { pool: NameEntry[] }) {
           onClick={() => commit("like")}
           size="icon"
           aria-label="Like"
-          className="h-16 w-16 rounded-full bg-names hover:bg-names/90 text-white shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all"
+          className="h-16 w-16 rounded-full bg-names hover:bg-names/90 text-on-accent shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all"
         >
           <Heart className="h-7 w-7 fill-current" />
         </Button>

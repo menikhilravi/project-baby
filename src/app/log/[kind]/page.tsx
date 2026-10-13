@@ -1,5 +1,12 @@
+import { ViewTransition } from "react";
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { ChevronLeft } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
+import { StatTile } from "@/components/ui/stat-tile";
+import type { MascotMood } from "@/components/mascot/baby-mascot";
+import { dailyIntakeRangeOz } from "@/lib/feed-intake";
+import { ageInDays } from "@/lib/newborn-health";
 import { createClient } from "@/lib/supabase/server";
 import { KIND_META, isEventKind, type EventKind } from "@/lib/kind-meta";
 import { dayBuckets, formatDuration, rangeStats } from "@/lib/baby-stats";
@@ -30,7 +37,7 @@ export default async function ActivityDetailPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("couple_id, birth_date")
+    .select("couple_id, birth_date, birth_weight_g")
     .eq("id", user.id)
     .single();
   const coupleId = profile?.couple_id ?? null;
@@ -58,53 +65,100 @@ export default async function ActivityDetailPage({
     .limit(200);
 
   const rows = (events ?? []) as BabyEventRow[];
+
+  let intakeRange: { low: number; high: number } | null = null;
+  if (kind === "feed") {
+    const { data: latestWeight } = await supabase
+      .from("growth_measurements")
+      .select("weight_g")
+      .not("weight_g", "is", null)
+      .order("measured_on", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const weightG = latestWeight?.weight_g ?? profile?.birth_weight_g ?? null;
+    intakeRange = dailyIntakeRangeOz(
+      weightG != null ? Number(weightG) / 1000 : null,
+      ageInDays(birthDate, new Date()),
+    );
+  }
   // Feed & diaper get the rich client metrics (charts + prediction/adequacy);
   // everything else keeps the compact server-rendered stat strip.
   const richKind = kind === "feed" || kind === "diaper";
   const metrics = richKind ? [] : computeMetrics(kind, rows);
 
   return (
-    <div className="mx-auto max-w-2xl px-5 py-10 md:px-8 md:py-16">
+    <div className="mx-auto max-w-2xl px-4 pt-4 pb-10 md:px-8 md:py-12">
+      <Link
+        href="/today"
+        transitionTypes={["nav-back"]}
+        className="-ml-2 mb-3 inline-flex h-10 items-center gap-1 rounded-full pl-1 pr-3 text-sm font-bold text-muted-foreground hover:bg-muted hover:text-foreground"
+      >
+        <ChevronLeft className="h-4 w-4" /> Today
+      </Link>
+
       <PageHero
         tool="logger"
+        tone={{ bgSoft: meta.tone.bgSoft, text: meta.tone.strong }}
         icon={meta.icon}
         eyebrow={meta.plural}
-        title={`${meta.label}.`}
-        subtitle="The full trace — add a missed entry, edit a time, or delete."
+        title={HEADLINES[kind]}
+        subtitle="Add a missed entry, fix a time, or swipe to delete."
+        mascot={MOODS[kind]}
+        morphName={`kind-${kind}`}
       />
 
-      {richKind ? (
-        <ActivityMetrics kind={kind} rows={rows} birthDate={birthDate} />
-      ) : null}
+      <ViewTransition
+        enter={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        exit={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        default="none"
+      >
+        <div>
+          {richKind ? (
+            <ActivityMetrics kind={kind} rows={rows} birthDate={birthDate} intakeRange={intakeRange} />
+          ) : null}
 
-      {metrics.length > 0 ? (
-        <div className="mb-6 grid grid-cols-3 gap-2">
-          {metrics.map((m) => (
-            <div
-              key={m.label}
-              className="rounded-2xl border bg-card px-3 py-3"
-            >
-              <p className="font-display nums text-2xl leading-none font-bold tracking-tight">
-                {m.value}
-              </p>
-              <p className="mt-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
-                {m.label}
-              </p>
+          {metrics.length > 0 ? (
+            <div className="mb-6 grid grid-cols-3 gap-2.5">
+              {metrics.map((m) => (
+                <StatTile key={m.label} label={m.label} value={m.value} />
+              ))}
             </div>
-          ))}
-        </div>
-      ) : null}
+          ) : null}
 
-      <ActivityDetail
-        kind={kind}
-        initialEvents={rows}
-        currentUserId={user.id}
-        coupleId={coupleId}
-        roleMap={roleMap}
-      />
+          <ActivityDetail
+            kind={kind}
+            initialEvents={rows}
+            currentUserId={user.id}
+            coupleId={coupleId}
+            roleMap={roleMap}
+          />
+        </div>
+      </ViewTransition>
     </div>
   );
 }
+
+const HEADLINES: Record<EventKind, string> = {
+  feed: "Every feed, in one place.",
+  diaper: "Diaper log.",
+  sleep: "Sleep, tracked gently.",
+  temp: "Temperature readings.",
+  med: "Medicine given.",
+  pump: "Pumping sessions.",
+  tummy: "Tummy time.",
+  milestone: "Little firsts.",
+};
+
+const MOODS: Record<EventKind, MascotMood> = {
+  feed: "feeding",
+  diaper: "happy",
+  sleep: "sleeping",
+  temp: "idle",
+  med: "idle",
+  pump: "happy",
+  tummy: "happy",
+  milestone: "celebrate",
+};
 
 type Metric = { label: string; value: string };
 

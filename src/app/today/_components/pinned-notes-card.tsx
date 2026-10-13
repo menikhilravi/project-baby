@@ -29,7 +29,7 @@ export function PinnedNotesCard({ notes }: { notes: PinnedNote[] }) {
             <Link
               href={`/notes/${note.id}`}
               className={cn(
-                "block rounded-2xl border bg-card px-3.5 py-3 transition-all h-full",
+                "block rounded-2xl border border-border/60 bg-card px-4 py-3.5 shadow-soft transition-all h-full",
                 "hover:border-notes/40 hover:shadow-sm hover:-translate-y-0.5",
               )}
             >

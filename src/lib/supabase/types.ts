@@ -53,6 +53,8 @@ export interface Database {
           role: "mom" | "dad" | null;
           birth_date: string | null;
           baby_sex: "male" | "female" | null;
+          baby_name: string | null;
+          baby_accent: "neutral" | "boy" | "girl" | null;
           birth_weight_g: number | null;
           phase_override: "prenatal" | "postnatal" | null;
           hidden_sections: string[];
@@ -72,6 +74,8 @@ export interface Database {
           role?: "mom" | "dad" | null;
           birth_date?: string | null;
           baby_sex?: "male" | "female" | null;
+          baby_name?: string | null;
+          baby_accent?: "neutral" | "boy" | "girl" | null;
           birth_weight_g?: number | null;
           phase_override?: "prenatal" | "postnatal" | null;
           hidden_sections?: string[];
@@ -90,6 +94,8 @@ export interface Database {
           role?: "mom" | "dad" | null;
           birth_date?: string | null;
           baby_sex?: "male" | "female" | null;
+          baby_name?: string | null;
+          baby_accent?: "neutral" | "boy" | "girl" | null;
           birth_weight_g?: number | null;
           phase_override?: "prenatal" | "postnatal" | null;
           hidden_sections?: string[];
@@ -618,6 +624,14 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      set_couple_baby_sex: {
+        Args: { p_sex: "male" | "female" | null };
+        Returns: undefined;
+      };
+      set_couple_baby_name: {
+        Args: { p_name: string | null };
+        Returns: undefined;
+      };
       kick_sessions_for_couple: {
         Args: {
           p_couple_id: string | null;

@@ -57,22 +57,22 @@ export function FeverAlertCard({
   return (
     <div
       className={cn(
-        "rounded-2xl border p-4",
+        "rounded-card border p-5 shadow-soft",
         alert.urgent
           ? "border-destructive/40 bg-destructive/10"
-          : "border-amber-500/40 bg-amber-500/10",
+          : "border-kind-temp/40 bg-kind-temp-soft",
       )}
     >
       <div className="flex items-center gap-2">
         {alert.urgent ? (
           <AlertTriangle className="h-4 w-4 text-destructive" />
         ) : (
-          <Thermometer className="h-4 w-4 text-amber-600" />
+          <Thermometer className="h-4 w-4 text-kind-temp" />
         )}
         <p
           className={cn(
             "text-sm font-semibold flex-1",
-            alert.urgent ? "text-destructive" : "text-amber-700",
+            alert.urgent ? "text-destructive" : "text-kind-temp-strong",
           )}
         >
           {headline} · {alert.fahrenheit}°F

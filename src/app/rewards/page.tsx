@@ -80,7 +80,7 @@ export default function RewardsPage() {
         <Button
           type="submit"
           disabled={pending}
-          className="w-full h-11 rounded-xl bg-rewards hover:bg-rewards/90 text-white shadow-sm hover:shadow transition-all"
+          className="w-full h-11 rounded-xl bg-rewards hover:bg-rewards/90 text-on-accent shadow-sm hover:shadow transition-all"
         >
           {pending ? "Looking up cards…" : "Find best card"}
           {!pending ? <ArrowRight className="h-4 w-4 ml-1" /> : null}

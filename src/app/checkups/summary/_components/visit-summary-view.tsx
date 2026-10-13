@@ -374,7 +374,7 @@ function FeedingSection({ summary: s }: { summary: VisitSummary }) {
   return (
     <SectionCard
       icon={Utensils}
-      accent="text-amber-500"
+      accent="text-kind-feed"
       title="Feeding"
       headline={`${f.perDay.toFixed(1)}/day`}
       sub={`${f.totalFeeds} feeds over ${s.window.days} days`}
@@ -406,7 +406,7 @@ function DiaperSection({ summary: s }: { summary: VisitSummary }) {
   return (
     <SectionCard
       icon={Droplets}
-      accent="text-sky-500"
+      accent="text-kind-diaper"
       title="Diapers"
       headline={`${d.wetPerDay.toFixed(1)} wet/day`}
       sub={`${d.dirtyPerDay.toFixed(1)} dirty/day · ${d.total} total`}
@@ -453,7 +453,7 @@ function SleepSection({ summary: s }: { summary: VisitSummary }) {
   return (
     <SectionCard
       icon={Moon}
-      accent="text-indigo-400"
+      accent="text-kind-sleep"
       title="Sleep"
       headline={`${sl.avgHoursPerDay.toFixed(1)}h/day`}
       sub={`${sl.nightHoursPerDay.toFixed(1)}h at night · ${sl.dayHoursPerDay.toFixed(1)}h in naps`}
@@ -500,7 +500,7 @@ function TempSection({ summary: s }: { summary: VisitSummary }) {
   return (
     <SectionCard
       icon={Thermometer}
-      accent="text-rose-500"
+      accent="text-kind-temp"
       title="Temperature"
       headline={t.maxF != null ? `${t.maxF.toFixed(1)}°F` : "—"}
       sub={`highest of ${t.readings.length} ${t.readings.length === 1 ? "reading" : "readings"}`}
@@ -546,7 +546,7 @@ function MedsSection({ summary: s }: { summary: VisitSummary }) {
   return (
     <SectionCard
       icon={Pill}
-      accent="text-violet-500"
+      accent="text-kind-med"
       title="Medicine"
       headline={`${m.vitaminD.pct}%`}
       sub={`Vitamin D given on ${m.vitaminD.daysGiven} of ${m.vitaminD.days} days`}
@@ -598,7 +598,7 @@ function ActivitySection({ summary: s }: { summary: VisitSummary }) {
   return (
     <SectionCard
       icon={Milk}
-      accent="text-emerald-500"
+      accent="text-kind-tummy"
       title="Tummy time & pumping"
     >
       <StatGrid items={stats} />

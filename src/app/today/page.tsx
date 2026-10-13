@@ -1,25 +1,21 @@
-import { Sun } from "lucide-react";
 import { redirect } from "next/navigation";
-import { PageHero } from "@/components/page-hero";
 import { createClient } from "@/lib/supabase/server";
-import { QuickLogPanel } from "@/app/log/_components/quick-log-panel";
-import { HealthQuickLog } from "@/app/log/_components/health-quick-log";
-import {
-  ActivitySummaryGrid,
-  type SummaryCell,
-} from "./_components/activity-summary-grid";
+import { StaggerList } from "@/components/motion/stagger";
+import { EmptyState } from "@/components/mascot/empty-state";
 import { LowSuppliesCard, type LowSupply } from "./_components/low-supplies-card";
 import { PinnedNotesCard, type PinnedNote } from "./_components/pinned-notes-card";
 import { KicksTodayCard } from "./_components/kicks-today-card";
 import { NextNapCard, type RawSleep } from "./_components/next-nap-card";
 import { FeverAlertCard, type LatestTemp } from "./_components/fever-alert-card";
-import {
-  DiaperAdequacyCard,
-  type DiaperRow,
-} from "./_components/diaper-adequacy-card";
+import { DiaperAdequacyCard, type DiaperRow } from "./_components/diaper-adequacy-card";
 import { MedsCard, type MedRow } from "./_components/meds-card";
 import { TummyTimeCard, type TummyRow } from "./_components/tummy-time-card";
+import { TodayLive } from "./_components/today-live";
 import { ageInDays } from "@/lib/newborn-health";
+import { defaultFeedIntervalMin, medianFeedIntervalMin } from "@/lib/care-schedule";
+import { baselineWakeWindowMin, predictNextNap } from "@/lib/wake-window";
+import { dailyIntakeRangeOz } from "@/lib/feed-intake";
+import { fetchLiveSnapshot } from "@/lib/live-snapshot";
 import type { MedScheduleRow } from "@/lib/med-schedule";
 
 export default async function TodayPage() {
@@ -30,158 +26,123 @@ export default async function TodayPage() {
     : null;
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("couple_id, role, birth_date")
-    .eq("id", user.id)
-    .single();
-  const coupleId = profile?.couple_id ?? null;
-  const role = profile?.role ?? null;
-  const birthDate = profile?.birth_date ?? null;
-
   // eslint-disable-next-line react-hooks/purity -- server component reading wall-clock time
-  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60_000).toISOString();
-  // eslint-disable-next-line react-hooks/purity -- server component reading wall-clock time
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60_000).toISOString();
+  const nowMs = Date.now();
+  const twoHoursAgo = new Date(nowMs - 2 * 60 * 60_000).toISOString();
+  const sevenDaysAgo = new Date(nowMs - 7 * 24 * 60 * 60_000).toISOString();
   // 30h covers "today" for any timezone the viewer might be in.
-  // eslint-disable-next-line react-hooks/purity -- server component reading wall-clock time
-  const thirtyHoursAgo = new Date(Date.now() - 30 * 60 * 60_000).toISOString();
+  const thirtyHoursAgo = new Date(nowMs - 30 * 60 * 60_000).toISOString();
   // Meds reach back further: the Vitamin D card shows a 7-day catch-up strip.
-  // eslint-disable-next-line react-hooks/purity -- server component reading wall-clock time
-  const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60_000).toISOString();
+  const eightDaysAgo = new Date(nowMs - 8 * 24 * 60 * 60_000).toISOString();
 
   const [
-    openSleepRes,
-    lastFeedRes,
-    lastDiaperRes,
-    lastSleepRes,
+    profileRes,
+    live,
     suppliesRes,
     notesRes,
     kicksRes,
     recentSleepsRes,
     latestTempRes,
-    diapersTodayRes,
-    feedsTodayRes,
     medsRes,
-    openNursingRes,
-    lastBreastRes,
     tummyTodayRes,
     medSchedulesRes,
+    latestWeightRes,
   ] = await Promise.all([
-      supabase
-        .from("baby_events")
-        .select("id, occurred_at")
-        .eq("kind", "sleep")
-        .is("ended_at", null)
-        .order("occurred_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("baby_events")
-        .select("id, occurred_at, user_id")
-        .eq("kind", "feed")
-        .order("occurred_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("baby_events")
-        .select("id, occurred_at, user_id")
-        .eq("kind", "diaper")
-        .order("occurred_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("baby_events")
-        .select("id, occurred_at, ended_at, user_id")
-        .eq("kind", "sleep")
-        .order("occurred_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("gear_items")
-        .select("id, name, emoji, quantity, low_threshold")
-        .eq("kind", "supplies")
-        .gt("low_threshold", 0)
-        .order("quantity", { ascending: true }),
-      supabase
-        .from("notes")
-        .select("id, title, body")
-        .eq("pinned", true)
-        .order("updated_at", { ascending: false })
-        .limit(6),
-      supabase
-        .from("baby_events")
-        .select("id", { count: "exact", head: true })
-        .eq("kind", "kick")
-        .gte("occurred_at", twoHoursAgo),
-      supabase
-        .from("baby_events")
-        .select("occurred_at, ended_at")
-        .eq("kind", "sleep")
-        .gte("occurred_at", sevenDaysAgo)
-        .order("occurred_at", { ascending: true }),
-      supabase
-        .from("baby_events")
-        .select("amount, unit, occurred_at")
-        .eq("kind", "temp")
-        .order("occurred_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("baby_events")
-        .select("subtype, occurred_at")
-        .eq("kind", "diaper")
-        .gte("occurred_at", thirtyHoursAgo)
-        .order("occurred_at", { ascending: false }),
-      supabase
-        .from("baby_events")
-        .select("occurred_at")
-        .eq("kind", "feed")
-        .gte("occurred_at", thirtyHoursAgo)
-        .order("occurred_at", { ascending: false }),
-      supabase
-        .from("baby_events")
-        .select(
-          "id, user_id, couple_id, kind, subtype, amount, unit, occurred_at, ended_at, notes",
-        )
-        .eq("kind", "med")
-        .gte("occurred_at", eightDaysAgo)
-        .order("occurred_at", { ascending: false }),
-      supabase
-        .from("baby_events")
-        .select("id, subtype, occurred_at")
-        .eq("kind", "feed")
-        .is("ended_at", null)
-        .order("occurred_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("baby_events")
-        .select("subtype")
-        .eq("kind", "feed")
-        .not("ended_at", "is", null)
-        .in("subtype", ["left", "right"])
-        .order("occurred_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("baby_events")
-        .select("occurred_at, ended_at")
-        .eq("kind", "tummy")
-        .gte("occurred_at", thirtyHoursAgo)
-        .order("occurred_at", { ascending: false }),
-      supabase
-        .from("med_schedules")
-        .select("id, subtype, label, times, amount, unit, active")
-        .eq("active", true)
-        .order("id", { ascending: true }),
-    ]);
+    supabase
+      .from("profiles")
+      .select("couple_id, role, birth_date, birth_weight_g, feed_interval_min")
+      .eq("id", user.id)
+      .single(),
+    fetchLiveSnapshot(supabase, nowMs),
+    supabase
+      .from("gear_items")
+      .select("id, name, emoji, quantity, low_threshold")
+      .eq("kind", "supplies")
+      .gt("low_threshold", 0)
+      .order("quantity", { ascending: true }),
+    supabase
+      .from("notes")
+      .select("id, title, body")
+      .eq("pinned", true)
+      .order("updated_at", { ascending: false })
+      .limit(6),
+    supabase
+      .from("baby_events")
+      .select("id", { count: "exact", head: true })
+      .eq("kind", "kick")
+      .gte("occurred_at", twoHoursAgo),
+    supabase
+      .from("baby_events")
+      .select("occurred_at, ended_at")
+      .eq("kind", "sleep")
+      .gte("occurred_at", sevenDaysAgo)
+      .order("occurred_at", { ascending: true }),
+    supabase
+      .from("baby_events")
+      .select("amount, unit, occurred_at")
+      .eq("kind", "temp")
+      .order("occurred_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("baby_events")
+      .select("id, user_id, couple_id, kind, subtype, amount, unit, occurred_at, ended_at, notes")
+      .eq("kind", "med")
+      .gte("occurred_at", eightDaysAgo)
+      .order("occurred_at", { ascending: false }),
+    supabase
+      .from("baby_events")
+      .select("occurred_at, ended_at")
+      .eq("kind", "tummy")
+      .gte("occurred_at", thirtyHoursAgo)
+      .order("occurred_at", { ascending: false }),
+    supabase
+      .from("med_schedules")
+      .select("id, subtype, label, times, amount, unit, active")
+      .eq("active", true)
+      .order("id", { ascending: true }),
+    supabase
+      .from("growth_measurements")
+      .select("weight_g")
+      .not("weight_g", "is", null)
+      .order("measured_on", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
-  const kickCount = kicksRes.count ?? 0;
+  const profile = profileRes.data;
+  const role = profile?.role ?? null;
+  const birthDate = profile?.birth_date ?? null;
+  const now = new Date(nowMs);
+  const ageDays = ageInDays(birthDate, now);
+
   const recentSleeps: RawSleep[] = (recentSleepsRes.data ?? []).map((s) => ({
     occurred_at: s.occurred_at,
     ended_at: s.ended_at,
   }));
+
+  // How long between feeds is "typical" for this baby: the parent's own
+  // setting, else their observed cadence, else an age-based default.
+  const feedIntervalMin =
+    profile?.feed_interval_min ??
+    medianFeedIntervalMin(live.recent.filter((e) => e.kind === "feed")) ??
+    defaultFeedIntervalMin(ageDays);
+
+  const nap = predictNextNap(
+    birthDate,
+    recentSleeps.map((s) => ({
+      start: new Date(s.occurred_at),
+      end: s.ended_at ? new Date(s.ended_at) : null,
+    })),
+    now,
+  );
+  const wakeWindowMin =
+    nap.status === "ok"
+      ? nap.wakeWindowMin
+      : baselineWakeWindowMin(ageDays != null ? ageDays / 7 : 0);
+
+  const weightG = latestWeightRes.data?.weight_g ?? profile?.birth_weight_g ?? null;
+  const intakeRange = dailyIntakeRangeOz(weightG != null ? Number(weightG) / 1000 : null, ageDays);
 
   const latestTemp: LatestTemp =
     latestTempRes.data && latestTempRes.data.amount != null
@@ -191,70 +152,22 @@ export default async function TodayPage() {
           occurred_at: latestTempRes.data.occurred_at,
         }
       : null;
-  const diaperRows: DiaperRow[] = (diapersTodayRes.data ?? []).map((d) => ({
-    subtype: d.subtype,
-    occurred_at: d.occurred_at,
-  }));
+  const diaperRows: DiaperRow[] = live.recent
+    .filter((e) => e.kind === "diaper")
+    .map((d) => ({ subtype: d.subtype, occurred_at: d.occurred_at }));
   const medRows = (medsRes.data ?? []) as MedRow[];
-  // Null when migration 0032 hasn't been applied yet — the card degrades to
+  // Empty when migration 0032 hasn't been applied yet — the card degrades to
   // the un-scheduled view rather than failing the page.
   const medSchedules = (medSchedulesRes.data ?? []) as MedScheduleRow[];
-  const openNursing = openNursingRes.data
-    ? {
-        id: openNursingRes.data.id,
-        side: (openNursingRes.data.subtype as "left" | "right") ?? "left",
-        occurred_at: openNursingRes.data.occurred_at,
-      }
-    : null;
-  const lastBreastSide =
-    (lastBreastRes.data?.subtype as "left" | "right" | undefined) ?? null;
-
   const tummyRows: TummyRow[] = (tummyTodayRes.data ?? []).map((t) => ({
     occurred_at: t.occurred_at,
     ended_at: t.ended_at,
   }));
 
-  const ageDays = ageInDays(birthDate, new Date());
   // Diaper-output adequacy is a newborn signal — show it through ~12 weeks.
   const showDiaperCard = ageDays == null || ageDays < 84;
   // Tummy time matters through the roll/sit window — show it through ~6 months.
   const showTummyCard = ageDays == null || ageDays < 180;
-
-  const isLocalToday = (iso: string) => {
-    const d = new Date(iso);
-    const n = new Date();
-    return (
-      d.getFullYear() === n.getFullYear() &&
-      d.getMonth() === n.getMonth() &&
-      d.getDate() === n.getDate()
-    );
-  };
-  const feedsToday = (feedsTodayRes.data ?? []).filter((f) =>
-    isLocalToday(f.occurred_at),
-  ).length;
-  const diapersToday = (diapersTodayRes.data ?? []).filter((d) =>
-    isLocalToday(d.occurred_at),
-  ).length;
-
-  const last: SummaryCell[] = [
-    {
-      kind: "feed",
-      occurred_at: lastFeedRes.data?.occurred_at ?? null,
-      count: feedsToday,
-    },
-    {
-      kind: "diaper",
-      occurred_at: lastDiaperRes.data?.occurred_at ?? null,
-      count: diapersToday,
-    },
-    {
-      kind: "sleep",
-      occurred_at: openSleepRes.data
-        ? openSleepRes.data.occurred_at
-        : (lastSleepRes.data?.ended_at ?? lastSleepRes.data?.occurred_at ?? null),
-      ongoing: Boolean(openSleepRes.data),
-    },
-  ];
 
   const supplies: LowSupply[] = (suppliesRes.data ?? [])
     .filter((s) => s.quantity <= s.low_threshold)
@@ -273,70 +186,33 @@ export default async function TodayPage() {
   }));
 
   return (
-    <div className="mx-auto max-w-2xl px-5 py-10 md:px-8 md:py-16">
-      <PageHero
-        tool="today"
-        icon={Sun}
-        eyebrow={formatToday()}
-        title="Today."
-        subtitle="Tap to log. Glance to check. Sleep when you can."
+    <div className="mx-auto max-w-2xl space-y-4 px-4 pt-4 pb-10 md:px-8 md:py-12">
+      <FeverAlertCard reading={latestTemp} birthDate={birthDate} />
+
+      <TodayLive
+        snapshot={live}
+        feedIntervalMin={feedIntervalMin}
+        wakeWindowMin={wakeWindowMin}
+        intakeRange={intakeRange}
       />
 
-      <div className="space-y-6">
-        <QuickLogPanel
-          coupleId={coupleId}
-          initialOpenSleep={
-            openSleepRes.data
-              ? {
-                  id: openSleepRes.data.id,
-                  occurred_at: openSleepRes.data.occurred_at,
-                }
-              : null
-          }
-          initialOpenNursing={openNursing}
-          lastBreastSide={lastBreastSide}
-          channelName="today_quick"
-        />
-
-        <HealthQuickLog birthDate={birthDate} />
-
-        <FeverAlertCard reading={latestTemp} birthDate={birthDate} />
-
-        <ActivitySummaryGrid cells={last} />
-
-        {showDiaperCard ? (
-          <DiaperAdequacyCard rows={diaperRows} birthDate={birthDate} />
-        ) : null}
-
-        {showTummyCard ? <TummyTimeCard rows={tummyRows} /> : null}
-
-        <MedsCard rows={medRows} schedules={medSchedules} />
-
+      <StaggerList className="space-y-4 [&>*:empty]:hidden" delay={0.1}>
         <NextNapCard birthDate={birthDate} sleeps={recentSleeps} />
-
-        <KicksTodayCard count={kickCount} canLog={role === "mom"} />
-
+        {showDiaperCard ? <DiaperAdequacyCard rows={diaperRows} birthDate={birthDate} /> : null}
+        {showTummyCard ? <TummyTimeCard rows={tummyRows} /> : null}
+        <MedsCard rows={medRows} schedules={medSchedules} />
+        <KicksTodayCard count={kicksRes.count ?? 0} canLog={role === "mom"} />
         {supplies.length > 0 ? <LowSuppliesCard supplies={supplies} /> : null}
-
         {pinned.length > 0 ? <PinnedNotesCard notes={pinned} /> : null}
-
         {supplies.length === 0 && pinned.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border px-6 py-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              Nothing urgent. Pin a note or set a supply&apos;s low threshold
-              and it&apos;ll surface here.
-            </p>
-          </div>
+          <EmptyState
+            compact
+            mood="happy"
+            title="Nothing urgent"
+            body="Pin a note or set a supply's low threshold and it'll surface here."
+          />
         ) : null}
-      </div>
+      </StaggerList>
     </div>
   );
-}
-
-function formatToday(): string {
-  return new Date().toLocaleDateString(undefined, {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-  });
 }

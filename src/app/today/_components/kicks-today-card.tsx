@@ -14,7 +14,7 @@ export function KicksTodayCard({
     <Link
       href="/kicks"
       className={cn(
-        "block rounded-2xl border bg-card p-4 transition-all",
+        "block rounded-card border bg-card p-5 shadow-soft transition-all active:scale-[0.99]",
         "hover:bg-card hover:border-border hover:shadow-sm",
         reachedTen
           ? "border-kicks/50 bg-kicks-soft/50"
@@ -31,10 +31,10 @@ export function KicksTodayCard({
           <Footprints className="h-5 w-5" />
         </span>
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+          <p className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
             Kicks · last 2h
           </p>
-          <p className="font-display nums text-2xl font-bold leading-tight">
+          <p className="font-display nums text-3xl font-semibold leading-tight">
             {count}
             <span className="text-sm font-normal text-muted-foreground">
               {" "}

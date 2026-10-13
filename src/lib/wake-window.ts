@@ -29,7 +29,7 @@ const WEEK_MS = 7 * 24 * 60 * 60_000;
 const MIN_AGE_WEEKS = 2;
 
 /** Baseline awake window (minutes) by age in weeks. */
-function baselineWakeWindowMin(ageWeeks: number): number {
+export function baselineWakeWindowMin(ageWeeks: number): number {
   if (ageWeeks < 4) return 50; // newborn
   if (ageWeeks < 8) return 70; // 1–2 mo
   if (ageWeeks < 13) return 90; // 2–3 mo

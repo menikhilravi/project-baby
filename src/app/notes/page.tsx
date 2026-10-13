@@ -93,7 +93,7 @@ export default async function NotesPage({
         </form>
         <Link
           href="/notes/new"
-          className="grid place-items-center h-10 w-10 rounded-2xl bg-notes text-white shadow-sm hover:bg-notes/90 transition-colors shrink-0"
+          className="grid place-items-center h-10 w-10 rounded-2xl bg-notes text-on-accent shadow-sm hover:bg-notes/90 transition-colors shrink-0"
           aria-label="New note"
         >
           <Plus className="h-4.5 w-4.5" />

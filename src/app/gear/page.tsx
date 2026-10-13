@@ -214,7 +214,7 @@ export default async function GearPage() {
                 {supplies.length}
               </span>
               {lowCount > 0 ? (
-                <span className="inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-destructive text-white text-[9px] font-bold">
+                <span className="inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-destructive text-on-accent text-[9px] font-bold">
                   {lowCount}
                 </span>
               ) : null}

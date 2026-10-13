@@ -2,16 +2,32 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+/* ----------------------------------------------------------------------------
+   Theme switching. <html data-theme="system|light|night"> is server-rendered
+   from the `theme` cookie, so there is never a flash. "system" resolves purely
+   in CSS through prefers-color-scheme. Night tokens are written once under
+   `@variant dark`, which compiles to both selectors below; existing `dark:`
+   utilities follow the same rule.
+---------------------------------------------------------------------------- */
+@custom-variant dark {
+  &:where([data-theme="night"], [data-theme="night"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where([data-theme="system"], [data-theme="system"] *) {
+      @slot;
+    }
+  }
+}
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  /* One grotesque family across the whole app — Robinhood-style. Headings get
-     their weight + tight tracking, not a separate serif. */
-  --font-heading: var(--font-sans);
+  --font-sans: var(--font-nunito), ui-rounded, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  /* Rounded display face for titles and big numbers; body stays Nunito. */
+  --font-display: var(--font-fredoka), var(--font-nunito), ui-rounded, sans-serif;
+  --font-heading: var(--font-display);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -41,6 +57,44 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-on-accent: var(--on-accent);
+
+  /* Baby accent — one hue, driven by <html data-accent>. */
+  --color-accent-baby: var(--accent-baby);
+  --color-accent-baby-soft: var(--accent-baby-soft);
+  --color-accent-baby-strong: var(--accent-baby-strong);
+  --color-accent-baby-fg: var(--accent-baby-fg);
+
+  /* baby_events kinds */
+  --color-kind-feed: var(--kind-feed);
+  --color-kind-feed-soft: var(--kind-feed-soft);
+  --color-kind-feed-strong: var(--kind-feed-strong);
+  --color-kind-diaper: var(--kind-diaper);
+  --color-kind-diaper-soft: var(--kind-diaper-soft);
+  --color-kind-diaper-strong: var(--kind-diaper-strong);
+  --color-kind-sleep: var(--kind-sleep);
+  --color-kind-sleep-soft: var(--kind-sleep-soft);
+  --color-kind-sleep-strong: var(--kind-sleep-strong);
+  --color-kind-temp: var(--kind-temp);
+  --color-kind-temp-soft: var(--kind-temp-soft);
+  --color-kind-temp-strong: var(--kind-temp-strong);
+  --color-kind-med: var(--kind-med);
+  --color-kind-med-soft: var(--kind-med-soft);
+  --color-kind-med-strong: var(--kind-med-strong);
+  --color-kind-pump: var(--kind-pump);
+  --color-kind-pump-soft: var(--kind-pump-soft);
+  --color-kind-pump-strong: var(--kind-pump-strong);
+  --color-kind-tummy: var(--kind-tummy);
+  --color-kind-tummy-soft: var(--kind-tummy-soft);
+  --color-kind-tummy-strong: var(--kind-tummy-strong);
+  --color-kind-milestone: var(--kind-milestone);
+  --color-kind-milestone-soft: var(--kind-milestone-soft);
+  --color-kind-milestone-strong: var(--kind-milestone-strong);
+  --color-milk: var(--milk);
+  --color-due: var(--due);
+  --color-due-strong: var(--due-strong);
+
+  /* Per-tool accents */
   --color-gear: var(--gear);
   --color-gear-soft: var(--gear-soft);
   --color-names: var(--names);
@@ -69,141 +123,391 @@
   --color-mood-soft: var(--mood-soft);
   --color-handoff: var(--handoff);
   --color-handoff-soft: var(--handoff-soft);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
+
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.7);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-xl: calc(var(--radius) * 1.2);
+  --radius-2xl: calc(var(--radius) * 1.4);
+  --radius-3xl: calc(var(--radius) * 1.7);
+  --radius-4xl: calc(var(--radius) * 2);
+  --radius-card: var(--radius-card-v);
+  --radius-tile: var(--radius-tile-v);
+
+  --shadow-soft: var(--shadow-soft-v);
+  --shadow-pop: var(--shadow-pop-v);
+  --shadow-squish: var(--shadow-squish-v);
+  --shadow-squish-pressed: var(--shadow-squish-pressed-v);
+
+  --ease-squish: linear(0, 0.55 8%, 1.08 22%, 0.98 38%, 1.01 55%, 1);
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-breathe: breathe 3.6s ease-in-out infinite;
+  --animate-blink: blink 5.2s ease-in-out infinite;
+  --animate-float-z: float-z 2.8s ease-in-out infinite;
+  --animate-twinkle: twinkle 3s ease-in-out infinite;
+  --animate-wave: wave 2.4s linear infinite;
+  --animate-drift: drift 22s linear infinite;
+  --animate-halo: halo 2.2s ease-out infinite;
+  --animate-wiggle: wiggle 0.5s ease-in-out;
+  --animate-bubble: bubble 2.8s ease-in infinite;
 }
 
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+  50% {
+    transform: scale(1.025, 0.985);
+  }
+}
+@keyframes blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+}
+@keyframes float-z {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.6);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(10px, -26px) scale(1.1);
+  }
+}
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes wave {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes drift {
+  from {
+    transform: translateX(-30%);
+  }
+  to {
+    transform: translateX(130%);
+  }
+}
+@keyframes halo {
+  from {
+    opacity: 0.55;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.2);
+  }
+}
+@keyframes bubble {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.6);
+  }
+  20% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-46px) scale(1);
+  }
+}
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: rotate(-8deg);
+  }
+  75% {
+    transform: rotate(8deg);
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   Tokens. Light = "milk": cream paper, plum ink, pastel accents.
+   Night = "cozy": navy-plum, warm off-white text, low chroma for 3am eyes.
+---------------------------------------------------------------------------- */
 :root {
-  /* light mode — warm cream */
-  --background: oklch(0.985 0.012 75);
-  --foreground: oklch(0.24 0.025 50);
-  --card: oklch(1 0.003 80);
-  --card-foreground: oklch(0.24 0.025 50);
-  --popover: oklch(1 0.003 80);
-  --popover-foreground: oklch(0.24 0.025 50);
-  --primary: oklch(0.42 0.05 35);
-  --primary-foreground: oklch(0.99 0.01 75);
-  --secondary: oklch(0.96 0.025 60);
-  --secondary-foreground: oklch(0.32 0.04 35);
-  --muted: oklch(0.96 0.02 70);
-  --muted-foreground: oklch(0.5 0.03 55);
-  --accent: oklch(0.94 0.04 50);
-  --accent-foreground: oklch(0.32 0.04 35);
-  --destructive: oklch(0.6 0.2 25);
-  --border: oklch(0.91 0.018 65);
-  --input: oklch(0.92 0.015 65);
-  --ring: oklch(0.78 0.05 50);
-  --chart-1: oklch(0.65 0.15 30);
-  --chart-2: oklch(0.7 0.13 75);
-  --chart-3: oklch(0.6 0.11 155);
-  --chart-4: oklch(0.62 0.14 235);
-  --chart-5: oklch(0.65 0.18 350);
-  --radius: 0.9rem;
-  --sidebar: oklch(0.99 0.01 75);
-  --sidebar-foreground: oklch(0.24 0.025 50);
-  --sidebar-primary: oklch(0.42 0.05 35);
-  --sidebar-primary-foreground: oklch(0.99 0.01 75);
-  --sidebar-accent: oklch(0.94 0.04 50);
-  --sidebar-accent-foreground: oklch(0.32 0.04 35);
-  --sidebar-border: oklch(0.91 0.018 65);
-  --sidebar-ring: oklch(0.78 0.05 50);
-  --gear: oklch(0.55 0.13 235);
-  --gear-soft: oklch(0.95 0.035 235);
-  --names: oklch(0.62 0.18 10);
-  --names-soft: oklch(0.96 0.04 10);
-  --hospital: oklch(0.55 0.11 155);
-  --hospital-soft: oklch(0.95 0.045 155);
-  --rewards: oklch(0.62 0.13 75);
-  --rewards-soft: oklch(0.96 0.05 75);
-  --nursery: oklch(0.58 0.13 295);
-  --nursery-soft: oklch(0.95 0.04 295);
-  --logger: oklch(0.50 0.10 260);
-  --logger-soft: oklch(0.94 0.035 260);
-  --notes: oklch(0.55 0.08 110);
-  --notes-soft: oklch(0.95 0.035 110);
-  --today: oklch(0.62 0.14 50);
-  --today-soft: oklch(0.96 0.05 50);
-  --kicks: oklch(0.62 0.15 335);
-  --kicks-soft: oklch(0.96 0.04 335);
-  --contractions: oklch(0.58 0.19 25);
-  --contractions-soft: oklch(0.95 0.045 25);
-  --reports: oklch(0.55 0.10 195);
-  --reports-soft: oklch(0.95 0.035 195);
-  --checkups: oklch(0.55 0.10 175);
-  --checkups-soft: oklch(0.95 0.035 175);
-  --mood: oklch(0.60 0.13 320);
-  --mood-soft: oklch(0.95 0.035 320);
-  --handoff: oklch(0.56 0.12 130);
-  --handoff-soft: oklch(0.95 0.035 130);
+  color-scheme: light;
+
+  /* Baby accent: neutral sage until the baby's sex (or an override) says
+     otherwise. Chroma stays low on purpose — a tint, not a takeover. */
+  --baby-h: 160;
+  --baby-c: 0.06;
+
+  --background: oklch(0.985 0.008 85);
+  --foreground: oklch(0.27 0.03 285);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.27 0.03 285);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.27 0.03 285);
+  --primary: oklch(0.32 0.045 285);
+  --primary-foreground: oklch(0.985 0.008 85);
+  --secondary: oklch(0.96 0.014 80);
+  --secondary-foreground: oklch(0.32 0.04 285);
+  --muted: oklch(0.962 0.012 82);
+  --muted-foreground: oklch(0.5 0.03 285);
+  --accent: oklch(0.95 0.016 82);
+  --accent-foreground: oklch(0.3 0.04 285);
+  --destructive: oklch(0.58 0.19 25);
+  --border: oklch(0.915 0.014 80);
+  --input: oklch(0.9 0.016 80);
+  --ring: var(--accent-baby);
+  --on-accent: oklch(1 0 0);
+  --scrim: oklch(0.25 0.03 285 / 0.28);
+
+  --accent-baby: oklch(0.6 calc(var(--baby-c) * 1.4) var(--baby-h));
+  --accent-baby-soft: oklch(0.945 calc(var(--baby-c) * 0.55) var(--baby-h));
+  --accent-baby-strong: oklch(0.46 calc(var(--baby-c) * 1.3) var(--baby-h));
+  --accent-baby-fg: oklch(1 0 0);
+
+  --chart-1: var(--kind-feed);
+  --chart-2: var(--kind-sleep);
+  --chart-3: var(--kind-tummy);
+  --chart-4: var(--kind-diaper);
+  --chart-5: var(--kind-med);
+
+  /* Kinds: solid (icons, chart marks) / soft (tile wash) / strong (text). */
+  --kind-feed: oklch(0.66 0.13 62);
+  --kind-feed-soft: oklch(0.955 0.035 75);
+  --kind-feed-strong: oklch(0.5 0.11 55);
+  --kind-diaper: oklch(0.62 0.11 225);
+  --kind-diaper-soft: oklch(0.95 0.03 225);
+  --kind-diaper-strong: oklch(0.47 0.1 230);
+  --kind-sleep: oklch(0.58 0.12 285);
+  --kind-sleep-soft: oklch(0.95 0.03 285);
+  --kind-sleep-strong: oklch(0.45 0.12 285);
+  --kind-temp: oklch(0.62 0.16 25);
+  --kind-temp-soft: oklch(0.955 0.03 25);
+  --kind-temp-strong: oklch(0.5 0.16 25);
+  --kind-med: oklch(0.6 0.13 315);
+  --kind-med-soft: oklch(0.955 0.03 315);
+  --kind-med-strong: oklch(0.47 0.13 315);
+  --kind-pump: oklch(0.62 0.09 195);
+  --kind-pump-soft: oklch(0.955 0.025 195);
+  --kind-pump-strong: oklch(0.46 0.08 200);
+  --kind-tummy: oklch(0.62 0.12 150);
+  --kind-tummy-soft: oklch(0.955 0.035 150);
+  --kind-tummy-strong: oklch(0.46 0.1 150);
+  --kind-milestone: oklch(0.72 0.14 85);
+  --kind-milestone-soft: oklch(0.965 0.045 90);
+  --kind-milestone-strong: oklch(0.5 0.11 75);
+  --milk: oklch(0.975 0.02 88);
+  /* "Might be time" — a soft apricot nudge, deliberately not alarm-red. */
+  --due: oklch(0.74 0.12 45);
+  --due-strong: oklch(0.52 0.12 40);
+  --diaper-pee: oklch(0.82 0.13 95);
+  --diaper-poop: oklch(0.55 0.08 60);
+  --diaper-both: oklch(0.66 0.11 45);
+  --mascot-skin: oklch(0.9 0.045 60);
+  --mascot-ink: oklch(0.3 0.035 285);
+
+  --radius: 1.1rem;
+  --radius-card-v: 1.6rem;
+  --radius-tile-v: 1.75rem;
+
+  --shadow-soft-v:
+    0 1px 2px oklch(0.3 0.03 285 / 0.05), 0 6px 20px -6px oklch(0.3 0.03 285 / 0.1);
+  --shadow-pop-v:
+    0 2px 4px oklch(0.3 0.03 285 / 0.06),
+    0 14px 32px -10px oklch(0.5 0.08 var(--baby-h) / 0.35);
+  --shadow-squish-v:
+    inset 0 -3px 0 oklch(0.3 0.03 285 / 0.08), 0 4px 14px -6px oklch(0.3 0.03 285 / 0.14);
+  --shadow-squish-pressed-v: inset 0 -1px 0 oklch(0.3 0.03 285 / 0.08);
+
+  --wash:
+    radial-gradient(ellipse 70% 45% at 0% 0%, oklch(0.94 0.045 30 / 0.7), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 100% 5%, oklch(0.95 0.05 90 / 0.6), transparent 70%),
+    radial-gradient(
+      ellipse 80% 50% at 60% 100%,
+      oklch(0.95 calc(var(--baby-c) * 0.8) var(--baby-h) / 0.7),
+      transparent 70%
+    ),
+    var(--background);
+
+  --sidebar: oklch(0.99 0.006 85 / 0.8);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--accent-baby);
+  --sidebar-primary-foreground: var(--accent-baby-fg);
+  --sidebar-accent: var(--accent-baby-soft);
+  --sidebar-accent-foreground: var(--accent-baby-strong);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+
+  /* Tools: solid at L≈0.56 so it reads as text on white and carries white
+     text as a fill; soft is the pastel wash. */
+  --gear: oklch(0.55 0.11 235);
+  --gear-soft: oklch(0.95 0.03 235);
+  --names: oklch(0.57 0.15 10);
+  --names-soft: oklch(0.955 0.03 10);
+  --hospital: oklch(0.53 0.1 155);
+  --hospital-soft: oklch(0.95 0.035 155);
+  --rewards: oklch(0.55 0.11 70);
+  --rewards-soft: oklch(0.96 0.045 80);
+  --nursery: oklch(0.55 0.12 295);
+  --nursery-soft: oklch(0.955 0.03 295);
+  --logger: oklch(0.52 0.1 265);
+  --logger-soft: oklch(0.95 0.03 265);
+  --notes: oklch(0.53 0.08 115);
+  --notes-soft: oklch(0.955 0.035 110);
+  --today: oklch(0.57 0.13 50);
+  --today-soft: oklch(0.96 0.035 55);
+  --kicks: oklch(0.57 0.14 340);
+  --kicks-soft: oklch(0.955 0.03 340);
+  --contractions: oklch(0.56 0.17 25);
+  --contractions-soft: oklch(0.955 0.035 25);
+  --reports: oklch(0.53 0.09 200);
+  --reports-soft: oklch(0.955 0.03 200);
+  --checkups: oklch(0.53 0.09 175);
+  --checkups-soft: oklch(0.955 0.03 175);
+  --mood: oklch(0.56 0.12 320);
+  --mood-soft: oklch(0.955 0.03 320);
+  --handoff: oklch(0.53 0.11 130);
+  --handoff-soft: oklch(0.955 0.035 130);
+
+  @variant dark {
+    color-scheme: dark;
+
+    --background: oklch(0.215 0.032 275);
+    --foreground: oklch(0.925 0.016 80);
+    --card: oklch(0.255 0.034 275);
+    --card-foreground: oklch(0.925 0.016 80);
+    --popover: oklch(0.28 0.036 275);
+    --popover-foreground: oklch(0.925 0.016 80);
+    --primary: oklch(0.92 0.018 80);
+    --primary-foreground: oklch(0.2 0.03 275);
+    --secondary: oklch(0.29 0.034 275);
+    --secondary-foreground: oklch(0.92 0.016 80);
+    --muted: oklch(0.285 0.032 275);
+    --muted-foreground: oklch(0.73 0.022 275);
+    --accent: oklch(0.31 0.036 275);
+    --accent-foreground: oklch(0.93 0.016 80);
+    --destructive: oklch(0.7 0.15 25);
+    --border: oklch(0.95 0.02 275 / 0.09);
+    --input: oklch(0.95 0.02 275 / 0.12);
+    --on-accent: oklch(0.2 0.03 275);
+    --scrim: oklch(0.08 0.02 275 / 0.6);
+
+    --accent-baby: oklch(0.78 calc(var(--baby-c) * 1.2) var(--baby-h));
+    --accent-baby-soft: oklch(0.3 calc(var(--baby-c) * 0.7) var(--baby-h));
+    --accent-baby-strong: oklch(0.86 calc(var(--baby-c) * 1.1) var(--baby-h));
+    --accent-baby-fg: oklch(0.2 0.03 275);
+
+    --kind-feed: oklch(0.8 0.1 70);
+    --kind-feed-soft: oklch(0.29 0.04 65);
+    --kind-feed-strong: oklch(0.86 0.09 75);
+    --kind-diaper: oklch(0.77 0.08 225);
+    --kind-diaper-soft: oklch(0.28 0.04 230);
+    --kind-diaper-strong: oklch(0.85 0.07 225);
+    --kind-sleep: oklch(0.76 0.09 285);
+    --kind-sleep-soft: oklch(0.29 0.05 285);
+    --kind-sleep-strong: oklch(0.85 0.07 285);
+    --kind-temp: oklch(0.74 0.12 25);
+    --kind-temp-soft: oklch(0.29 0.05 25);
+    --kind-temp-strong: oklch(0.83 0.1 25);
+    --kind-med: oklch(0.76 0.1 315);
+    --kind-med-soft: oklch(0.29 0.05 315);
+    --kind-med-strong: oklch(0.85 0.08 315);
+    --kind-pump: oklch(0.78 0.07 195);
+    --kind-pump-soft: oklch(0.28 0.035 200);
+    --kind-pump-strong: oklch(0.86 0.06 195);
+    --kind-tummy: oklch(0.77 0.09 150);
+    --kind-tummy-soft: oklch(0.28 0.04 150);
+    --kind-tummy-strong: oklch(0.86 0.08 150);
+    --kind-milestone: oklch(0.83 0.11 88);
+    --kind-milestone-soft: oklch(0.3 0.045 85);
+    --kind-milestone-strong: oklch(0.88 0.1 90);
+    --milk: oklch(0.93 0.025 85);
+    --due: oklch(0.8 0.1 50);
+    --due-strong: oklch(0.86 0.09 55);
+    --diaper-pee: oklch(0.84 0.1 95);
+    --diaper-poop: oklch(0.62 0.07 60);
+    --diaper-both: oklch(0.72 0.09 45);
+    --mascot-skin: oklch(0.86 0.04 60);
+    --mascot-ink: oklch(0.24 0.03 275);
+
+    --shadow-soft-v: inset 0 1px 0 oklch(1 0 0 / 0.05), 0 8px 24px -12px oklch(0 0 0 / 0.5);
+    --shadow-pop-v:
+      inset 0 1px 0 oklch(1 0 0 / 0.07),
+      0 14px 32px -12px oklch(0.4 0.08 var(--baby-h) / 0.45);
+    --shadow-squish-v: inset 0 1px 0 oklch(1 0 0 / 0.06), inset 0 -3px 0 oklch(0 0 0 / 0.22);
+    --shadow-squish-pressed-v: inset 0 -1px 0 oklch(0 0 0 / 0.22);
+
+    --wash:
+      radial-gradient(ellipse 90% 50% at 50% -10%, oklch(0.32 0.07 285 / 0.45), transparent 70%),
+      radial-gradient(
+        ellipse 60% 40% at 100% 100%,
+        oklch(0.3 calc(var(--baby-c) * 0.7) var(--baby-h) / 0.35),
+        transparent 70%
+      ),
+      var(--background);
+
+    --sidebar: oklch(0.23 0.032 275 / 0.85);
+
+    --gear: oklch(0.8 0.09 235);
+    --gear-soft: oklch(0.28 0.045 235);
+    --names: oklch(0.8 0.1 10);
+    --names-soft: oklch(0.29 0.05 10);
+    --hospital: oklch(0.8 0.09 155);
+    --hospital-soft: oklch(0.28 0.045 155);
+    --rewards: oklch(0.84 0.1 80);
+    --rewards-soft: oklch(0.3 0.05 75);
+    --nursery: oklch(0.8 0.09 295);
+    --nursery-soft: oklch(0.29 0.05 295);
+    --logger: oklch(0.8 0.08 265);
+    --logger-soft: oklch(0.29 0.05 265);
+    --notes: oklch(0.82 0.08 110);
+    --notes-soft: oklch(0.28 0.04 110);
+    --today: oklch(0.82 0.1 55);
+    --today-soft: oklch(0.3 0.05 55);
+    --kicks: oklch(0.8 0.1 340);
+    --kicks-soft: oklch(0.29 0.05 340);
+    --contractions: oklch(0.76 0.13 25);
+    --contractions-soft: oklch(0.3 0.06 25);
+    --reports: oklch(0.8 0.08 200);
+    --reports-soft: oklch(0.28 0.04 200);
+    --checkups: oklch(0.8 0.08 175);
+    --checkups-soft: oklch(0.28 0.04 175);
+    --mood: oklch(0.8 0.09 320);
+    --mood-soft: oklch(0.29 0.05 320);
+    --handoff: oklch(0.8 0.09 130);
+    --handoff-soft: oklch(0.28 0.045 130);
+  }
 }
 
-.dark {
-  /* Robinhood-style near-black — neutral, deep, high-contrast & flat. */
-  --background: oklch(0.072 0.003 280);
-  --foreground: oklch(0.97 0.004 280);
-  --card: oklch(0.148 0.005 280);
-  --card-foreground: oklch(0.96 0.004 280);
-  --popover: oklch(0.16 0.005 280);
-  --popover-foreground: oklch(0.96 0.004 280);
-  --primary: oklch(0.97 0.003 280);
-  --primary-foreground: oklch(0.13 0.004 280);
-  --secondary: oklch(0.168 0.004 280);
-  --secondary-foreground: oklch(0.96 0.004 280);
-  --muted: oklch(0.158 0.004 280);
-  --muted-foreground: oklch(0.62 0.006 280);
-  --accent: oklch(0.195 0.005 280);
-  --accent-foreground: oklch(0.96 0.004 280);
-  --destructive: oklch(0.68 0.20 22);
-  --border: oklch(1 0 0 / 9%);
-  --input: oklch(1 0 0 / 11%);
-  /* violet signature accent — focus rings, interactive touches */
-  --ring: oklch(0.62 0.17 285);
-  --chart-1: oklch(0.72 0.16 30);
-  --chart-2: oklch(0.78 0.14 75);
-  --chart-3: oklch(0.70 0.14 155);
-  --chart-4: oklch(0.72 0.16 235);
-  --chart-5: oklch(0.72 0.18 350);
-  --sidebar: oklch(0.098 0.003 280);
-  --sidebar-foreground: oklch(0.96 0.004 280);
-  --sidebar-primary: oklch(0.62 0.17 285);
-  --sidebar-primary-foreground: oklch(0.96 0.004 280);
-  --sidebar-accent: oklch(0.168 0.004 280);
-  --sidebar-accent-foreground: oklch(0.96 0.004 280);
-  --sidebar-border: oklch(1 0 0 / 6.5%);
-  --sidebar-ring: oklch(0.62 0.17 285);
-  --gear: oklch(0.72 0.16 235);
-  --gear-soft: oklch(0.22 0.07 235);
-  --names: oklch(0.76 0.18 10);
-  --names-soft: oklch(0.22 0.07 10);
-  --hospital: oklch(0.72 0.16 155);
-  --hospital-soft: oklch(0.22 0.07 155);
-  --rewards: oklch(0.82 0.15 75);
-  --rewards-soft: oklch(0.24 0.08 75);
-  --nursery: oklch(0.76 0.16 295);
-  --nursery-soft: oklch(0.23 0.07 295);
-  --logger: oklch(0.74 0.13 260);
-  --logger-soft: oklch(0.22 0.06 260);
-  --notes: oklch(0.78 0.12 110);
-  --notes-soft: oklch(0.22 0.06 110);
-  --today: oklch(0.80 0.14 50);
-  --today-soft: oklch(0.24 0.07 50);
-  --kicks: oklch(0.80 0.15 335);
-  --kicks-soft: oklch(0.24 0.08 335);
-  --contractions: oklch(0.72 0.19 25);
-  --contractions-soft: oklch(0.24 0.09 25);
-  --reports: oklch(0.76 0.12 195);
-  --reports-soft: oklch(0.22 0.06 195);
-  --checkups: oklch(0.72 0.13 175);
-  --checkups-soft: oklch(0.22 0.06 175);
-  --mood: oklch(0.74 0.14 320);
-  --mood-soft: oklch(0.22 0.06 320);
-  --handoff: oklch(0.74 0.14 130);
-  --handoff-soft: oklch(0.22 0.06 130);
+/* Baby accent hues. Powder blue / warm blush — never saturated pink/blue. */
+:root[data-accent="boy"] {
+  --baby-h: 238;
+  --baby-c: 0.075;
+}
+:root[data-accent="girl"] {
+  --baby-h: 12;
+  --baby-c: 0.075;
 }
 
 @layer base {
@@ -213,58 +517,64 @@
   html {
     @apply font-sans;
     background: var(--background);
+    -webkit-tap-highlight-color: transparent;
   }
-  /* Fixed pseudo-element carries the gradient so it never shifts on scroll */
+  /* Fixed pseudo-element carries the wash so it never shifts on scroll. The
+     gradient itself is a token so it follows the theme. */
   html::before {
     content: "";
     position: fixed;
     inset: 0;
     z-index: -1;
     pointer-events: none;
-    background:
-      radial-gradient(at 0% 0%, oklch(0.95 0.04 30 / 0.55), transparent 50%),
-      radial-gradient(at 100% 0%, oklch(0.95 0.04 80 / 0.5), transparent 50%),
-      radial-gradient(at 50% 100%, oklch(0.95 0.04 150 / 0.35), transparent 60%),
-      var(--background);
-  }
-  .dark html::before {
-    /* Quiet, premium near-black wash — a single faint violet bloom up top,
-       nothing that competes with content. */
-    background:
-      radial-gradient(ellipse 90% 55% at 50% -10%, oklch(0.30 0.06 285 / 0.18), transparent 70%),
-      radial-gradient(ellipse 70% 50% at 100% 0%, oklch(0.24 0.04 285 / 0.10), transparent 60%),
-      var(--background);
+    background: var(--wash);
   }
   body {
     @apply text-foreground;
     background: transparent;
   }
-  /* Display = the same grotesque, just tighter and with lined/tabular figures
-     so big numbers lock into a clean column (Robinhood-style). */
-  .font-display {
-    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-    letter-spacing: -0.022em;
-    font-feature-settings: "ss01", "cv01", "tnum";
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
   }
-  /* Numeric emphasis utility: lined tabular figures, tight, for stats. */
+  .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+    font-feature-settings: "tnum";
+  }
+  /* Numeric emphasis utility: tabular figures so ticking numbers never jitter. */
   .nums {
     font-variant-numeric: tabular-nums lining-nums;
     font-feature-settings: "tnum", "lnum";
-    letter-spacing: -0.01em;
   }
+  :focus-visible {
+    outline: 2px solid var(--accent-baby-strong);
+    outline-offset: 2px;
+  }
+}
+
+/* SVG parts that animate around their own centre (mascot eyes, cheeks…). */
+.fill-box {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.origin-bottom-box {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
 }
 
 /* ----------------------------------------------------------------------------
    View transitions — route navigations are wrapped in startViewTransition
-   (experimental.viewTransition). The page content crossfades with a soft blur
-   while the persistent nav chrome stays anchored so it never flickers.
+   (experimental.viewTransition). The page content crossfades while the
+   persistent chrome stays anchored so it never flickers.
 ---------------------------------------------------------------------------- */
 
 ::view-transition-old(root) {
   animation: 110ms linear both vt-page-out;
 }
 ::view-transition-new(root) {
-  animation: 150ms cubic-bezier(0.16, 1, 0.3, 1) both vt-page-in;
+  animation: 160ms var(--ease-out-soft) both vt-page-in;
 }
 
 @keyframes vt-page-out {
@@ -284,43 +594,104 @@
 }
 
 /* Anchor the persistent chrome: pull it out of the root snapshot and freeze it
-   so the side nav, bottom nav, mobile actions and progress bar hold still. */
+   so the navs, header, toasts and progress bar hold still. */
 ::view-transition-group(side-nav),
 ::view-transition-group(bottom-nav),
-::view-transition-group(mobile-actions),
+::view-transition-group(app-header),
+::view-transition-group(toaster),
 ::view-transition-group(top-progress) {
   animation: none;
   z-index: 50;
 }
 ::view-transition-old(side-nav),
 ::view-transition-old(bottom-nav),
-::view-transition-old(mobile-actions),
+::view-transition-old(app-header),
+::view-transition-old(toaster),
 ::view-transition-old(top-progress) {
-  /* Hide the old snapshot so the live (new) chrome shows through immediately. */
   display: none;
 }
 ::view-transition-new(side-nav),
 ::view-transition-new(bottom-nav),
-::view-transition-new(mobile-actions),
+::view-transition-new(app-header),
+::view-transition-new(toaster),
 ::view-transition-new(top-progress) {
   animation: none;
 }
 
-/* Positional movement is the most common motion-sensitivity trigger — drop all
-   transition animation for users who ask for reduced motion. */
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(*),
-  ::view-transition-old(*),
-  ::view-transition-new(*) {
-    animation-duration: 0s !important;
-    animation-delay: 0s !important;
+/* Shared-element morph: Today ring ↔ /log/[kind] hero icon. */
+::view-transition-group(.morph) {
+  animation-duration: 380ms;
+  animation-timing-function: var(--ease-out-soft);
+}
+::view-transition-image-pair(.morph) {
+  animation-name: vt-via-blur;
+}
+@keyframes vt-via-blur {
+  30% {
+    filter: blur(2px);
+  }
+}
+
+/* Directional slides for drill-in / back links. */
+::view-transition-old(.nav-forward) {
+  --slide-offset: -48px;
+  animation:
+    140ms ease-in both vt-fade reverse,
+    360ms var(--ease-out-soft) both vt-slide reverse;
+}
+::view-transition-new(.nav-forward) {
+  --slide-offset: 48px;
+  animation:
+    200ms ease-out 120ms both vt-fade,
+    360ms var(--ease-out-soft) both vt-slide;
+}
+::view-transition-old(.nav-back) {
+  --slide-offset: 48px;
+  animation:
+    140ms ease-in both vt-fade reverse,
+    360ms var(--ease-out-soft) both vt-slide reverse;
+}
+::view-transition-new(.nav-back) {
+  --slide-offset: -48px;
+  animation:
+    200ms ease-out 120ms both vt-fade,
+    360ms var(--ease-out-soft) both vt-slide;
+}
+@keyframes vt-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes vt-slide {
+  from {
+    translate: var(--slide-offset);
+  }
+  to {
+    translate: 0;
+  }
+}
+
+/* Theme switch: a circular reveal from the toggle (see theme-provider). */
+html.theme-reveal::view-transition-old(root) {
+  animation: none;
+}
+html.theme-reveal::view-transition-new(root) {
+  animation: 520ms var(--ease-out-soft) both theme-reveal;
+}
+@keyframes theme-reveal {
+  from {
+    clip-path: circle(0 at var(--reveal-x, 50%) var(--reveal-y, 0%));
+  }
+  to {
+    clip-path: circle(150% at var(--reveal-x, 50%) var(--reveal-y, 0%));
   }
 }
 
 /* ----------------------------------------------------------------------------
-   Skeleton shimmer — upgrade the loading placeholders (bg-muted + animate-pulse)
-   from a flat pulse to a soft light sweep so loading reads as premium, and the
-   handoff to real content feels intentional rather than a hard pop.
+   Skeleton shimmer — a soft light sweep over the loading placeholders.
 ---------------------------------------------------------------------------- */
 
 .animate-pulse.bg-muted {
@@ -334,7 +705,7 @@
   background: linear-gradient(
     90deg,
     transparent,
-    color-mix(in oklab, var(--foreground) 7%, transparent),
+    color-mix(in oklab, var(--foreground) 6%, transparent),
     transparent
   );
   transform: translateX(-100%);
@@ -346,18 +717,59 @@
   }
 }
 
+/* Floating chrome falls back to a solid surface where blur is unsupported
+   (and it is slow on older iPhones, so they get the solid look too). */
+.glass {
+  background: color-mix(in oklab, var(--card) 82%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  backdrop-filter: blur(18px) saturate(1.4);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass {
+    background: var(--card);
+  }
+}
+
+/* Loops pause while the tab is hidden (set by use-page-visible). */
+:root[data-hidden] .animate-breathe,
+:root[data-hidden] .animate-blink,
+:root[data-hidden] .animate-float-z,
+:root[data-hidden] .animate-twinkle,
+:root[data-hidden] .animate-wave,
+:root[data-hidden] .animate-drift,
+:root[data-hidden] .animate-halo,
+:root[data-hidden] .animate-bubble {
+  animation-play-state: paused;
+}
+
+/* ----------------------------------------------------------------------------
+   Reduced motion: drop positional movement and decorative loops; keep fades.
+---------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
-  .animate-pulse.bg-muted::after {
-    animation: none;
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+  .animate-pulse.bg-muted::after,
+  .animate-breathe,
+  .animate-blink,
+  .animate-float-z,
+  .animate-twinkle,
+  .animate-wave,
+  .animate-drift,
+  .animate-halo,
+  .animate-bubble,
+  .animate-wiggle {
+    animation: none !important;
   }
 }
 
 /* ----------------------------------------------------------------------------
    Print — the pediatrician visit summary (/checkups/summary) is meant to be
-   handed over or filed, so printing has to produce ink on paper rather than a
-   screenshot of a dark app. Two jobs: drop the fixed app chrome, and flip the
-   forced-dark palette to light. Any page can print; only that one is designed
-   for it.
+   handed over or filed, so printing produces ink on paper: drop the fixed app
+   chrome and force a light palette regardless of the on-screen theme.
 ---------------------------------------------------------------------------- */
 
 @media print {
@@ -365,9 +777,11 @@
     margin: 14mm;
   }
 
-  /* Side nav, bottom nav, the mobile action row and the progress bar are all
-     fixed-position siblings of <main> in the root layout. */
+  /* Navs, header, toaster and overlays are siblings of <main>. */
   body > *:not(main) {
+    display: none !important;
+  }
+  [data-print-hide] {
     display: none !important;
   }
 
@@ -376,8 +790,8 @@
     min-height: 0 !important;
   }
 
-  html.dark,
-  :root {
+  :root,
+  :root[data-theme] {
     color-scheme: light;
     --background: #ffffff;
     --foreground: #111114;
@@ -390,12 +804,52 @@
     --border: #c9c9d1;
     --input: #c9c9d1;
     --destructive: #b3261e;
+    --accent-baby: #5f7f8a;
+    --accent-baby-soft: #eef2f3;
+    --accent-baby-strong: #34505a;
+    --wash: #ffffff;
+    --shadow-soft-v: none;
+    --shadow-pop-v: none;
+    --shadow-squish-v: none;
+    /* Light kind colours, even when printing from the night theme. */
+    --kind-feed: oklch(0.66 0.13 62);
+    --kind-feed-soft: oklch(0.955 0.035 75);
+    --kind-feed-strong: oklch(0.5 0.11 55);
+    --kind-diaper: oklch(0.62 0.11 225);
+    --kind-diaper-soft: oklch(0.95 0.03 225);
+    --kind-diaper-strong: oklch(0.47 0.1 230);
+    --kind-sleep: oklch(0.58 0.12 285);
+    --kind-sleep-soft: oklch(0.95 0.03 285);
+    --kind-sleep-strong: oklch(0.45 0.12 285);
+    --kind-temp: oklch(0.62 0.16 25);
+    --kind-temp-soft: oklch(0.955 0.03 25);
+    --kind-temp-strong: oklch(0.5 0.16 25);
+    --kind-med: oklch(0.6 0.13 315);
+    --kind-med-soft: oklch(0.955 0.03 315);
+    --kind-med-strong: oklch(0.47 0.13 315);
+    --kind-pump: oklch(0.62 0.09 195);
+    --kind-pump-soft: oklch(0.955 0.025 195);
+    --kind-pump-strong: oklch(0.46 0.08 200);
+    --kind-tummy: oklch(0.62 0.12 150);
+    --kind-tummy-soft: oklch(0.955 0.035 150);
+    --kind-tummy-strong: oklch(0.46 0.1 150);
+    --kind-milestone: oklch(0.72 0.14 85);
+    --kind-milestone-soft: oklch(0.965 0.045 90);
+    --kind-milestone-strong: oklch(0.5 0.11 75);
+    --due: oklch(0.74 0.12 45);
+    --due-strong: oklch(0.52 0.12 40);
+    --diaper-pee: oklch(0.82 0.13 95);
+    --diaper-poop: oklch(0.55 0.08 60);
+    --diaper-both: oklch(0.66 0.11 45);
   }
 
   html,
   body {
     background: #ffffff !important;
     color: #111114 !important;
+  }
+  html::before {
+    display: none;
   }
 
   /* Keep the day-bar strips and status tints — they carry meaning here. */

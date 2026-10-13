@@ -18,17 +18,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import type { GrowthRow } from "./growth-card";
+import { axisTick } from "@/lib/chart-theme";
+import { ChartTooltip, useChartAnimation } from "@/components/charts/chart-kit";
+import type { GrowthRow } from "./growth-shared";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-const tooltipStyle = {
-  background: "var(--popover)",
-  border: "1px solid var(--border)",
-  borderRadius: 12,
-  fontSize: 12,
-  color: "var(--popover-foreground)",
-};
 
 /**
  * The first-2-week concern WHO percentiles don't surface: newborns lose
@@ -60,6 +54,7 @@ export function BirthWeightCard({
       .sort((a, b) => a.day - b.day);
   }, [birthWeightG, birthDate, measurements]);
 
+  const { ref, inView, anim } = useChartAnimation();
   if (!birthWeightG || !birthDate || points.length === 0) return null;
 
   const latest = points[points.length - 1];
@@ -82,11 +77,14 @@ export function BirthWeightCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-[12px] uppercase tracking-[0.14em] font-semibold text-muted-foreground">
-          <Scale className="h-3.5 w-3.5 text-reports" /> Birth-weight recovery
+        <CardTitle className="flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-muted-foreground">
+          <span className="grid h-8 w-8 place-items-center rounded-xl bg-accent-baby-soft text-accent-baby-strong">
+            <Scale className="h-4 w-4" />
+          </span>
+          Birth-weight recovery
         </CardTitle>
         <div className="flex items-baseline gap-2 mt-1">
-          <span className="font-display nums text-3xl font-bold tracking-tight">
+          <span className="font-display nums text-3xl font-semibold">
             {latest.pct}
             <span className="text-lg text-muted-foreground font-semibold">%</span>
           </span>
@@ -96,7 +94,9 @@ export function BirthWeightCard({
         </div>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={150}>
+        <div ref={ref} className="h-[150px]">
+        {inView ? (
+        <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={points}
             margin={{ left: -18, right: 8, top: 6, bottom: 2 }}
@@ -106,13 +106,13 @@ export function BirthWeightCard({
               dataKey="day"
               domain={[0, maxDay]}
               ticks={tickRange(maxDay)}
-              tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+              tick={axisTick}
               tickFormatter={(d) => `d${d}`}
               tickLine={false}
               axisLine={false}
             />
             <YAxis
-              tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+              tick={axisTick}
               tickLine={false}
               axisLine={false}
               width={40}
@@ -121,7 +121,7 @@ export function BirthWeightCard({
             />
             <ReferenceLine
               y={100}
-              stroke="var(--hospital)"
+              stroke="var(--kind-tummy)"
               strokeDasharray="4 4"
               strokeOpacity={0.7}
             />
@@ -132,27 +132,29 @@ export function BirthWeightCard({
               strokeOpacity={0.5}
             />
             <Tooltip
-              contentStyle={tooltipStyle}
-              formatter={(v) => [`${v}%`, "Birth weight"]}
+              content={<ChartTooltip format={(v) => `${v}%`} />}
               labelFormatter={(d) => `Day ${d}`}
             />
             <Line
               type="monotone"
               dataKey="pct"
-              stroke="var(--reports)"
-              strokeWidth={2.5}
-              dot={{ r: 3, fill: "var(--reports)" }}
-              isAnimationActive={false}
+              name="Of birth weight"
+              stroke="var(--accent-baby-strong)"
+              strokeWidth={3}
+              dot={{ r: 4, fill: "var(--card)", stroke: "var(--accent-baby-strong)", strokeWidth: 2.5 }}
+              {...anim}
             />
           </LineChart>
         </ResponsiveContainer>
+        ) : null}
+        </div>
         <p
           className={cn(
             "mt-2 text-xs",
             status.tone === "good"
-              ? "text-hospital"
+              ? "text-kind-tummy-strong font-semibold"
               : status.tone === "warn"
-                ? "text-amber-600"
+                ? "text-due-strong font-semibold"
                 : "text-muted-foreground",
           )}
         >

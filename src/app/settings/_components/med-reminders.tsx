@@ -74,7 +74,7 @@ export function MedReminders({
   return (
     <div className="rounded-2xl border bg-card p-4 space-y-3">
       <div className="flex items-start gap-3">
-        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-500/10 text-violet-500">
+        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-kind-med-soft text-kind-med-strong">
           <Pill className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">

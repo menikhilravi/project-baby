@@ -36,31 +36,31 @@ export function TummyTimeCard({ rows }: { rows: TummyRow[] }) {
   return (
     <div
       className={cn(
-        "rounded-2xl border bg-card p-4",
-        met ? "border-hospital/40 bg-hospital-soft/40" : "border-border",
+        "rounded-card border border-border/60 bg-card p-5 shadow-soft",
+        met ? "border-kind-tummy/40 bg-kind-tummy-soft/60" : "border-border",
       )}
     >
       <div className="flex items-center gap-2 mb-2.5">
-        <Timer className="h-4 w-4 text-emerald-500" />
-        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground flex-1">
+        <Timer className="h-4 w-4 text-kind-tummy" />
+        <p className="text-xs uppercase tracking-wider font-bold text-muted-foreground flex-1">
           Tummy time today
         </p>
         {met ? (
-          <span className="flex items-center gap-1 text-[11px] font-medium text-hospital">
+          <span className="flex items-center gap-1 text-[11px] font-medium text-kind-tummy-strong">
             <Check className="h-3.5 w-3.5" /> Goal met
           </span>
         ) : null}
       </div>
-      <p className="font-display nums text-2xl font-bold leading-tight tabular-nums">
+      <p className="font-display nums text-3xl font-semibold leading-tight tabular-nums">
         {total}
         <span className="text-sm font-normal text-muted-foreground">
           {" "}
           / ~{GOAL_MIN} min
         </span>
       </p>
-      <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+      <div className="mt-3 h-3 w-full overflow-hidden rounded-full bg-muted">
         <div
-          className={cn("h-full rounded-full", met ? "bg-hospital" : "bg-emerald-500")}
+          className={cn("h-full rounded-full", met ? "bg-kind-tummy" : "bg-kind-tummy")}
           style={{ width: `${pct}%` }}
         />
       </div>

@@ -5,7 +5,9 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { KIND_META, type EventKind } from "@/lib/kind-meta";
-import { removeEvent } from "../actions";
+import { toast } from "@/lib/toast";
+import { haptic } from "@/lib/haptics";
+import { createEventAt, removeEvent } from "../actions";
 import { Timeline, type BabyEventRow, type RoleMap } from "./timeline";
 import { EventEditor } from "./event-editor";
 
@@ -22,17 +24,9 @@ function sortEvents(rows: BabyEventRow[]): BabyEventRow[] {
   return [...rows].sort((a, b) => b.occurred_at.localeCompare(a.occurred_at));
 }
 
-export function ActivityDetail({
-  kind,
-  initialEvents,
-  currentUserId,
-  coupleId,
-  roleMap,
-}: Props) {
+export function ActivityDetail({ kind, initialEvents, currentUserId, coupleId, roleMap }: Props) {
   const meta = KIND_META[kind];
-  const [events, setEvents] = useState<BabyEventRow[]>(() =>
-    sortEvents(initialEvents),
-  );
+  const [events, setEvents] = useState<BabyEventRow[]>(() => sortEvents(initialEvents));
   const [editing, setEditing] = useState<BabyEventRow | null>(null);
   const [adding, setAdding] = useState(false);
   const [, startTransition] = useTransition();
@@ -75,31 +69,42 @@ export function ActivityDetail({
   }, [coupleId, kind]);
 
   /** State-only drop — for deletions the server already carried out. */
-  const dropLocal = (id: number) =>
-    setEvents((prev) => prev.filter((e) => e.id !== id));
+  const dropLocal = (id: number) => setEvents((prev) => prev.filter((e) => e.id !== id));
 
-  const handleRemove = (id: number) => {
-    const snapshot = events;
-    dropLocal(id);
+  const handleRemove = (row: BabyEventRow) => {
+    haptic("warning");
+    dropLocal(row.id);
     startTransition(async () => {
       try {
-        await removeEvent(id);
+        await removeEvent(row.id);
+        toast.log(`${row.kind === "milestone" ? (row.notes ?? "Milestone") : meta.label} deleted`, {
+          kind,
+          // Re-create with the original details (new id; the undoer becomes the author).
+          undo: async () => {
+            const restored = await createEventAt({
+              kind: row.kind,
+              occurred_at: row.occurred_at,
+              ended_at: row.ended_at,
+              subtype: row.subtype,
+              amount: row.amount,
+              unit: row.unit,
+              notes: row.notes,
+            });
+            upsert(restored as BabyEventRow);
+          },
+        });
       } catch (err) {
-        console.error(err);
-        setEvents(snapshot);
+        upsert(row);
+        toast.error("Couldn't delete that", err instanceof Error ? err.message : undefined);
       }
     });
   };
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setAdding(true)}
-          className="rounded-full"
-        >
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-lg font-semibold">History</h2>
+        <Button variant="soft" onClick={() => setAdding(true)} className="rounded-full px-4">
           <Plus className="h-4 w-4" /> Add {meta.label.toLowerCase()}
         </Button>
       </div>
@@ -110,16 +115,14 @@ export function ActivityDetail({
         roleMap={roleMap}
         onEdit={setEditing}
         onRemove={handleRemove}
-        emptyLabel={`No ${meta.plural.toLowerCase()} logged yet. Tap “Add ${meta.label.toLowerCase()}” to record one — even for a past time.`}
+        emptyLabel={`No ${meta.plural.toLowerCase()} logged yet. Add one — even for a past time.`}
       />
 
-      {adding ? (
-        <EventEditor
-          kind={kind}
-          onClose={() => setAdding(false)}
-          onSaved={upsert}
-        />
+      {events.length > 0 ? (
+        <p className="text-center text-xs text-muted-foreground">Tip: swipe a row left to delete it.</p>
       ) : null}
+
+      {adding ? <EventEditor kind={kind} onClose={() => setAdding(false)} onSaved={upsert} /> : null}
       {editing ? (
         <EventEditor
           kind={kind}

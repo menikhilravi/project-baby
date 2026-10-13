@@ -27,7 +27,7 @@ export function AddItemForm() {
         render={
           <Button
             size="sm"
-            className="rounded-full bg-gear hover:bg-gear/90 text-white shadow-sm"
+            className="rounded-full bg-gear hover:bg-gear/90 text-on-accent shadow-sm"
           />
         }
       >
@@ -136,7 +136,7 @@ export function AddItemForm() {
             <Button
               type="submit"
               disabled={pending}
-              className="rounded-xl bg-gear hover:bg-gear/90 text-white"
+              className="rounded-xl bg-gear hover:bg-gear/90 text-on-accent"
             >
               {pending ? "Checking price…" : "Add item"}
             </Button>

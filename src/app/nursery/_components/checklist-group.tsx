@@ -163,7 +163,7 @@ export function ChecklistGroup({
                 onCheckedChange={() => handleToggle(row)}
                 className={cn(
                   "data-[state=checked]:bg-nursery data-[state=checked]:border-nursery",
-                  "data-[state=checked]:text-white",
+                  "data-[state=checked]:text-on-accent",
                 )}
               />
               <Label
@@ -251,7 +251,7 @@ export function ChecklistGroup({
             <Button
               type="submit"
               size="sm"
-              className="h-8 rounded-lg bg-nursery hover:bg-nursery/90 text-white"
+              className="h-8 rounded-lg bg-nursery hover:bg-nursery/90 text-on-accent"
             >
               Add
             </Button>

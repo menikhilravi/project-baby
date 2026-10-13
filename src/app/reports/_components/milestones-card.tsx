@@ -1,15 +1,18 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { AnimatePresence, m } from "motion/react";
 import { Plus, Star, Trash2 } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { spring } from "@/lib/motion";
+import { toast } from "@/lib/toast";
+import { APP_LOCALE, ymdIn } from "@/lib/time-format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Sheet } from "@/components/ui/sheet";
+import { EmptyState } from "@/components/mascot/empty-state";
+import { useCelebrate } from "@/components/celebrate/celebrate-provider";
+import { useTimeZone } from "@/components/providers/time-zone";
 import { addMilestone, removeMilestone } from "../growth-actions";
 
 export type MilestoneRow = {
@@ -18,88 +21,131 @@ export type MilestoneRow = {
   occurred_at: string;
 };
 
-/** A lightweight keepsake list of "firsts" — first smile, rolled over, … */
+const SUGGESTIONS = [
+  "First smile",
+  "First laugh",
+  "Held head up",
+  "Rolled over",
+  "First bath",
+  "Sat up",
+  "First tooth",
+  "Crawled",
+  "First steps",
+];
+
+/** A keepsake timeline of "firsts" — each one gets a little celebration. */
 export function MilestonesCard({ milestones }: { milestones: MilestoneRow[] }) {
-  const [showForm, setShowForm] = useState(false);
-  const rows = [...milestones].sort((a, b) =>
-    b.occurred_at.localeCompare(a.occurred_at),
-  );
+  const [adding, setAdding] = useState(false);
+  const [hidden, setHidden] = useState<Set<number>>(new Set());
+  const [, startTransition] = useTransition();
+  const { tz, ready } = useTimeZone();
+  const rows = [...milestones]
+    .filter((r) => !hidden.has(r.id))
+    .sort((a, b) => b.occurred_at.localeCompare(a.occurred_at));
 
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="flex items-center gap-2">
-          <Star className="h-4 w-4 text-reports" /> Milestones
-        </CardTitle>
-        <Button
-          size="sm"
-          variant={showForm ? "secondary" : "outline"}
-          onClick={() => setShowForm((v) => !v)}
-        >
-          <Plus className="h-4 w-4" /> Add
-        </Button>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {showForm ? <AddForm onDone={() => setShowForm(false)} /> : null}
-
-        {rows.length === 0 ? (
-          <p className="py-4 text-center text-sm text-muted-foreground">
-            No milestones yet. Capture the first smile, first roll, first
-            bath…
-          </p>
-        ) : (
-          <ul className="divide-y divide-border">
-            {rows.map((m) => (
-              <MilestoneRowItem key={m.id} row={m} />
-            ))}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function MilestoneRowItem({ row }: { row: MilestoneRow }) {
-  const [pending, startTransition] = useTransition();
-  const remove = () =>
+  const remove = (row: MilestoneRow) => {
+    setHidden((h) => new Set(h).add(row.id));
     startTransition(async () => {
       try {
         await removeMilestone(row.id);
+        toast.log(`“${row.notes ?? "Milestone"}” removed`, {
+          kind: "milestone",
+          undo: () => addMilestone(row.notes ?? "Milestone", ymdIn(new Date(row.occurred_at), tz)),
+        });
       } catch (err) {
-        console.error(err);
+        setHidden((h) => {
+          const n = new Set(h);
+          n.delete(row.id);
+          return n;
+        });
+        toast.error("Couldn't remove that", err instanceof Error ? err.message : undefined);
       }
     });
+  };
 
   return (
-    <li className="group flex items-center gap-3 py-2.5">
-      <span className="grid h-8 w-8 place-items-center rounded-xl bg-reports-soft text-reports ring-1 ring-border shrink-0">
-        <Star className="h-4 w-4" />
-      </span>
-      <div className="flex-1 min-w-0">
-        <p className="text-[15px] font-medium truncate">{row.notes}</p>
-        <p className="text-xs text-muted-foreground tabular-nums">
-          {fmtDate(row.occurred_at)}
-        </p>
+    <section className="rounded-card border border-border/60 bg-card p-5 shadow-soft">
+      <div className="mb-4 flex items-center gap-3">
+        <span className="grid h-11 w-11 place-items-center rounded-2xl bg-kind-milestone-soft text-kind-milestone-strong">
+          <Star className="h-5 w-5 fill-current" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-display text-xl font-semibold leading-tight">Little firsts</h2>
+          <p className="text-xs text-muted-foreground">
+            {rows.length ? `${rows.length} milestone${rows.length === 1 ? "" : "s"} so far` : "Capture the moments"}
+          </p>
+        </div>
+        <Button variant="squish" onClick={() => setAdding(true)} className="rounded-full px-4">
+          <Plus className="h-4 w-4" /> Add
+        </Button>
       </div>
-      <button
-        type="button"
-        onClick={remove}
-        disabled={pending}
-        className="text-muted-foreground/40 opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
-        aria-label="Delete milestone"
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-      </button>
-    </li>
+
+      {rows.length === 0 ? (
+        <EmptyState
+          compact
+          mood="happy"
+          title="No firsts yet"
+          body="The first smile, first roll, first bath… they go by fast."
+        />
+      ) : (
+        <ol className="relative ml-4 border-l-2 border-dashed border-kind-milestone/40 pl-6">
+          <AnimatePresence initial={false}>
+            {rows.map((row) => (
+              <m.li
+                key={row.id}
+                layout
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                transition={spring.gentle}
+                className="group relative mb-4 last:mb-0"
+              >
+                <span className="absolute -left-[2.35rem] top-0.5 grid h-7 w-7 place-items-center rounded-full bg-kind-milestone text-[oklch(0.3_0.06_80)] shadow-soft ring-4 ring-card">
+                  <Star className="h-3.5 w-3.5 fill-current" />
+                </span>
+                <div className="flex items-start gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-display text-base font-semibold leading-tight">{row.notes}</p>
+                    <p className="text-xs text-muted-foreground nums">
+                      {ready
+                        ? new Date(row.occurred_at).toLocaleDateString(APP_LOCALE, {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                            timeZone: tz,
+                          })
+                        : " "}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => remove(row)}
+                    className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive"
+                    aria-label={`Remove ${row.notes}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </m.li>
+            ))}
+          </AnimatePresence>
+        </ol>
+      )}
+
+      {adding ? <AddMilestoneSheet onClose={() => setAdding(false)} existing={rows.map((r) => r.notes ?? "")} /> : null}
+    </section>
   );
 }
 
-function AddForm({ onDone }: { onDone: () => void }) {
-  const today = new Date().toISOString().slice(0, 10);
+function AddMilestoneSheet({ onClose, existing }: { onClose: () => void; existing: string[] }) {
+  const { tz } = useTimeZone();
+  const today = ymdIn(new Date(), tz);
   const [label, setLabel] = useState("");
   const [date, setDate] = useState(today);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const celebrate = useCelebrate();
+  const taken = new Set(existing.map((e) => e.toLowerCase()));
 
   const submit = () => {
     setError(null);
@@ -110,8 +156,8 @@ function AddForm({ onDone }: { onDone: () => void }) {
     startTransition(async () => {
       try {
         await addMilestone(label, date);
-        setLabel("");
-        onDone();
+        celebrate("milestone", { word: label.trim().length <= 16 ? `${label.trim()}!` : "A first!", mood: "celebrate" });
+        onClose();
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong.");
       }
@@ -119,37 +165,35 @@ function AddForm({ onDone }: { onDone: () => void }) {
   };
 
   return (
-    <div className="space-y-3 rounded-2xl border border-border bg-card p-3">
-      <Input
-        placeholder="First smile"
-        value={label}
-        maxLength={80}
-        onChange={(e) => setLabel(e.target.value)}
-      />
-      <Input
-        type="date"
-        value={date}
-        max={today}
-        onChange={(e) => setDate(e.target.value)}
-        className="max-w-xs"
-      />
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
-      <div className="flex justify-end gap-2">
-        <Button size="sm" variant="ghost" onClick={onDone} disabled={pending}>
-          Cancel
-        </Button>
-        <Button size="sm" onClick={submit} disabled={pending}>
-          Save
+    <Sheet open onOpenChange={(o) => !o && onClose()} title="A new first!" description="Pick one or write your own.">
+      <div className="space-y-4 pb-2">
+        <div className="flex flex-wrap gap-2">
+          {SUGGESTIONS.filter((s) => !taken.has(s.toLowerCase())).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setLabel(s)}
+              className={cn(
+                "h-10 rounded-full border px-4 text-sm font-semibold transition-colors",
+                label === s
+                  ? "border-transparent bg-kind-milestone-soft text-kind-milestone-strong ring-2 ring-kind-milestone/50"
+                  : "bg-card hover:bg-muted",
+              )}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+        <Input placeholder="First smile" value={label} maxLength={80} onChange={(e) => setLabel(e.target.value)} />
+        <label className="block space-y-1.5">
+          <span className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">When</span>
+          <Input type="date" value={date} max={today} onChange={(e) => setDate(e.target.value)} className="max-w-48" />
+        </label>
+        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        <Button variant="squish" size="xl" className="w-full" onClick={submit} disabled={pending}>
+          {pending ? "Saving…" : "Celebrate it"}
         </Button>
       </div>
-    </div>
+    </Sheet>
   );
-}
-
-function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
 }

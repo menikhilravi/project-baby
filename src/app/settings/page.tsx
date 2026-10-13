@@ -7,6 +7,8 @@ import { SettingsForm } from "./_components/settings-form";
 import { HideSectionsForm } from "./_components/hide-sections-form";
 import { CareReminders } from "./_components/care-reminders";
 import { MedReminders } from "./_components/med-reminders";
+import { AppearanceForm } from "./_components/appearance-form";
+import { isAccent } from "@/lib/theme";
 import type { MedScheduleRow } from "@/lib/med-schedule";
 
 export default async function SettingsPage() {
@@ -17,12 +19,12 @@ export default async function SettingsPage() {
     : null;
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: medSchedules }] = await Promise.all([
+  const BASE_COLUMNS =
+    "birth_date, phase_override, hidden_sections, baby_sex, birth_weight_g, feed_reminders, diaper_reminders, feed_interval_min";
+  const [profileRes, { data: medSchedules }] = await Promise.all([
     supabase
       .from("profiles")
-      .select(
-        "birth_date, phase_override, hidden_sections, baby_sex, birth_weight_g, feed_reminders, diaper_reminders, feed_interval_min",
-      )
+      .select(`${BASE_COLUMNS}, baby_name, baby_accent`)
       .eq("id", user.id)
       .single(),
     // Empty until migration 0032 is applied — the card just shows no rows.
@@ -32,6 +34,13 @@ export default async function SettingsPage() {
       .order("id", { ascending: true }),
   ]);
 
+  // Until migration 0034 lands the new columns don't exist; retry without.
+  const profile: (typeof profileRes)["data"] = profileRes.error
+    ? ((
+        await supabase.from("profiles").select(BASE_COLUMNS).eq("id", user.id).single()
+      ).data as (typeof profileRes)["data"])
+    : profileRes.data;
+
   const phase = await getPhase();
 
   return (
@@ -40,11 +49,18 @@ export default async function SettingsPage() {
         tool="nursery"
         icon={SettingsIcon}
         eyebrow="Settings"
-        title="Tune the app to where you are."
-        subtitle="Set your due/birth date and Night Shift unlocks automatically."
+        title="Make it yours."
+        subtitle="Theme, your baby's details, reminders and which sections you see."
       />
 
+      <AppearanceForm
+        sex={profile?.baby_sex ?? null}
+        initialOverride={isAccent(profile?.baby_accent) ? profile.baby_accent : null}
+      />
+
+      <h2 className="font-display text-lg font-semibold mt-10 mb-3">Your baby</h2>
       <SettingsForm
+        initialName={profile?.baby_name ?? ""}
         initialBirthDate={profile?.birth_date ?? ""}
         initialOverride={profile?.phase_override ?? ""}
         initialSex={profile?.baby_sex ?? ""}
@@ -56,7 +72,7 @@ export default async function SettingsPage() {
       />
 
       <div className="mt-10">
-        <h2 className="text-sm font-medium mb-1">Care reminders</h2>
+        <h2 className="font-display text-lg font-semibold mb-1">Care reminders</h2>
         <p className="text-xs text-muted-foreground mb-3">
           Opt into gentle feed, diaper &amp; medicine nudges. Turn them on, then
           subscribe each device you want notified.
@@ -74,7 +90,7 @@ export default async function SettingsPage() {
       </div>
 
       <div className="mt-10">
-        <h2 className="text-sm font-medium mb-1">Visible sections</h2>
+        <h2 className="font-display text-lg font-semibold mb-1">Visible sections</h2>
         <p className="text-xs text-muted-foreground mb-3">
           Turn sections off if you don&apos;t use them. They&apos;ll disappear from the nav but remain accessible by URL.
         </p>

@@ -38,7 +38,7 @@ export default function NewNotePage() {
           </Link>
           <Button
             type="submit"
-            className="rounded-2xl bg-notes hover:bg-notes/90 text-white"
+            className="rounded-2xl bg-notes hover:bg-notes/90 text-on-accent"
           >
             Save note
           </Button>

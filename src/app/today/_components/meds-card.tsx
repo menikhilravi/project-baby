@@ -91,10 +91,10 @@ export function MedsCard({
     });
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4">
+    <div className="rounded-card border border-border/60 bg-card p-5 shadow-soft">
       <div className="flex items-center gap-2 mb-3">
-        <Pill className="h-4 w-4 text-violet-500" />
-        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground flex-1">
+        <Pill className="h-4 w-4 text-kind-med" />
+        <p className="text-xs uppercase tracking-wider font-bold text-muted-foreground flex-1">
           Medicine
         </p>
         <Link
@@ -111,8 +111,8 @@ export function MedsCard({
           className={cn(
             "grid place-items-center h-9 w-9 rounded-xl",
             vitaminDToday
-              ? "bg-hospital-soft text-hospital"
-              : "bg-violet-500/10 text-violet-500",
+              ? "bg-kind-tummy-soft text-kind-tummy-strong"
+              : "bg-kind-med-soft text-kind-med",
           )}
         >
           {vitaminDToday ? (
@@ -166,7 +166,7 @@ export function MedsCard({
               type="button"
               onClick={giveVitaminD}
               disabled={pending}
-              className="rounded-full bg-foreground px-4 py-1.5 text-xs font-semibold text-background hover:opacity-90 active:scale-[0.97] disabled:opacity-50"
+              className="rounded-full bg-kind-med px-4 py-2 text-xs font-bold text-on-accent shadow-squish active:translate-y-px active:scale-[0.97] disabled:opacity-50"
             >
               Log it
             </button>
@@ -310,9 +310,9 @@ function VitaminDStrip({
             </span>
             <span
               className={cn(
-                "grid h-5 w-5 place-items-center rounded-full text-[9px] transition-colors",
+                "grid h-7 w-7 place-items-center rounded-full text-[9px] transition-colors",
                 dose
-                  ? "bg-hospital-soft text-hospital"
+                  ? "bg-kind-tummy-soft text-kind-tummy-strong"
                   : "border border-dashed border-border text-muted-foreground/50 group-hover:border-foreground/40 group-hover:text-foreground",
               )}
             >
@@ -370,9 +370,9 @@ function ScheduleRow({
               className={cn(
                 "rounded-full px-2 py-0.5 text-[11px] font-medium tabular-nums transition-colors",
                 given
-                  ? "bg-hospital-soft text-hospital"
+                  ? "bg-kind-tummy-soft text-kind-tummy-strong"
                   : overdue
-                    ? "bg-amber-500/15 text-amber-700 hover:bg-amber-500/25 dark:text-amber-400"
+                    ? "bg-kind-temp-soft text-kind-temp-strong hover:bg-kind-temp-soft/70"
                     : "bg-muted text-muted-foreground hover:bg-muted/70",
               )}
             >

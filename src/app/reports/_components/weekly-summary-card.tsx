@@ -57,15 +57,15 @@ export function WeeklySummaryCard({ events }: { events: RawEvent[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>This week</CardTitle>
+        <CardTitle className="font-display text-lg font-semibold">This week</CardTitle>
       </CardHeader>
-      <CardContent className="grid grid-cols-2 gap-x-4 gap-y-5">
+      <CardContent className="grid grid-cols-2 gap-2.5">
         {metrics.map((m) => (
-          <div key={m.label} className="space-y-1">
-            <p className="text-[10px] uppercase tracking-[0.14em] font-semibold text-muted-foreground">
+          <div key={m.label} className="space-y-1 rounded-2xl bg-muted/70 px-3.5 py-3">
+            <p className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground">
               {m.label}
             </p>
-            <p className="font-display nums text-[1.75rem] font-bold tracking-tight leading-none">
+            <p className="font-display nums text-[1.75rem] font-semibold leading-none">
               {m.value}
             </p>
             <Delta
@@ -97,11 +97,11 @@ function Delta({
     : good == null
       ? "text-muted-foreground"
       : good
-        ? "text-hospital"
-        : "text-destructive";
+        ? "text-kind-tummy-strong"
+        : "text-due-strong";
   const Icon = flat ? Minus : delta > 0 ? TrendingUp : TrendingDown;
   return (
-    <span className={`flex items-center gap-1 text-xs ${color}`}>
+    <span className={`flex items-center gap-1 text-xs font-semibold ${color}`}>
       <Icon className="h-3 w-3" />
       {flat ? "no change" : `${text} vs last wk`}
     </span>

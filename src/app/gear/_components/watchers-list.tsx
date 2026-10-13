@@ -228,12 +228,12 @@ function WatcherRowView({
             {watcher.title || watcher.retailer || urlSlug(watcher.url)}
           </span>
           {chosen ? (
-            <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-gear text-white font-semibold shrink-0">
+            <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-gear text-on-accent font-semibold shrink-0">
               chosen
             </span>
           ) : null}
           {isBest ? (
-            <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-hospital text-white font-semibold shrink-0">
+            <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-hospital text-on-accent font-semibold shrink-0">
               best
             </span>
           ) : null}
@@ -306,7 +306,7 @@ function WatcherRowView({
           <Button
             type="submit"
             size="icon"
-            className="h-7 w-7 rounded-md bg-gear text-white hover:bg-gear/90"
+            className="h-7 w-7 rounded-md bg-gear text-on-accent hover:bg-gear/90"
             aria-label="Save"
           >
             <Check className="h-3 w-3" />
@@ -415,7 +415,7 @@ function AddWatcherForm({
         type="submit"
         size="sm"
         disabled={pending}
-        className="h-7 rounded-md bg-gear hover:bg-gear/90 text-white"
+        className="h-7 rounded-md bg-gear hover:bg-gear/90 text-on-accent"
       >
         {pending ? "…" : "Add"}
       </Button>

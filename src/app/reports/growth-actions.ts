@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { setCoupleBabySex } from "@/lib/baby-identity";
 
 async function ctx() {
   const supabase = await createClient();
@@ -33,31 +34,35 @@ export async function addMeasurement(input: GrowthInput) {
   ) {
     throw new Error("Enter at least one measurement.");
   }
-  const { error } = await supabase.from("growth_measurements").insert({
-    user_id: userId,
-    couple_id: coupleId,
-    measured_on: input.measured_on,
-    weight_g: input.weight_g ?? null,
-    height_cm: input.height_cm ?? null,
-    head_cm: input.head_cm ?? null,
-  });
+  const { data, error } = await supabase
+    .from("growth_measurements")
+    .insert({
+      user_id: userId,
+      couple_id: coupleId,
+      measured_on: input.measured_on,
+      weight_g: input.weight_g ?? null,
+      height_cm: input.height_cm ?? null,
+      head_cm: input.head_cm ?? null,
+    })
+    .select("id, measured_on, weight_g, height_cm, head_cm")
+    .single();
   if (error) throw new Error(error.message);
   revalidatePath("/reports");
+  return data;
 }
 
-/** Persist the baby's sex on the profile (drives the WHO curve selection). */
+/**
+ * Persist the baby's sex for the couple. Drives the WHO curve selection and
+ * the app-wide accent, so the whole layout revalidates.
+ */
 export async function setBabySex(sex: "male" | "female") {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Unauthorized");
-  const { error } = await supabase
-    .from("profiles")
-    .update({ baby_sex: sex })
-    .eq("id", user.id);
-  if (error) throw new Error(error.message);
-  revalidatePath("/reports");
+  await setCoupleBabySex(supabase, user.id, sex);
+  revalidatePath("/", "layout");
 }
 
 export async function removeMeasurement(id: number) {
@@ -75,15 +80,20 @@ export async function addMilestone(label: string, occurredOn: string) {
   const { supabase, userId, coupleId } = await ctx();
   const clean = label.trim();
   if (!clean) throw new Error("Add a short description.");
-  const { error } = await supabase.from("baby_events").insert({
-    user_id: userId,
-    couple_id: coupleId,
-    kind: "milestone",
-    notes: clean,
-    occurred_at: new Date(`${occurredOn}T12:00:00`).toISOString(),
-  });
+  const { data, error } = await supabase
+    .from("baby_events")
+    .insert({
+      user_id: userId,
+      couple_id: coupleId,
+      kind: "milestone",
+      notes: clean,
+      occurred_at: new Date(`${occurredOn}T12:00:00`).toISOString(),
+    })
+    .select("id")
+    .single();
   if (error) throw new Error(error.message);
   revalidatePath("/reports");
+  return { id: data.id };
 }
 
 export async function removeMilestone(id: number) {

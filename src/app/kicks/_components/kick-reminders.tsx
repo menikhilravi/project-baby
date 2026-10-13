@@ -244,7 +244,7 @@ export function KickReminders() {
                 size="sm"
                 onClick={handleSubscribe}
                 disabled={busy}
-                className="h-8 text-xs bg-kicks hover:bg-kicks/90 text-white"
+                className="h-8 text-xs bg-kicks hover:bg-kicks/90 text-on-accent"
               >
                 {busy ? "Subscribing…" : "Subscribe this device"}
               </Button>

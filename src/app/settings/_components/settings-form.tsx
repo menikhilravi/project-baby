@@ -1,40 +1,43 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { cn } from "@/lib/utils";
 import { updatePhase } from "../actions";
 
 type Override = "" | "prenatal" | "postnatal";
-
-const CHOICES: Array<{ value: Override; label: string }> = [
-  { value: "", label: "Auto" },
-  { value: "prenatal", label: "Pregnancy" },
-  { value: "postnatal", label: "Baby" },
-];
-
 type Sex = "" | "male" | "female";
 
-const SEX_CHOICES: Array<{ value: Sex; label: string }> = [
-  { value: "", label: "Unknown" },
+// SegmentedControl needs non-empty values; map "" ↔ "auto"/"unknown".
+const PHASE_OPTIONS = [
+  { value: "auto", label: "Auto" },
+  { value: "prenatal", label: "Pregnancy" },
+  { value: "postnatal", label: "Baby" },
+] as const;
+
+const SEX_OPTIONS = [
+  { value: "unknown", label: "Not set" },
   { value: "male", label: "Boy" },
   { value: "female", label: "Girl" },
-];
+] as const;
 
 export function SettingsForm({
+  initialName,
   initialBirthDate,
   initialOverride,
   initialSex,
   initialBirthWeightKg,
 }: {
+  initialName: string;
   initialBirthDate: string;
   initialOverride: Override;
   initialSex: Sex;
   initialBirthWeightKg: string;
 }) {
+  const [name, setName] = useState(initialName);
   const [birthDate, setBirthDate] = useState(initialBirthDate);
   const [override, setOverride] = useState<Override>(initialOverride);
   const [sex, setSex] = useState<Sex>(initialSex);
@@ -44,6 +47,7 @@ export function SettingsForm({
   const [pending, startTransition] = useTransition();
 
   const dirty =
+    name !== initialName ||
     birthDate !== initialBirthDate ||
     override !== initialOverride ||
     sex !== initialSex ||
@@ -53,6 +57,7 @@ export function SettingsForm({
     e.preventDefault();
     setError(null);
     const fd = new FormData();
+    fd.set("baby_name", name);
     fd.set("birth_date", birthDate);
     fd.set("phase_override", override);
     fd.set("baby_sex", sex);
@@ -71,57 +76,61 @@ export function SettingsForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <section className="rounded-2xl border bg-card p-5 space-y-4">
-        <div>
-          <Label htmlFor="birth_date" className="text-sm font-medium">
-            Baby&apos;s birth date
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <section className="rounded-card border bg-card p-5 shadow-soft space-y-5">
+        <div className="space-y-2">
+          <Label htmlFor="baby_name" className="text-sm font-semibold">
+            Baby&apos;s name
           </Label>
-          <p className="text-xs text-muted-foreground mt-1">
-            Once today is on/after this date, postnatal sections appear in your nav.
+          <p className="text-xs text-muted-foreground">
+            Shown in the header and greetings. A nickname works too.
           </p>
-        </div>
-        <Input
-          id="birth_date"
-          type="date"
-          value={birthDate}
-          onChange={(e) => setBirthDate(e.target.value)}
-          className="rounded-xl max-w-xs"
-        />
-
-        <div className="pt-2">
-          <p className="text-sm font-medium">Baby&apos;s sex</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Picks the right WHO growth curves. Leave Unknown if you prefer.
-          </p>
-          <div className="mt-2 grid grid-cols-3 gap-2 max-w-xs">
-            {SEX_CHOICES.map((c) => {
-              const checked = sex === c.value;
-              return (
-                <button
-                  key={c.value || "unknown"}
-                  type="button"
-                  onClick={() => setSex(c.value)}
-                  aria-pressed={checked}
-                  className={cn(
-                    "flex items-center justify-center gap-1.5 rounded-xl border bg-card px-3 py-2.5 text-sm transition-all hover:bg-card",
-                    checked &&
-                      "border-foreground/40 bg-muted/60 font-medium ring-1 ring-foreground/10",
-                  )}
-                >
-                  {checked ? <Check className="h-3.5 w-3.5" /> : null}
-                  {c.label}
-                </button>
-              );
-            })}
-          </div>
+          <Input
+            id="baby_name"
+            value={name}
+            maxLength={40}
+            autoComplete="off"
+            placeholder="e.g. Peanut"
+            onChange={(e) => setName(e.target.value)}
+            className="max-w-xs"
+          />
         </div>
 
-        <div className="pt-2">
-          <Label htmlFor="birth_weight" className="text-sm font-medium">
+        <div className="space-y-2">
+          <Label htmlFor="birth_date" className="text-sm font-semibold">
+            Birth or due date
+          </Label>
+          <p className="text-xs text-muted-foreground">
+            Once today is on or after this date, the baby sections appear in your nav.
+          </p>
+          <Input
+            id="birth_date"
+            type="date"
+            value={birthDate}
+            onChange={(e) => setBirthDate(e.target.value)}
+            className="max-w-xs"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-sm font-semibold">Baby&apos;s sex</p>
+          <p className="text-xs text-muted-foreground">
+            Picks the right WHO growth curves and a soft accent color. Shared with your partner.
+          </p>
+          <SegmentedControl
+            label="Baby's sex"
+            value={sex || "unknown"}
+            onChange={(v) => setSex(v === "unknown" ? "" : v)}
+            options={SEX_OPTIONS}
+            className="max-w-sm"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="birth_weight" className="text-sm font-semibold">
             Birth weight (kg)
           </Label>
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground">
             Used to track the first-2-week weight recovery in Reports.
           </p>
           <Input
@@ -132,55 +141,36 @@ export function SettingsForm({
             placeholder="3.3"
             value={birthWeightKg}
             onChange={(e) => setBirthWeightKg(e.target.value)}
-            className="rounded-xl max-w-xs mt-2"
+            className="max-w-xs"
           />
         </div>
       </section>
 
-      <section className="rounded-2xl border bg-card p-5 space-y-4">
+      <section className="rounded-card border bg-card p-5 shadow-soft space-y-3">
         <div>
-          <p className="text-sm font-medium">Phase</p>
+          <p className="text-sm font-semibold">Phase</p>
           <p className="text-xs text-muted-foreground mt-1">
-            Auto follows the birth date above. Override to pin a mode.
+            Auto follows the date above. Override to pin a mode.
           </p>
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          {CHOICES.map((c) => {
-            const checked = override === c.value;
-            return (
-              <button
-                key={c.value || "auto"}
-                type="button"
-                onClick={() => setOverride(c.value)}
-                aria-pressed={checked}
-                className={cn(
-                  "flex items-center justify-center gap-1.5 rounded-xl border bg-card px-3 py-2.5 text-sm transition-all",
-                  "hover:bg-card",
-                  checked &&
-                    "border-foreground/40 bg-muted/60 font-medium ring-1 ring-foreground/10",
-                )}
-              >
-                {checked ? <Check className="h-3.5 w-3.5" /> : null}
-                {c.label}
-              </button>
-            );
-          })}
-        </div>
+        <SegmentedControl
+          label="Phase"
+          value={override || "auto"}
+          onChange={(v) => setOverride(v === "auto" ? "" : v)}
+          options={PHASE_OPTIONS}
+        />
       </section>
 
       <div className="flex items-center justify-end gap-3">
         <span
+          aria-live="polite"
           className={cn(
             "text-xs tabular-nums",
             error
               ? "text-destructive"
-              : pending
-                ? "text-muted-foreground"
-                : dirty
-                  ? "text-muted-foreground"
-                  : savedAt
-                    ? "text-foreground/70"
-                    : "text-muted-foreground/60",
+              : savedAt && !dirty && !pending
+                ? "text-foreground/70"
+                : "text-muted-foreground",
           )}
         >
           {error
@@ -193,11 +183,7 @@ export function SettingsForm({
                   ? "Saved"
                   : "Up to date"}
         </span>
-        <Button
-          type="submit"
-          disabled={!dirty || pending}
-          className="rounded-2xl"
-        >
+        <Button type="submit" variant="squish" size="lg" disabled={!dirty || pending}>
           Save
         </Button>
       </div>

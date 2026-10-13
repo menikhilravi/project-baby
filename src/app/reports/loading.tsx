@@ -1,21 +1,18 @@
 export default function Loading() {
   return (
-    <div className="mx-auto max-w-2xl px-5 py-10 md:px-8 md:py-16">
-      <div className="flex items-start gap-3.5 mb-6">
-        <div className="h-11 w-11 rounded-2xl bg-muted animate-pulse shrink-0" />
-        <div className="space-y-2 pt-1">
-          <div className="h-3 w-20 rounded bg-muted animate-pulse" />
-          <div className="h-7 w-40 rounded bg-muted animate-pulse" />
+    <div className="mx-auto max-w-2xl px-4 pt-6 pb-10 md:px-8 md:py-12" aria-busy="true">
+      <div className="mb-8 flex items-start gap-4">
+        <div className="h-12 w-12 shrink-0 rounded-[1.15rem] bg-muted animate-pulse" />
+        <div className="flex-1 space-y-2.5 pt-1">
+          <div className="h-5 w-20 rounded-full bg-muted animate-pulse" />
+          <div className="h-8 w-60 rounded-full bg-muted animate-pulse" />
+          <div className="h-3.5 w-72 rounded-full bg-muted animate-pulse" />
         </div>
       </div>
-      <div className="space-y-6">
-        <div className="grid grid-cols-2 gap-3">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-24 rounded-3xl bg-muted animate-pulse" />
-          ))}
-        </div>
-        <div className="h-56 rounded-3xl bg-muted animate-pulse" />
-        <div className="h-40 rounded-3xl bg-muted animate-pulse" />
+      <div className="space-y-5">
+        <div className="h-[34rem] rounded-card bg-muted animate-pulse" />
+        <div className="h-10 rounded-full bg-muted animate-pulse" />
+        <div className="h-64 rounded-card bg-muted animate-pulse" />
       </div>
     </div>
   );

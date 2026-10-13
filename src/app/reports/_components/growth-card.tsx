@@ -1,67 +1,34 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { Plus, Trash2 } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AnimatePresence, m } from "motion/react";
+import { Plus, Ruler, Trash2 } from "lucide-react";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { WHO_MAX_MONTH, type WhoSex } from "@/lib/who-growth";
-import { ordinal, valueToCentile, whoCurve } from "@/lib/growth-percentiles";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { EmptyState } from "@/components/mascot/empty-state";
+import { useTheme } from "@/components/theme/theme-provider";
+import { ChartTooltip, useChartAnimation } from "@/components/charts/chart-kit";
+import { valueToCentile } from "@/lib/growth-percentiles";
+import { axisTick } from "@/lib/chart-theme";
+import { spring } from "@/lib/motion";
+import { toast } from "@/lib/toast";
+import type { WhoSex } from "@/lib/who-growth";
 import { addMeasurement, removeMeasurement, setBabySex } from "../growth-actions";
+import { GrowthChart } from "./growth-chart";
+import { GrowthBadge } from "./growth-badge";
+import { AddMeasurementSheet } from "./add-measurement-sheet";
+import {
+  GROWTH_METRICS,
+  ageInMonths,
+  kgToLbOz,
+  metricValue,
+  shortDate,
+  type GrowthMetric,
+  type GrowthRow,
+} from "./growth-shared";
 
-export type GrowthRow = {
-  id: number;
-  measured_on: string;
-  weight_g: number | null;
-  height_cm: number | null;
-  head_cm: number | null;
-};
-
-type Metric = "weight" | "height" | "head";
-
-const METRICS: { key: Metric; label: string; unit: string }[] = [
-  { key: "weight", label: "Weight", unit: "kg" },
-  { key: "height", label: "Height", unit: "cm" },
-  { key: "head", label: "Head", unit: "cm" },
-];
-
-const MS_PER_MONTH = 30.4375 * 24 * 60 * 60 * 1000;
-
-const tooltipStyle = {
-  background: "var(--popover)",
-  border: "1px solid var(--border)",
-  borderRadius: 12,
-  fontSize: 12,
-  color: "var(--popover-foreground)",
-};
-
-function metricValue(row: GrowthRow, m: Metric): number | null {
-  if (m === "weight") return row.weight_g == null ? null : row.weight_g / 1000;
-  if (m === "height") return row.height_cm;
-  return row.head_cm;
-}
-
-function ageInMonths(birthDate: string, measuredOn: string): number {
-  const ms =
-    new Date(`${measuredOn}T00:00:00`).getTime() -
-    new Date(`${birthDate}T00:00:00`).getTime();
-  return ms / MS_PER_MONTH;
-}
+export type { GrowthRow } from "./growth-shared";
 
 export function GrowthCard({
   measurements,
@@ -72,448 +39,253 @@ export function GrowthCard({
   birthDate: string | null;
   initialSex: WhoSex | null;
 }) {
-  const [metric, setMetric] = useState<Metric>("weight");
-  const [showForm, setShowForm] = useState(false);
-  const [sex, setSex] = useState<WhoSex>(initialSex ?? "male");
+  const [metric, setMetric] = useState<GrowthMetric>("weight");
+  const [sex, setSex] = useState<WhoSex | null>(initialSex);
+  const [adding, setAdding] = useState(false);
   const [, startTransition] = useTransition();
+  const { previewAccent } = useTheme();
+  // Until the sex is set, plot against the boys' curves but say so.
+  const curveSex: WhoSex = sex ?? "male";
 
-  const setSexPersist = (s: WhoSex) => {
+  const chooseSex = (s: WhoSex) => {
     setSex(s);
+    // The accent follows the baby: repaint now, persist (layout revalidates).
+    previewAccent(s === "male" ? "boy" : "girl");
     startTransition(async () => {
       try {
         await setBabySex(s);
       } catch (err) {
-        console.error(err);
+        toast.error("Couldn't save that", err instanceof Error ? err.message : undefined);
       }
     });
   };
 
-  const meta = METRICS.find((m) => m.key === metric)!;
+  const meta = GROWTH_METRICS.find((g) => g.key === metric)!;
 
-  // Actual measurements that have a value for this metric, oldest → newest.
   const points = useMemo(
     () =>
       measurements
-        .map((r) => ({ row: r, value: metricValue(r, metric) }))
-        .filter((p): p is { row: GrowthRow; value: number } => p.value != null)
-        .map((p) => ({
-          age: birthDate ? ageInMonths(birthDate, p.row.measured_on) : null,
-          date: p.row.measured_on,
-          value: p.value,
-        }))
-        .sort((a, b) => a.date.localeCompare(b.date)),
+        .map((r) => ({ date: r.measured_on, value: metricValue(r, metric) }))
+        .filter((p): p is { date: string; value: number } => p.value != null)
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .map((p) => ({ ...p, x: birthDate ? ageInMonths(birthDate, p.date) : 0 })),
     [measurements, metric, birthDate],
   );
 
-  const hasWho = Boolean(birthDate);
-
-  const { data, ticks, maxMonth } = useMemo(() => {
-    if (!hasWho) return { data: [], ticks: [], maxMonth: 0 };
-    const maxAge = points.reduce((m, p) => Math.max(m, p.age ?? 0), 0);
-    const max = Math.min(WHO_MAX_MONTH, Math.max(6, Math.ceil(maxAge + 1)));
-    const curve = whoCurve(metric, sex, max);
-    const merged = [
-      ...curve.map((c) => ({ ...c })),
-      ...points
-        .filter((p) => p.age != null && p.age <= max)
-        .map((p) => ({ x: p.age as number, value: p.value })),
-    ].sort((a, b) => a.x - b.x);
-    const t: number[] = [];
-    for (let m = 0; m <= max; m += 3) t.push(m);
-    return { data: merged, ticks: t, maxMonth: max };
-  }, [hasWho, points, metric, sex]);
-
-  // Latest measurement's percentile, for the caption.
   const latest = points[points.length - 1];
-  const centile =
-    hasWho && latest && latest.age != null
-      ? valueToCentile(metric, sex, latest.age, latest.value)
-      : null;
+  const centile = birthDate && latest ? valueToCentile(metric, curveSex, latest.x, latest.value) : null;
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Growth</CardTitle>
-        <Button
-          size="sm"
-          variant={showForm ? "secondary" : "outline"}
-          onClick={() => setShowForm((v) => !v)}
-        >
+    <section className="rounded-card border border-border/60 bg-card p-5 shadow-soft">
+      <div className="mb-4 flex items-center gap-3">
+        <span className="grid h-11 w-11 place-items-center rounded-2xl bg-accent-baby-soft text-accent-baby-strong">
+          <Ruler className="h-5 w-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-display text-xl font-semibold leading-tight">Growth</h2>
+          <p className="text-xs text-muted-foreground">
+            WHO {sex ? (sex === "male" ? "boys'" : "girls'") : ""} percentiles
+          </p>
+        </div>
+        <Button variant="squish" onClick={() => setAdding(true)} className="rounded-full px-4">
           <Plus className="h-4 w-4" /> Add
         </Button>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {showForm ? <AddForm onDone={() => setShowForm(false)} /> : null}
+      </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Tabs value={metric} onValueChange={(v) => setMetric(v as Metric)}>
-            <TabsList>
-              {METRICS.map((m) => (
-                <TabsTrigger key={m.key} value={m.key}>
-                  {m.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-          {hasWho ? (
-            <Tabs value={sex} onValueChange={(v) => setSexPersist(v as WhoSex)}>
-              <TabsList>
-                <TabsTrigger value="male">Boy</TabsTrigger>
-                <TabsTrigger value="female">Girl</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          ) : null}
-        </div>
-
-        {!hasWho && points.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
-            No {meta.label.toLowerCase()} entries yet. Tap Add to record one.
-          </p>
-        ) : hasWho ? (
-          <>
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart
-                data={data}
-                margin={{ left: -16, right: 8, top: 8, bottom: 4 }}
-              >
-                <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-                <XAxis
-                  type="number"
-                  dataKey="x"
-                  domain={[0, maxMonth]}
-                  ticks={ticks}
-                  tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                  tickFormatter={(m) => `${m}mo`}
-                  tickLine={false}
-                  axisLine={false}
-                  allowDuplicatedCategory={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={40}
-                  domain={["auto", "auto"]}
-                  unit={meta.unit}
-                />
-                <Tooltip
-                  contentStyle={tooltipStyle}
-                  formatter={(v, name) => [`${v} ${meta.unit}`, labelFor(name)]}
-                  labelFormatter={(m) => `${Number(m).toFixed(1)} mo`}
-                />
-                {/* WHO percentile band */}
-                <Curve dataKey="p3" opacity={0.3} />
-                <Curve dataKey="p15" opacity={0.2} />
-                <Curve dataKey="p50" opacity={0.55} dash />
-                <Curve dataKey="p85" opacity={0.2} />
-                <Curve dataKey="p97" opacity={0.3} />
-                {/* Actual measurements */}
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  name="value"
-                  stroke="var(--reports)"
-                  strokeWidth={2.5}
-                  dot={{ r: 3, fill: "var(--reports)" }}
-                  connectNulls
-                  isAnimationActive={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-            <p className="text-xs text-muted-foreground">
-              {centile != null && latest ? (
-                <>
-                  Latest {meta.label.toLowerCase()}:{" "}
-                  <span className="font-medium text-foreground">
-                    {latest.value} {meta.unit}
-                  </span>{" "}
-                  · around the{" "}
-                  <span className="font-medium text-foreground">
-                    {ordinal(clampCentile(centile))} percentile
-                  </span>{" "}
-                  for a {sex === "male" ? "boy" : "girl"}. Lines are WHO 3/15/50/85/97th.
-                </>
-              ) : (
-                <>Lines show WHO 3/15/50/85/97th percentiles. Add a measurement to plot it.</>
-              )}
-            </p>
-          </>
-        ) : (
-          <DateChart points={points} unit={meta.unit} label={meta.label} />
-        )}
-
-        {measurements.length > 0 ? (
-          <EntryList measurements={measurements} metric={metric} unit={meta.unit} />
+      <AnimatePresence initial={false}>
+        {!sex && birthDate ? (
+          <m.div
+            key="sex-prompt"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={spring.gentle}
+            className="overflow-hidden"
+          >
+            <div className="mb-4 rounded-2xl bg-muted p-4">
+              <p className="text-sm font-bold">Which growth curves should we use?</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                WHO charts differ for boys and girls. Showing boys&apos; curves until you choose — this also sets a soft
+                accent color (change it any time in Settings).
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <Button variant="outline" size="lg" onClick={() => chooseSex("male")}>
+                  Boy
+                </Button>
+                <Button variant="outline" size="lg" onClick={() => chooseSex("female")}>
+                  Girl
+                </Button>
+              </div>
+            </div>
+          </m.div>
         ) : null}
-      </CardContent>
-    </Card>
+      </AnimatePresence>
+
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <SegmentedControl label="Measurement" value={metric} onChange={setMetric} options={GROWTH_METRICS.map((g) => ({ value: g.key, label: g.label }))} className="flex-1" />
+        {sex ? (
+          <SegmentedControl
+            label="WHO curves"
+            size="sm"
+            value={sex}
+            onChange={chooseSex}
+            options={[
+              { value: "male", label: "Boy" },
+              { value: "female", label: "Girl" },
+            ]}
+            className="w-32"
+          />
+        ) : null}
+      </div>
+
+      {latest ? (
+        <div className="mb-4">
+          <GrowthBadge
+            label={meta.label}
+            value={latest.value}
+            unit={meta.unit}
+            decimals={metric === "weight" ? 2 : 1}
+            centile={centile}
+            ageMonths={birthDate ? latest.x : null}
+            sub={`${shortDate(latest.date)}${metric === "weight" ? ` · ${kgToLbOz(latest.value)}` : ""}`}
+          />
+        </div>
+      ) : null}
+
+      {birthDate ? (
+        <>
+          <GrowthChart metric={metric} sex={curveSex} unit={meta.unit} points={points} />
+          <p className="mt-2 text-xs text-muted-foreground">
+            Shaded bands are the WHO 3rd–97th and 15th–85th percentiles; the dashed line is the median.
+          </p>
+        </>
+      ) : points.length ? (
+        <DateChart points={points} unit={meta.unit} label={meta.label} />
+      ) : null}
+
+      {points.length === 0 ? (
+        <EmptyState
+          compact
+          className="mt-4"
+          title={`No ${meta.label.toLowerCase()} yet`}
+          body="Add one from your next checkup to see the curve."
+          action={
+            <Button variant="soft" onClick={() => setAdding(true)} className="rounded-full">
+              <Plus className="h-4 w-4" /> Add measurement
+            </Button>
+          }
+        />
+      ) : null}
+
+      {measurements.length > 0 ? <EntryList measurements={measurements} metric={metric} unit={meta.unit} /> : null}
+
+      {adding ? (
+        <AddMeasurementSheet
+          open={adding}
+          onOpenChange={setAdding}
+          measurements={measurements}
+          birthDate={birthDate}
+          sex={curveSex}
+        />
+      ) : null}
+    </section>
   );
-}
-
-function Curve({
-  dataKey,
-  opacity,
-  dash,
-}: {
-  dataKey: string;
-  opacity: number;
-  dash?: boolean;
-}) {
-  return (
-    <Line
-      type="monotone"
-      dataKey={dataKey}
-      stroke="var(--muted-foreground)"
-      strokeOpacity={opacity}
-      strokeWidth={1}
-      strokeDasharray={dash ? "5 4" : undefined}
-      dot={false}
-      activeDot={false}
-      connectNulls
-      isAnimationActive={false}
-    />
-  );
-}
-
-function labelFor(name: unknown): string {
-  const map: Record<string, string> = {
-    value: "Measured",
-    p3: "3rd",
-    p15: "15th",
-    p50: "50th",
-    p85: "85th",
-    p97: "97th",
-  };
-  return map[String(name)] ?? String(name);
-}
-
-function clampCentile(c: number): number {
-  return Math.min(99, Math.max(1, c));
 }
 
 /** Fallback: plot vs measurement date when we don't know the birth date. */
-function DateChart({
-  points,
-  unit,
-  label,
-}: {
-  points: { date: string; value: number }[];
-  unit: string;
-  label: string;
-}) {
-  if (points.length === 0) {
-    return (
-      <p className="py-6 text-center text-sm text-muted-foreground">
-        No {label.toLowerCase()} entries yet. Tap Add to record one.
-      </p>
-    );
-  }
+function DateChart({ points, unit, label }: { points: { date: string; value: number }[]; unit: string; label: string }) {
+  const { ref, inView, anim } = useChartAnimation();
   return (
-    <ResponsiveContainer width="100%" height={200}>
-      <LineChart
-        data={points}
-        margin={{ left: -16, right: 8, top: 8, bottom: 4 }}
-      >
-        <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-        <XAxis
-          dataKey="date"
-          tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-          tickFormatter={shortDate}
-          tickLine={false}
-          axisLine={false}
-        />
-        <YAxis
-          tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-          tickLine={false}
-          axisLine={false}
-          width={40}
-          domain={["auto", "auto"]}
-          unit={unit}
-        />
-        <Tooltip
-          contentStyle={tooltipStyle}
-          formatter={(v) => [`${v} ${unit}`, label]}
-          labelFormatter={(d) => shortDate(String(d))}
-        />
-        <Line
-          type="monotone"
-          dataKey="value"
-          stroke="var(--reports)"
-          strokeWidth={2}
-          dot={{ r: 3, fill: "var(--reports)" }}
-          isAnimationActive={false}
-        />
-      </LineChart>
-    </ResponsiveContainer>
-  );
-}
-
-function AddForm({ onDone }: { onDone: () => void }) {
-  const today = new Date().toISOString().slice(0, 10);
-  const [date, setDate] = useState(today);
-  const [weight, setWeight] = useState("");
-  const [height, setHeight] = useState("");
-  const [head, setHead] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
-
-  const submit = () => {
-    setError(null);
-    const w = weight.trim() ? Number(weight) : null;
-    const h = height.trim() ? Number(height) : null;
-    const hc = head.trim() ? Number(head) : null;
-    if (w == null && h == null && hc == null) {
-      setError("Enter at least one value.");
-      return;
-    }
-    startTransition(async () => {
-      try {
-        await addMeasurement({
-          measured_on: date,
-          weight_g: w == null ? null : Math.round(w * 1000),
-          height_cm: h,
-          head_cm: hc,
-        });
-        setWeight("");
-        setHeight("");
-        setHead("");
-        onDone();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Something went wrong.");
-      }
-    });
-  };
-
-  return (
-    <div className="space-y-3 rounded-2xl border border-border bg-card p-3">
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Date">
-          <Input
-            type="date"
-            value={date}
-            max={today}
-            onChange={(e) => setDate(e.target.value)}
-          />
-        </Field>
-        <Field label="Weight (kg)">
-          <Input
-            type="number"
-            inputMode="decimal"
-            step="0.1"
-            placeholder="4.2"
-            value={weight}
-            onChange={(e) => setWeight(e.target.value)}
-          />
-        </Field>
-        <Field label="Height (cm)">
-          <Input
-            type="number"
-            inputMode="decimal"
-            step="0.1"
-            placeholder="55"
-            value={height}
-            onChange={(e) => setHeight(e.target.value)}
-          />
-        </Field>
-        <Field label="Head (cm)">
-          <Input
-            type="number"
-            inputMode="decimal"
-            step="0.1"
-            placeholder="38"
-            value={head}
-            onChange={(e) => setHead(e.target.value)}
-          />
-        </Field>
-      </div>
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
-      <div className="flex justify-end gap-2">
-        <Button size="sm" variant="ghost" onClick={onDone} disabled={pending}>
-          Cancel
-        </Button>
-        <Button size="sm" onClick={submit} disabled={pending}>
-          Save
-        </Button>
-      </div>
+    <div ref={ref} className="h-[200px]">
+      {inView ? (
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={points} margin={{ left: -16, right: 8, top: 8, bottom: 4 }}>
+            <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 6" />
+            <XAxis dataKey="date" tick={axisTick} tickFormatter={shortDate} tickLine={false} axisLine={false} />
+            <YAxis tick={axisTick} tickLine={false} axisLine={false} width={40} domain={["auto", "auto"]} />
+            <Tooltip content={<ChartTooltip format={(v) => `${v} ${unit}`} />} />
+            <Line
+              type="monotone"
+              dataKey="value"
+              name={label}
+              stroke="var(--accent-baby-strong)"
+              strokeWidth={3}
+              dot={{ r: 4, fill: "var(--card)", stroke: "var(--accent-baby-strong)", strokeWidth: 2.5 }}
+              {...anim}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      ) : null}
     </div>
   );
 }
 
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="space-y-1">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      {children}
-    </label>
-  );
-}
-
-function EntryList({
-  measurements,
-  metric,
-  unit,
-}: {
-  measurements: GrowthRow[];
-  metric: Metric;
-  unit: string;
-}) {
-  const [pending, startTransition] = useTransition();
+function EntryList({ measurements, metric, unit }: { measurements: GrowthRow[]; metric: GrowthMetric; unit: string }) {
+  const [hidden, setHidden] = useState<Set<number>>(new Set());
+  const [, startTransition] = useTransition();
   const rows = [...measurements]
+    .filter((r) => !hidden.has(r.id))
     .sort((a, b) => b.measured_on.localeCompare(a.measured_on))
-    .slice(0, 5);
+    .slice(0, 6);
 
-  const remove = (id: number) => {
+  const remove = (row: GrowthRow) => {
+    setHidden((h) => new Set(h).add(row.id));
     startTransition(async () => {
       try {
-        await removeMeasurement(id);
+        await removeMeasurement(row.id);
+        toast.log("Measurement deleted", {
+          undo: async () => {
+            await addMeasurement({
+              measured_on: row.measured_on,
+              weight_g: row.weight_g,
+              height_cm: row.height_cm,
+              head_cm: row.head_cm,
+            });
+          },
+        });
       } catch (e) {
-        console.error(e);
+        setHidden((h) => {
+          const n = new Set(h);
+          n.delete(row.id);
+          return n;
+        });
+        toast.error("Couldn't delete that", e instanceof Error ? e.message : undefined);
       }
     });
   };
 
   return (
-    <ul className="divide-y divide-border border-t border-border mt-3">
-      {rows.map((r) => {
-        const v = metricValue(r, metric);
-        return (
-          <li
-            key={r.id}
-            className="group flex items-center gap-2 text-sm tabular-nums py-2.5"
-          >
-            <span className="text-muted-foreground">
-              {shortDate(r.measured_on)}
-            </span>
-            <span className="font-medium">
-              {v == null ? "—" : `${v} ${unit}`}
-            </span>
-            <button
-              type="button"
-              onClick={() => remove(r.id)}
-              disabled={pending}
-              className="ml-auto text-muted-foreground/40 opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
-              aria-label="Delete measurement"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          </li>
-        );
-      })}
-    </ul>
+    <div className="mt-5">
+      <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">Recent entries</h3>
+      <ul className="overflow-hidden rounded-2xl bg-muted/60">
+        <AnimatePresence initial={false}>
+          {rows.map((r) => {
+            const v = metricValue(r, metric);
+            return (
+              <m.li
+                key={r.id}
+                layout
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={spring.gentle}
+                className="group flex items-center gap-3 border-b border-border/60 px-4 py-2.5 text-sm last:border-b-0"
+              >
+                <span className="w-16 text-muted-foreground">{shortDate(r.measured_on)}</span>
+                <span className="font-bold nums">{v == null ? "—" : `${v} ${unit}`}</span>
+                <button
+                  type="button"
+                  onClick={() => remove(r)}
+                  className="ml-auto grid h-9 w-9 place-items-center rounded-xl text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  aria-label={`Delete measurement from ${shortDate(r.measured_on)}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </m.li>
+            );
+          })}
+        </AnimatePresence>
+      </ul>
+    </div>
   );
-}
-
-function shortDate(iso: string): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  if (!y) return iso;
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  });
 }

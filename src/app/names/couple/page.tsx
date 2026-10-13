@@ -63,7 +63,7 @@ function NotConnected() {
           Create a couple and share your invite code with your partner.
         </p>
         <form action={createCouple}>
-          <Button type="submit" className="w-full bg-names hover:bg-names/90 text-white">
+          <Button type="submit" className="w-full bg-names hover:bg-names/90 text-on-accent">
             Create couple
           </Button>
         </form>
@@ -111,7 +111,7 @@ function WaitingForPartner({ inviteCode }: { inviteCode: string }) {
         your matches on the Favorites page.
       </p>
       <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground/60">
-        <div className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+        <div className="h-1.5 w-1.5 rounded-full bg-kind-feed animate-pulse" />
         Waiting for partner to join…
       </div>
     </div>
@@ -163,7 +163,7 @@ function Connected({
               variant={myRole === "mom" ? "default" : "outline"}
               className={
                 myRole === "mom"
-                  ? "bg-names hover:bg-names/90 text-white"
+                  ? "bg-names hover:bg-names/90 text-on-accent"
                   : ""
               }
             >
@@ -181,7 +181,7 @@ function Connected({
               variant={myRole === "dad" ? "default" : "outline"}
               className={
                 myRole === "dad"
-                  ? "bg-names hover:bg-names/90 text-white"
+                  ? "bg-names hover:bg-names/90 text-on-accent"
                   : ""
               }
             >
